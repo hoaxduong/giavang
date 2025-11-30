@@ -221,7 +221,21 @@ export class GoldPriceAPI {
 
         // Handle XAUUSD separately (world gold in USD/oz)
         if (typeCode === "XAUUSD") {
-          // For world gold, we don't need to store it in the database
+          // For world gold, store it in the database with USD/oz unit
+          // No conversion needed - price is already in USD/oz
+          const xauusdMapping = TYPE_CODE_MAPPING["XAUUSD"];
+          prices.push({
+            id: "",
+            createdAt: timestamp,
+            retailer: xauusdMapping.retailer,
+            province: "TP. Hồ Chí Minh", // Default province for world gold
+            productType: xauusdMapping.productType,
+            buyPrice: priceInfo.buy, // Already in USD/oz
+            sellPrice: priceInfo.sell, // Already in USD/oz
+            unit: "USD/oz",
+            // Include change information if available
+            change: priceInfo.change_buy || undefined,
+          });
           continue;
         }
 

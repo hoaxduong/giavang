@@ -34,6 +34,18 @@ export function formatCurrencyCompact(amount: number): string {
 }
 
 /**
+ * Format currency in US Dollars
+ */
+export function formatCurrencyUSD(amount: number): string {
+  return new Intl.NumberFormat('en-US', {
+    style: 'currency',
+    currency: 'USD',
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  }).format(amount)
+}
+
+/**
  * Format date with Vietnamese locale
  */
 export function formatVietnameseDate(date: Date | string, formatString: string = 'PPP'): string {

@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import { PriceTable } from '@/components/prices/price-table'
+import { WorldGoldPrice } from '@/components/prices/world-gold-price'
 import { ProvinceFilter } from '@/components/prices/province-filter'
 import { RetailerFilter } from '@/components/prices/retailer-filter'
 import { ProductTypeFilter } from '@/components/prices/product-type-filter'
@@ -21,6 +22,10 @@ export function DashboardClient() {
 
   return (
     <>
+      <div className="mb-6">
+        <WorldGoldPrice />
+      </div>
+
       <div className="mb-4 flex flex-wrap gap-4">
         <ProvinceFilter value={province} onValueChange={setProvince} />
         <RetailerFilter value={retailer} onValueChange={setRetailer} />

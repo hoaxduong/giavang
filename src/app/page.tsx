@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import { Header } from '@/components/layout/header'
 import { PriceTable } from '@/components/prices/price-table'
+import { WorldGoldPrice } from '@/components/prices/world-gold-price'
 import { ProvinceFilter } from '@/components/prices/province-filter'
 import { RetailerFilter } from '@/components/prices/retailer-filter'
 import { ProductTypeFilter } from '@/components/prices/product-type-filter'
@@ -43,6 +44,10 @@ export default function Home() {
             <RetailerFilter value={retailer} onValueChange={setRetailer} />
             <ProductTypeFilter value={productType} onValueChange={setProductType} />
           </div>
+        </div>
+
+        <div className="mb-6">
+          <WorldGoldPrice />
         </div>
 
         <PriceTable data={data?.data || []} isLoading={isLoading} />
