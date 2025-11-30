@@ -1,6 +1,6 @@
 import { clsx, type ClassValue } from "clsx"
 import { twMerge } from "tailwind-merge"
-import { format as formatDate } from "date-fns"
+import { format as formatDate, formatDistanceToNow } from "date-fns"
 import { vi } from "date-fns/locale"
 import { CURRENCY_CONFIG } from "./constants"
 
@@ -39,6 +39,23 @@ export function formatCurrencyCompact(amount: number): string {
 export function formatVietnameseDate(date: Date | string, formatString: string = 'PPP'): string {
   const dateObj = typeof date === 'string' ? new Date(date) : date
   return formatDate(dateObj, formatString, { locale: vi })
+}
+
+/**
+ * Format relative time in human-readable format (e.g., "2 giờ trước", "5 phút trước")
+ */
+export function formatRelativeTime(date: Date | string): string {
+  const dateObj = typeof date === 'string' ? new Date(date) : date
+  
+  // Check if date is valid
+  if (isNaN(dateObj.getTime())) {
+    return 'Không xác định'
+  }
+  
+  return formatDistanceToNow(dateObj, {
+    addSuffix: true,
+    locale: vi,
+  })
 }
 
 /**

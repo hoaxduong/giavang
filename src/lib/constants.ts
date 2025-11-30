@@ -31,8 +31,8 @@ export type Province = typeof PROVINCES[number]
 
 // Gold product types
 export const PRODUCT_TYPES = [
-  { value: 'SJC_BARS', label: 'Vàng SJC 1 lượng', shortLabel: 'SJC 1L' },
-  { value: 'SJC_RINGS', label: 'Vàng nhẫn SJC 99.99', shortLabel: 'Nhẫn SJC' },
+  { value: 'SJC_BARS', label: 'Vàng miếng SJC', shortLabel: 'Miếng SJC' },
+  { value: 'SJC_RINGS', label: 'Vàng nhẫn SJC', shortLabel: 'Nhẫn SJC' },
   { value: 'GOLD_9999', label: 'Vàng 9999', shortLabel: '9999' },
   { value: 'GOLD_999', label: 'Vàng 999', shortLabel: '999' },
   { value: 'GOLD_24K', label: 'Vàng 24K', shortLabel: '24K' },

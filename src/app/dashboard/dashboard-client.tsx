@@ -30,7 +30,7 @@ export function DashboardClient() {
       <PriceTable data={data?.data || []} isLoading={isLoading} />
 
       <div className="mt-8 text-center text-sm text-muted-foreground">
-        <p>Dữ liệu được cập nhật tự động mỗi 5 phút</p>
+        <p>Hiển thị giá cuối cùng cho mỗi nhà bán, loại sản phẩm và tỉnh/thành phố</p>
       </div>
     </>
   )

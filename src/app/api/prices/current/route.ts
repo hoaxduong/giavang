@@ -25,15 +25,15 @@ export async function GET(request: NextRequest) {
 
     const supabase = await createClient()
 
-    // Get prices from the last 10 minutes
-    // This ensures we get fresh data even if cron job is delayed
-    const tenMinutesAgo = new Date(Date.now() - 10 * 60 * 1000).toISOString()
-
+    // Get the latest price for each retailer/product/province combination
+    // We fetch recent records ordered by created_at DESC, then filter to get
+    // the latest price for each unique combination (regardless of when it was updated)
+    // Using a reasonable limit to balance performance and completeness
     let query = supabase
       .from('price_snapshots')
       .select('*')
-      .gte('created_at', tenMinutesAgo)
       .order('created_at', { ascending: false })
+      .limit(5000) // Limit to prevent fetching too many records while ensuring we get all combinations
 
     // Apply filters if provided
     if (retailer) {
@@ -54,6 +54,7 @@ export async function GET(request: NextRequest) {
     }
 
     // Get the latest price for each retailer/province/product combination
+    // This ensures we get the most recent price regardless of when it was last updated
     const latestPrices = getLatestPrices(data || [])
 
     return NextResponse.json({
