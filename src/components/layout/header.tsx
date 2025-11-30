@@ -1,7 +1,16 @@
-import Link from 'next/link'
-import { ThemeToggle } from './theme-toggle'
+"use client";
+
+import Link from "next/link";
+import { ThemeToggle } from "./theme-toggle";
+import { UserMenu } from "@/components/user/user-menu";
+import { Button } from "@/components/ui/button";
+import { useAuth } from "@/hooks/use-auth";
+import { useRole } from "@/hooks/use-role";
 
 export function Header() {
+  const { isAuthenticated, loading } = useAuth();
+  const { isAdmin } = useRole();
+
   return (
     <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
       <div className="container mx-auto flex h-16 items-center justify-between px-4">
@@ -29,8 +38,19 @@ export function Header() {
 
         <div className="flex items-center gap-4">
           <ThemeToggle />
+          {loading ? (
+            <div className="h-9 w-20 animate-pulse rounded-md bg-muted" />
+          ) : isAuthenticated ? (
+            <>
+              <UserMenu />
+            </>
+          ) : (
+            <Button asChild variant="default" size="sm">
+              <Link href="/auth/signin">Đăng Nhập</Link>
+            </Button>
+          )}
         </div>
       </div>
     </header>
-  )
+  );
 }
