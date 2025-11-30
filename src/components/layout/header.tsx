@@ -35,7 +35,7 @@ export function Header() {
             </Link>
             {isAuthenticated && (
               <Link
-                href="/portfolio"
+                href="/tinh-loi-nhuan-vang-dinh-ky"
                 className="text-sm font-medium transition-colors hover:text-primary"
               >
                 Danh Mục
