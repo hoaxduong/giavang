@@ -221,18 +221,7 @@ export class GoldPriceAPI {
 
         // Handle XAUUSD separately (world gold in USD/oz)
         if (typeCode === "XAUUSD") {
-          // For world gold, we'll store it as-is in USD/oz
-          // You may want to convert this to VND or handle it differently
-          prices.push({
-            id: "",
-            createdAt: timestamp,
-            retailer: "SJC", // Default retailer
-            province: "TP. Hồ Chí Minh", // Default province
-            productType: "GOLD_9999",
-            buyPrice: priceInfo.buy,
-            sellPrice: priceInfo.sell || priceInfo.buy, // Some APIs don't have sell for world gold
-            unit: "USD/oz",
-          });
+          // For world gold, we don't need to store it in the database
           continue;
         }
 
