@@ -103,3 +103,43 @@ export interface APIError {
   code?: string
   details?: unknown
 }
+
+// Portfolio types
+export interface PortfolioEntry {
+  id: string
+  user_id: string
+  amount: number
+  retailer: Retailer
+  product_type: ProductType
+  province?: Province | null
+  bought_at: string
+  sold_at?: string | null
+  buy_price: number
+  sell_price?: number | null
+  created_at: string
+  updated_at: string
+}
+
+export interface PortfolioStats {
+  totalPurchasePeriod: number // tổng kỳ mua (number of purchase transactions)
+  totalGoldAmount: number // Total gold in chỉ
+  totalVndInvested: number // Total VND invested (sum of buy_price * amount)
+  currentVndValue: number // Current value based on current sell prices
+  profitLossVnd: number // Profit/loss in VND
+  profitLossPercent: number // Profit/loss percentage
+  soldEntries: number // Number of sold entries
+  activeEntries: number // Number of unsold entries
+}
+
+export interface PortfolioGrowthDataPoint {
+  date: string
+  value: number // Portfolio value at this date
+  invested: number // Cumulative invested amount
+  profitLoss: number // Profit/loss at this date
+}
+
+export interface PortfolioGrowthResponse {
+  data: PortfolioGrowthDataPoint[]
+  groupBy: 'total' | 'monthly' | 'yearly'
+  timestamp: string
+}

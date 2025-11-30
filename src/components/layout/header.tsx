@@ -33,6 +33,14 @@ export function Header() {
             >
               Biểu Đồ
             </Link>
+            {isAuthenticated && (
+              <Link
+                href="/portfolio"
+                className="text-sm font-medium transition-colors hover:text-primary"
+              >
+                Danh Mục
+              </Link>
+            )}
           </nav>
         </div>
 

@@ -19,7 +19,9 @@ export function UserMenu() {
   const { user, profile, loading } = useAuth()
   const router = useRouter()
 
-  if (loading) {
+  // Show skeleton only if we're still loading auth state
+  // Once we have user, show menu even if profile is still loading
+  if (loading && !user) {
     return (
       <Skeleton className="h-9 w-24" />
     )
