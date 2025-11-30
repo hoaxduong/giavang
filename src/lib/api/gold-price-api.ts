@@ -1,64 +1,145 @@
-import type { PriceData } from '../types'
-import type { Retailer, Province, ProductType } from '../constants'
+import type { ProductType, Province, Retailer } from "../constants";
+import type { PriceData } from "../types";
 
 /**
  * API Response from vang.today
  */
 interface VangTodayResponse {
-  success: boolean
-  current_time: number
-  data: Array<{
-    type_code: string
-    buy: number
-    sell: number
-    change_buy: number
-    change_sell: number
-    update_time: number
-  }>
+  success: boolean;
+  timestamp: number;
+  time: string;
+  date: string;
+  count: number;
+  prices: Record<
+    string,
+    {
+      name: string;
+      buy: number;
+      sell: number;
+      change_buy: number;
+      change_sell: number;
+      currency: string;
+    }
+  >;
 }
 
 /**
  * Type code mapping for vang.today API
+ * Maps vang.today type codes to internal product types and retailers
  */
 const TYPE_CODE_MAPPING: Record<
   string,
   { productType: ProductType; retailer: Retailer; label: string }
 > = {
+  XAUUSD: {
+    productType: "GOLD_9999", // World gold, using GOLD_9999 as closest match
+    retailer: "SJC", // Default retailer for world gold
+    label: "Vàng Thế Giới (XAU/USD)",
+  },
   SJL1L10: {
-    productType: 'SJC_BARS',
-    retailer: 'SJC',
-    label: 'Vàng SJC 1 lượng 10 chỉ',
+    productType: "SJC_BARS",
+    retailer: "SJC",
+    label: "Vàng SJC 1 lượng 10 chỉ",
   },
   SJ9999: {
-    productType: 'SJC_RINGS',
-    retailer: 'SJC',
-    label: 'Vàng nhẫn SJC 99.99',
+    productType: "SJC_RINGS",
+    retailer: "SJC",
+    label: "Vàng nhẫn SJC 99.99",
   },
+  DOHNL: {
+    productType: "GOLD_9999",
+    retailer: "DOJI",
+    label: "DOJI Hà Nội",
+  },
+  DOHCML: {
+    productType: "GOLD_9999",
+    retailer: "DOJI",
+    label: "DOJI HCM",
+  },
+  DOJINHTV: {
+    productType: "GOLD_9999",
+    retailer: "DOJI",
+    label: "DOJI Nữ Trang",
+  },
+  BTSJC: {
+    productType: "SJC_BARS",
+    retailer: "Bảo Tín Minh Châu",
+    label: "Bảo Tín SJC",
+  },
+  BT9999NTT: {
+    productType: "GOLD_9999",
+    retailer: "Bảo Tín Minh Châu",
+    label: "Bảo Tín 9999",
+  },
+  PQHNVM: {
+    productType: "SJC_BARS",
+    retailer: "PNJ",
+    label: "PNJ Hà Nội",
+  },
+  PQHN24NTT: {
+    productType: "GOLD_24K",
+    retailer: "PNJ",
+    label: "PNJ 24K",
+  },
+  VNGSJC: {
+    productType: "SJC_BARS",
+    retailer: "SJC",
+    label: "VN Gold SJC",
+  },
+  VIETTINMSJC: {
+    productType: "SJC_BARS",
+    retailer: "SJC",
+    label: "Viettin SJC",
+  },
+  // Legacy mappings for backward compatibility
   SJHNL1L10: {
-    productType: 'SJC_BARS',
-    retailer: 'SJC',
-    label: 'Vàng SJC HN 1 lượng',
+    productType: "SJC_BARS",
+    retailer: "SJC",
+    label: "Vàng SJC HN 1 lượng",
   },
   DOJI9999: {
-    productType: 'GOLD_9999',
-    retailer: 'DOJI',
-    label: 'Vàng DOJI 99.99',
+    productType: "GOLD_9999",
+    retailer: "DOJI",
+    label: "Vàng DOJI 99.99",
   },
   PNJL1L10: {
-    productType: 'SJC_BARS',
-    retailer: 'PNJ',
-    label: 'Vàng PNJ 1 lượng',
+    productType: "SJC_BARS",
+    retailer: "PNJ",
+    label: "Vàng PNJ 1 lượng",
   },
   PNJ9999: {
-    productType: 'GOLD_9999',
-    retailer: 'PNJ',
-    label: 'Vàng PNJ 99.99',
+    productType: "GOLD_9999",
+    retailer: "PNJ",
+    label: "Vàng PNJ 99.99",
   },
   BTMC9999: {
-    productType: 'GOLD_9999',
-    retailer: 'Bảo Tín Minh Châu',
-    label: 'Vàng Bảo Tín Minh Châu 99.99',
+    productType: "GOLD_9999",
+    retailer: "Bảo Tín Minh Châu",
+    label: "Vàng Bảo Tín Minh Châu 99.99",
   },
+};
+
+/**
+ * Province inference from type codes
+ * Some type codes contain location hints (e.g., DOHNL = DOJI Hà Nội)
+ */
+function inferProvinceFromTypeCode(typeCode: string): Province {
+  const provinceMap: Record<string, Province> = {
+    DOHNL: "Hà Nội", // DOJI Hà Nội
+    DOHCML: "TP. Hồ Chí Minh", // DOJI HCM
+    PQHNVM: "Hà Nội", // PNJ Hà Nội
+    SJHNL1L10: "Hà Nội", // SJC Hà Nội
+  };
+
+  return provinceMap[typeCode] || "TP. Hồ Chí Minh";
+}
+
+/**
+ * Convert price from VND/lượng to VND/chi
+ * 1 lượng = 10 chỉ
+ */
+function convertLuongToChi(priceInLuong: number): number {
+  return Math.round(priceInLuong / 10);
 }
 
 /**
@@ -70,396 +151,214 @@ const TYPE_CODE_MAPPING: Record<
  * - Public API, no authentication required
  * - Aggregated data from multiple gold retailers
  * - Simple JSON response format
- * - Real-time price updates
+ * - Real-time price updates (every 5 minutes)
  */
 export class GoldPriceAPI {
-  private apiUrl: string
+  private apiUrl: string;
 
   constructor() {
     this.apiUrl =
-      process.env.GOLD_PRICE_API_URL || 'https://www.vang.today/vi/api'
+      process.env.GOLD_PRICE_API_URL || "https://www.vang.today/api/prices";
   }
 
   /**
-   * Get current valid API key from database
-   * Automatically requests new key if none exists or if expired
-   */
-  private async getApiKey(): Promise<string | null> {
-    try {
-      // Return cached key if still valid
-      if (this.cachedApiKey && this.cacheExpiry && new Date() < this.cacheExpiry) {
-        return this.cachedApiKey
-      }
-
-      const supabase = createServiceRoleClient()
-
-      // Try to get current valid key from database
-      const { data, error } = await supabase.rpc('get_current_api_key', {
-        p_provider: 'vnappmob',
-        p_scope: 'gold',
-      })
-
-      if (error) {
-        console.error('Failed to fetch API key from database:', error)
-        return null
-      }
-
-      // If we have a valid key, cache it
-      if (data && data.length > 0) {
-        const keyInfo = data[0] as ApiKeyInfo
-
-        // Check if key is expiring soon (less than 3 days)
-        if (keyInfo.days_until_expiry < 3) {
-          console.warn(
-            `API key expiring in ${keyInfo.days_until_expiry} days. Requesting new key...`
-          )
-          await this.requestNewApiKey()
-          // Recursively call to get the new key
-          return this.getApiKey()
-        }
-
-        // Cache the key (cache for 1 hour to reduce database queries)
-        this.cachedApiKey = keyInfo.api_key
-        this.cacheExpiry = new Date(Date.now() + 60 * 60 * 1000)
-
-        return keyInfo.api_key
-      }
-
-      // No valid key found, request a new one
-      console.log('No valid API key found. Requesting new key...')
-      await this.requestNewApiKey()
-
-      // Try again after requesting
-      return this.getApiKey()
-    } catch (error) {
-      console.error('Error getting API key:', error)
-      return null
-    }
-  }
-
-  /**
-   * Request a new API key from vnappmob
-   */
-  private async requestNewApiKey(): Promise<void> {
-    try {
-      const response = await fetch(
-        `${process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'}/api/auth/vnappmob-key`,
-        {
-          method: 'POST',
-          headers: {
-            Authorization: `Bearer ${process.env.CRON_SECRET}`,
-            'Content-Type': 'application/json',
-          },
-        }
-      )
-
-      if (!response.ok) {
-        console.error('Failed to request new API key:', response.status)
-        return
-      }
-
-      const result = await response.json()
-      console.log('New API key requested:', result.message)
-
-      // Clear cache to force refetch
-      this.cachedApiKey = null
-      this.cacheExpiry = null
-    } catch (error) {
-      console.error('Error requesting new API key:', error)
-    }
-  }
-
-  /**
-   * Fetch current gold prices from vnappmob API
+   * Fetch current gold prices from vang.today API
    * This should only be called from the server-side cron job
-   * Automatically manages API keys from database
    */
   async getCurrentPrices(): Promise<PriceData[]> {
     try {
-      // Get current API key from database (auto-refreshes if needed)
-      const apiKey = await this.getApiKey()
-
-      if (!apiKey) {
-        console.warn(
-          'No API key available. Using mock data. Request key at: https://api.vnappmob.com/api/request_api_key?scope=gold'
-        )
-        return this.getMockData()
-      }
-
-      // Fetch from all retailers in parallel
-      const [sjcData] = await Promise.all([
-        this.fetchRetailerPrices('sjc', 'SJC', apiKey),
-      ])
-
-      // Combine all prices
-      const allPrices = [...sjcData]
-
-      // If no data fetched, use mock data as fallback
-      if (allPrices.length === 0) {
-        console.warn('No data from API, using mock data as fallback')
-        return this.getMockData()
-      }
-
-      return allPrices
-    } catch (error) {
-      console.error('Failed to fetch current prices:', error)
-      // Fallback to mock data on error
-      return this.getMockData()
-    }
-  }
-
-  /**
-   * Fetch prices for a specific retailer
-   */
-  private async fetchRetailerPrices(
-    endpoint: string,
-    retailerName: string,
-    apiKey: string
-  ): Promise<PriceData[]> {
-    try {
-      const headers: HeadersInit = {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${apiKey}`,
-      }
-
-      const response = await fetch(`${this.apiUrl}/api/v2/gold/${endpoint}`, {
-        method: 'GET',
-        headers,
-        next: { revalidate: 300 }, // Cache for 5 minutes
-      })
+      const response = await fetch(this.apiUrl, {
+        method: "GET",
+        headers: {
+          Accept: "application/json",
+          "User-Agent": "Mozilla/5.0",
+        },
+      });
 
       if (!response.ok) {
-        console.warn(`API error for ${retailerName}: ${response.status}`)
-        return []
+        const text = await response.text();
+        console.warn(
+          `vang.today API error: ${response.status} ${response.statusText}`,
+          text.substring(0, 200)
+        );
+        return this.getMockData();
       }
 
-      const data: VnappmobResponse = await response.json()
+      // Check if response is actually JSON
+      const contentType = response.headers.get("content-type");
+      if (!contentType || !contentType.includes("application/json")) {
+        const text = await response.text();
+        console.warn(
+          `vang.today API returned non-JSON response. Content-Type: ${contentType}`,
+          text.substring(0, 200)
+        );
+        return this.getMockData();
+      }
 
-      // Parse and normalize the response
-      return this.parseRetailerResponse(data, retailerName)
-    } catch (error) {
-      console.error(`Failed to fetch ${retailerName} prices:`, error)
-      return []
-    }
-  }
+      const data: VangTodayResponse = await response.json();
 
-  /**
-   * Parse retailer response and convert to PriceData format
-   */
-  private parseRetailerResponse(
-    response: VnappmobResponse,
-    retailer: string
-  ): PriceData[] {
-    if (!response.results || response.results.length === 0) {
-      return []
-    }
+      if (!data.success || !data.prices || Object.keys(data.prices).length === 0) {
+        console.warn("No data from vang.today API, using mock data as fallback");
+        return this.getMockData();
+      }
 
-    const prices: PriceData[] = []
-    const timestamp = new Date().toISOString()
+      // Parse and convert to PriceData format
+      const prices: PriceData[] = [];
+      const timestamp = new Date(data.timestamp * 1000).toISOString();
 
-    // Process each result item
-    for (const item of response.results) {
-      // Extract buy/sell price pairs from the response
-      const priceEntries = this.extractPriceEntries(item, retailer)
+      // Iterate over the prices object (keys are type codes)
+      for (const [typeCode, priceInfo] of Object.entries(data.prices)) {
+        const mapping = TYPE_CODE_MAPPING[typeCode];
 
-      for (const entry of priceEntries) {
+        // Skip unknown type codes (except XAUUSD which we handle specially)
+        if (!mapping && typeCode !== "XAUUSD") {
+          console.warn(`Unknown type code: ${typeCode}`);
+          continue;
+        }
+
+        // Infer province from type code
+        const province = inferProvinceFromTypeCode(typeCode);
+
+        // Handle XAUUSD separately (world gold in USD/oz)
+        if (typeCode === "XAUUSD") {
+          // For world gold, we'll store it as-is in USD/oz
+          // You may want to convert this to VND or handle it differently
+          prices.push({
+            id: "",
+            createdAt: timestamp,
+            retailer: "SJC", // Default retailer
+            province: "TP. Hồ Chí Minh", // Default province
+            productType: "GOLD_9999",
+            buyPrice: priceInfo.buy,
+            sellPrice: priceInfo.sell || priceInfo.buy, // Some APIs don't have sell for world gold
+            unit: "USD/oz",
+          });
+          continue;
+        }
+
+        // Convert from VND/lượng to VND/chi (1 lượng = 10 chỉ)
+        const buyPriceInChi = convertLuongToChi(priceInfo.buy);
+        const sellPriceInChi = convertLuongToChi(priceInfo.sell);
+
         prices.push({
-          id: '',
+          id: "",
           createdAt: timestamp,
-          retailer: entry.retailer,
-          province: entry.province,
-          productType: entry.productType,
-          buyPrice: entry.buyPrice,
-          sellPrice: entry.sellPrice,
-          unit: 'VND/chi',
-        })
-      }
-    }
-
-    return prices
-  }
-
-  /**
-   * Extract price entries from API response
-   * Handles different field naming conventions for each retailer
-   */
-  private extractPriceEntries(
-    item: Record<string, number | string>,
-    retailer: string
-  ): Array<{
-    retailer: Retailer
-    province: Province
-    productType: ProductType
-    buyPrice: number
-    sellPrice: number
-  }> {
-    const entries: Array<{
-      retailer: Retailer
-      province: Province
-      productType: ProductType
-      buyPrice: number
-      sellPrice: number
-    }> = []
-
-    // Map location codes to province names
-    const locationMap: Record<string, string> = {
-      hcm: 'TP. Hồ Chí Minh',
-      hn: 'Hà Nội',
-      dn: 'Đà Nẵng',
-      ct: 'Cần Thơ',
-    }
-
-    // SJC format: buy_1l, sell_1l, buy_05l, sell_05l, etc.
-    // DOJI format: buy_hcm, sell_hcm, buy_hn, sell_hn, etc.
-    // PNJ format: buy_hcm, sell_hcm, etc.
-
-    const keys = Object.keys(item)
-
-    // Group buy/sell pairs
-    const buyKeys = keys.filter(k => k.startsWith('buy_'))
-
-    for (const buyKey of buyKeys) {
-      const suffix = buyKey.replace('buy_', '')
-      const sellKey = `sell_${suffix}`
-
-      if (item[sellKey] !== undefined) {
-        const buyPrice = Number(item[buyKey])
-        const sellPrice = Number(item[sellKey])
-
-        // Determine product type and province from suffix
-        let productType: ProductType = 'SJC_BARS'
-        let province: Province = 'TP. Hồ Chí Minh'
-
-        if (suffix === '1l' || suffix === 'sjc') {
-          productType = 'SJC_BARS'
-        } else if (suffix.includes('nhan') || suffix.includes('ring')) {
-          productType = 'SJC_RINGS'
-        } else if (suffix === '9999' || suffix === 'gold_9999') {
-          productType = 'GOLD_9999'
-        } else if (locationMap[suffix]) {
-          // Location-based pricing
-          province = locationMap[suffix] as Province
-        }
-
-        // For location-based keys (DOJI, PNJ)
-        if (locationMap[suffix]) {
-          province = locationMap[suffix] as Province
-        }
-
-        entries.push({
-          retailer: retailer as Retailer,
+          retailer: mapping.retailer,
           province,
-          productType,
-          buyPrice,
-          sellPrice,
-        })
+          productType: mapping.productType,
+          buyPrice: buyPriceInChi,
+          sellPrice: sellPriceInChi,
+          unit: "VND/chi",
+          // Include change information if available
+          change: priceInfo.change_buy ? convertLuongToChi(priceInfo.change_buy) : undefined,
+        });
       }
-    }
 
-    // If no entries found, try alternative parsing
-    if (entries.length === 0 && item.buy && item.sell) {
-      entries.push({
-        retailer: retailer as Retailer,
-        province: 'TP. Hồ Chí Minh' as Province,
-        productType: 'SJC_BARS' as ProductType,
-        buyPrice: Number(item.buy),
-        sellPrice: Number(item.sell),
-      })
-    }
+      // If no prices were parsed, use mock data as fallback
+      if (prices.length === 0) {
+        console.warn("No prices parsed from API response, using mock data");
+        return this.getMockData();
+      }
 
-    return entries
+      return prices;
+    } catch (error) {
+      console.error("Failed to fetch current prices from vang.today:", error);
+      // Fallback to mock data on error
+      return this.getMockData();
+    }
   }
 
   /**
    * Fetch prices for a specific retailer (public method)
    */
   async getPricesByRetailer(retailer: string): Promise<PriceData[]> {
-    const allPrices = await this.getCurrentPrices()
-    return allPrices.filter(price => price.retailer === retailer)
+    const allPrices = await this.getCurrentPrices();
+    return allPrices.filter((price) => price.retailer === retailer);
   }
 
   /**
    * Fetch prices for a specific province (public method)
    */
   async getPricesByProvince(province: string): Promise<PriceData[]> {
-    const allPrices = await this.getCurrentPrices()
-    return allPrices.filter(price => price.province === province)
+    const allPrices = await this.getCurrentPrices();
+    return allPrices.filter((price) => price.province === province);
   }
 
   /**
    * Mock data for development/testing
-   * Used when API key is not configured
+   * Used when API is unavailable or for testing
    */
   private getMockData(): PriceData[] {
-    const basePrice = 76500000 // Base price in VND
-    const timestamp = new Date().toISOString()
+    const basePrice = 76500000; // Base price in VND/lượng
+    const basePriceInChi = convertLuongToChi(basePrice); // Convert to VND/chi
+    const timestamp = new Date().toISOString();
 
     return [
       {
-        id: '1',
+        id: "1",
         createdAt: timestamp,
-        retailer: 'SJC',
-        province: 'TP. Hồ Chí Minh',
-        productType: 'SJC_BARS',
-        buyPrice: basePrice,
-        sellPrice: basePrice + 300000,
-        unit: 'VND/chi',
+        retailer: "SJC",
+        province: "TP. Hồ Chí Minh",
+        productType: "SJC_BARS",
+        buyPrice: basePriceInChi,
+        sellPrice: basePriceInChi + 30000, // 300,000 VND/lượng = 30,000 VND/chi
+        unit: "VND/chi",
       },
       {
-        id: '2',
+        id: "2",
         createdAt: timestamp,
-        retailer: 'SJC',
-        province: 'Hà Nội',
-        productType: 'SJC_BARS',
-        buyPrice: basePrice + 50000,
-        sellPrice: basePrice + 350000,
-        unit: 'VND/chi',
+        retailer: "SJC",
+        province: "Hà Nội",
+        productType: "SJC_BARS",
+        buyPrice: basePriceInChi + 5000, // 50,000 VND/lượng = 5,000 VND/chi
+        sellPrice: basePriceInChi + 35000,
+        unit: "VND/chi",
       },
       {
-        id: '3',
+        id: "3",
         createdAt: timestamp,
-        retailer: 'DOJI',
-        province: 'TP. Hồ Chí Minh',
-        productType: 'SJC_BARS',
-        buyPrice: basePrice - 100000,
-        sellPrice: basePrice + 200000,
-        unit: 'VND/chi',
+        retailer: "DOJI",
+        province: "TP. Hồ Chí Minh",
+        productType: "SJC_BARS",
+        buyPrice: basePriceInChi - 10000,
+        sellPrice: basePriceInChi + 20000,
+        unit: "VND/chi",
       },
       {
-        id: '4',
+        id: "4",
         createdAt: timestamp,
-        retailer: 'PNJ',
-        province: 'TP. Hồ Chí Minh',
-        productType: 'SJC_RINGS',
-        buyPrice: basePrice - 200000,
-        sellPrice: basePrice + 100000,
-        unit: 'VND/chi',
+        retailer: "PNJ",
+        province: "TP. Hồ Chí Minh",
+        productType: "SJC_RINGS",
+        buyPrice: basePriceInChi - 20000,
+        sellPrice: basePriceInChi + 10000,
+        unit: "VND/chi",
       },
       {
-        id: '5',
+        id: "5",
         createdAt: timestamp,
-        retailer: 'SJC',
-        province: 'Đà Nẵng',
-        productType: 'SJC_BARS',
-        buyPrice: basePrice + 100000,
-        sellPrice: basePrice + 400000,
-        unit: 'VND/chi',
+        retailer: "SJC",
+        province: "Đà Nẵng",
+        productType: "SJC_BARS",
+        buyPrice: basePriceInChi + 10000,
+        sellPrice: basePriceInChi + 40000,
+        unit: "VND/chi",
       },
       {
-        id: '6',
+        id: "6",
         createdAt: timestamp,
-        retailer: 'DOJI',
-        province: 'Hà Nội',
-        productType: 'SJC_BARS',
-        buyPrice: basePrice - 50000,
-        sellPrice: basePrice + 250000,
-        unit: 'VND/chi',
+        retailer: "DOJI",
+        province: "Hà Nội",
+        productType: "SJC_BARS",
+        buyPrice: basePriceInChi - 5000,
+        sellPrice: basePriceInChi + 25000,
+        unit: "VND/chi",
       },
-    ]
+    ];
   }
 }
 
 /**
  * Singleton instance
  */
-export const goldPriceAPI = new GoldPriceAPI()
+export const goldPriceAPI = new GoldPriceAPI();
