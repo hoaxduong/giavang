@@ -2,11 +2,7 @@
   "crons": [
     {
       "path": "/api/prices/sync",
-      "schedule": "*/5 * * * *"
-    },
-    {
-      "path": "/api/auth/vnappmob-key/refresh",
-      "schedule": "0 2 * * *"
+      "schedule": "0 0 * * *"
     }
   ]
 }

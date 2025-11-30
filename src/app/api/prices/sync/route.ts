@@ -6,11 +6,11 @@ import { priceDataToSnapshot } from '@/lib/api/price-normalizer'
 /**
  * Price Sync API Route
  *
- * This endpoint should be called by a cron job every 5 minutes to sync prices
+ * This endpoint should be called by a cron job daily at 0 UTC to sync prices
  * from the external API to the Supabase database.
  *
  * Setup Vercel Cron:
- * Create vercel.json in project root with cron schedule (every 5 minutes)
+ * Create vercel.json in project root with cron schedule (daily at 0 UTC)
  *
  * For development/testing:
  * curl -X POST http://localhost:3000/api/prices/sync \
