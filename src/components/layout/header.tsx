@@ -45,6 +45,12 @@ export function Header() {
             >
               Tính Giá Vốn
             </Link>
+            <Link
+              href="/cong-cu-tinh-lai-lo-vang"
+              className="text-sm font-medium transition-colors hover:text-primary"
+            >
+              Tính Lãi/Lỗ
+            </Link>
             {isAuthenticated && (
               <Link
                 href="/tinh-loi-nhuan-vang-dinh-ky"
