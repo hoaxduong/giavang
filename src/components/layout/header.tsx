@@ -34,6 +34,12 @@ export function Header() {
               Biểu Đồ
             </Link>
             <Link
+              href="/cong-cu-tinh-so-vang"
+              className="text-sm font-medium transition-colors hover:text-primary"
+            >
+              Tính Số Vàng
+            </Link>
+            <Link
               href="/tinh-gia-von-vang"
               className="text-sm font-medium transition-colors hover:text-primary"
             >
