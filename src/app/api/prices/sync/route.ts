@@ -1,67 +1,84 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createClient } from '@/lib/supabase/server'
-import { goldPriceAPI } from '@/lib/api/gold-price-api'
-import { priceDataToSnapshot } from '@/lib/api/price-normalizer'
+import { crawlerManager } from '@/lib/api/crawler/crawler-manager'
+import { requireRole } from '@/lib/auth/server'
 
 /**
  * Price Sync API Route
  *
- * This endpoint should be called by a cron job daily at 0 UTC to sync prices
- * from the external API to the Supabase database.
+ * This endpoint can be triggered in two ways:
+ * 1. Cron job (daily at 0 UTC) - requires CRON_SECRET
+ * 2. Manual admin trigger - requires admin role
  *
  * Setup Vercel Cron:
  * Create vercel.json in project root with cron schedule (daily at 0 UTC)
  *
- * For development/testing:
+ * For cron testing:
  * curl -X POST http://localhost:3000/api/prices/sync \
  *   -H "Authorization: Bearer your-cron-secret"
+ *
+ * For manual admin testing:
+ * POST /api/prices/sync with admin authentication
+ * Body (optional): { "sourceId": "uuid" } to sync specific source
  */
 export async function POST(request: NextRequest) {
   try {
-    // Verify cron secret to prevent unauthorized access
+    // Check authentication: either cron secret or admin user
     const authHeader = request.headers.get('authorization')
     const expectedAuth = `Bearer ${process.env.CRON_SECRET}`
 
-    if (authHeader !== expectedAuth) {
-      return NextResponse.json(
-        { error: 'Unauthorized' },
-        { status: 401 }
-      )
+    let triggerType: 'cron' | 'manual' = 'cron'
+    let triggerUserId: string | undefined
+
+    if (authHeader === expectedAuth) {
+      // Cron trigger - authenticated with secret
+      triggerType = 'cron'
+    } else {
+      // Manual trigger - requires admin role
+      const { user } = await requireRole('admin')
+      triggerType = 'manual'
+      triggerUserId = user.id
     }
 
-    const supabase = await createClient()
-
-    // Fetch current prices from external API
-    const currentPrices = await goldPriceAPI.getCurrentPrices()
-
-    if (currentPrices.length === 0) {
-      return NextResponse.json({
-        success: true,
-        count: 0,
-        message: 'No prices to sync',
-        timestamp: new Date().toISOString(),
-      })
+    // Parse request body for manual triggers (optional sourceId)
+    let sourceId: string | undefined
+    try {
+      const body = await request.json()
+      sourceId = body.sourceId
+    } catch {
+      // No body or invalid JSON - sync all sources
     }
 
-    // Convert to database format
-    const snapshots = currentPrices.map(priceDataToSnapshot)
+    // Perform sync using CrawlerManager
+    let result
 
-    // Insert into database
-    const { data, error } = await supabase
-      .from('price_snapshots')
-      .insert(snapshots)
-      .select()
-
-    if (error) {
-      console.error('Database insert error:', error)
-      throw error
+    if (sourceId) {
+      // Sync specific source
+      const singleResult = await crawlerManager.syncSource(sourceId, triggerType, triggerUserId)
+      result = {
+        results: [
+          {
+            source: sourceId,
+            success: singleResult.success,
+            recordsSaved: singleResult.recordsSaved,
+            error: singleResult.error,
+          },
+        ],
+        totalRecords: singleResult.recordsSaved,
+        totalErrors: singleResult.success ? 0 : 1,
+        duration: 0,
+      }
+    } else {
+      // Sync all enabled sources
+      result = await crawlerManager.syncAll()
     }
 
-    console.log(`Successfully synced ${data?.length || 0} price snapshots`)
+    console.log(
+      `Sync completed: ${result.totalRecords} records saved, ${result.totalErrors} errors, ${result.duration}ms`
+    )
 
     return NextResponse.json({
-      success: true,
-      count: data?.length || 0,
+      success: result.totalErrors === 0,
+      ...result,
       timestamp: new Date().toISOString(),
     })
   } catch (error) {
@@ -69,8 +86,10 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json(
       {
+        success: false,
         error: 'Failed to sync prices',
         details: error instanceof Error ? error.message : 'Unknown error',
+        timestamp: new Date().toISOString(),
       },
       { status: 500 }
     )
@@ -78,12 +97,31 @@ export async function POST(request: NextRequest) {
 }
 
 /**
- * GET endpoint for manual trigger (development only)
- * Remove this in production or add additional security
+ * GET endpoint - shows sync status and usage information
  */
 export async function GET() {
-  return NextResponse.json({
-    message: 'Use POST method to sync prices',
-    usage: 'POST /api/prices/sync with Authorization: Bearer {CRON_SECRET}',
-  })
+  try {
+    // Get status of all sources
+    const status = await crawlerManager.getSourcesStatus()
+
+    return NextResponse.json({
+      message: 'Price sync endpoint',
+      usage: {
+        cron: 'POST /api/prices/sync with Authorization: Bearer {CRON_SECRET}',
+        manual: 'POST /api/prices/sync (requires admin auth)',
+        specific: 'POST /api/prices/sync with body: { "sourceId": "uuid" }',
+      },
+      sources: status,
+    })
+  } catch (error) {
+    return NextResponse.json({
+      message: 'Price sync endpoint',
+      usage: {
+        cron: 'POST /api/prices/sync with Authorization: Bearer {CRON_SECRET}',
+        manual: 'POST /api/prices/sync (requires admin auth)',
+        specific: 'POST /api/prices/sync with body: { "sourceId": "uuid" }',
+      },
+      error: 'Failed to fetch sources status',
+    })
+  }
 }
