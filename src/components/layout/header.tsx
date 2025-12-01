@@ -33,6 +33,12 @@ export function Header() {
             >
               Biểu Đồ
             </Link>
+            <Link
+              href="/tinh-gia-von-vang"
+              className="text-sm font-medium transition-colors hover:text-primary"
+            >
+              Tính Giá Vốn
+            </Link>
             {isAuthenticated && (
               <Link
                 href="/tinh-loi-nhuan-vang-dinh-ky"
