@@ -1,7 +1,7 @@
-'use client'
+"use client";
 
-import { useState } from 'react'
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
+import { useState } from "react";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import {
   Table,
   TableBody,
@@ -9,331 +9,367 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from '@/components/ui/table'
-import { Button } from '@/components/ui/button'
-import { Switch } from '@/components/ui/switch'
-import { Badge } from '@/components/ui/badge'
-import { Edit, Trash2, Plus, ExternalLink } from 'lucide-react'
-import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog'
-import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
-import { Alert, AlertDescription } from '@/components/ui/alert'
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+} from "@/components/ui/table";
+import { Button } from "@/components/ui/button";
+import { Switch } from "@/components/ui/switch";
+import { Badge } from "@/components/ui/badge";
+import { Edit, Trash2, Plus, ExternalLink } from "lucide-react";
+import {
+  Dialog,
+  DialogContent,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 interface FieldMappings {
-  dataPath: string
+  dataPath: string;
   fields: {
-    typeCode: string
-    buyPrice: string
-    sellPrice: string
-    timestamp: string
-    currency?: string
-  }
+    typeCode: string;
+    buyPrice: string;
+    sellPrice: string;
+    timestamp: string;
+    currency?: string;
+  };
   transforms?: {
-    timestamp?: 'iso8601' | 'unix'
-    priceMultiplier?: number
-  }
+    timestamp?: "iso8601" | "unix";
+    priceMultiplier?: number;
+  };
 }
 
 interface CrawlerSource {
-  id: string
-  name: string
-  api_url: string
-  api_type: string
-  is_enabled: boolean
-  priority: number
-  rate_limit_per_minute?: number
-  timeout_seconds?: number
-  field_mappings?: FieldMappings
+  id: string;
+  name: string;
+  api_url: string;
+  api_type: string;
+  is_enabled: boolean;
+  priority: number;
+  rate_limit_per_minute?: number;
+  timeout_seconds?: number;
+  field_mappings?: FieldMappings;
 }
 
 interface TypeMapping {
-  id: string
-  source_id: string
-  external_code: string
-  retailer_code: string
-  product_type_code: string
-  province_code: string | null
-  label: string
-  is_enabled: boolean
+  id: string;
+  source_id: string;
+  external_code: string;
+  retailer_code: string;
+  product_type_code: string;
+  province_code: string | null;
+  label: string;
+  is_enabled: boolean;
 }
 
 export function CrawlerSources() {
-  const queryClient = useQueryClient()
-  const [isDialogOpen, setIsDialogOpen] = useState(false)
-  const [editingItem, setEditingItem] = useState<CrawlerSource | null>(null)
-  const [activeTab, setActiveTab] = useState('config')
+  const queryClient = useQueryClient();
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [editingItem, setEditingItem] = useState<CrawlerSource | null>(null);
+  const [activeTab, setActiveTab] = useState("config");
   const [formData, setFormData] = useState({
-    name: '',
-    apiUrl: '',
-    apiType: 'vang_today',
+    name: "",
+    apiUrl: "",
+    apiType: "vang_today",
     priority: 1,
     rateLimitPerMinute: 60,
     timeoutSeconds: 30,
     fieldMappings: {
-      dataPath: 'prices',
+      dataPath: "prices",
       fields: {
-        typeCode: 'type',
-        buyPrice: 'buy',
-        sellPrice: 'sell',
-        timestamp: 'timestamp',
-        currency: 'currency',
+        typeCode: "type",
+        buyPrice: "buy",
+        sellPrice: "sell",
+        timestamp: "timestamp",
+        currency: "currency",
       },
       transforms: {
-        timestamp: 'unix' as const,
+        timestamp: "unix" as "iso8601" | "unix",
         priceMultiplier: 1,
       },
     },
-  })
-  const [error, setError] = useState<string | null>(null)
+  });
+  const [error, setError] = useState<string | null>(null);
 
   // Type mapping state
-  const [isMappingDialogOpen, setIsMappingDialogOpen] = useState(false)
-  const [editingMapping, setEditingMapping] = useState<TypeMapping | null>(null)
+  const [isMappingDialogOpen, setIsMappingDialogOpen] = useState(false);
+  const [editingMapping, setEditingMapping] = useState<TypeMapping | null>(
+    null
+  );
   const [mappingFormData, setMappingFormData] = useState({
-    externalCode: '',
-    retailerCode: '',
-    productTypeCode: '',
-    provinceCode: '',
-    label: '',
-  })
+    externalCode: "",
+    retailerCode: "",
+    productTypeCode: "",
+    provinceCode: "",
+    label: "",
+  });
 
   const { data: sources, isLoading } = useQuery({
-    queryKey: ['crawler-sources'],
+    queryKey: ["crawler-sources"],
     queryFn: async () => {
-      const res = await fetch('/api/admin/crawler/sources')
-      if (!res.ok) throw new Error('Failed to fetch sources')
-      const json = await res.json()
-      return json.sources as CrawlerSource[]
+      const res = await fetch("/api/admin/crawler/sources");
+      if (!res.ok) throw new Error("Failed to fetch sources");
+      const json = await res.json();
+      return json.sources as CrawlerSource[];
     },
-  })
+  });
 
   // Fetch mappings for the editing source
   const { data: mappings } = useQuery({
-    queryKey: ['crawler-mappings', editingItem?.id],
+    queryKey: ["crawler-mappings", editingItem?.id],
     queryFn: async () => {
-      if (!editingItem?.id) return []
-      const res = await fetch(`/api/admin/crawler/mappings?sourceId=${editingItem.id}`)
-      if (!res.ok) throw new Error('Failed to fetch mappings')
-      const json = await res.json()
-      return json.mappings as TypeMapping[]
+      if (!editingItem?.id) return [];
+      const res = await fetch(
+        `/api/admin/crawler/mappings?sourceId=${editingItem.id}`
+      );
+      if (!res.ok) throw new Error("Failed to fetch mappings");
+      const json = await res.json();
+      return json.mappings as TypeMapping[];
     },
     enabled: !!editingItem?.id && isDialogOpen,
-  })
+  });
 
   // Fetch reference data for mapping form
   const { data: retailers } = useQuery({
-    queryKey: ['retailers'],
+    queryKey: ["retailers"],
     queryFn: async () => {
-      const res = await fetch('/api/admin/retailers')
-      if (!res.ok) throw new Error('Failed to fetch retailers')
-      const json = await res.json()
-      return json.retailers
+      const res = await fetch("/api/admin/retailers");
+      if (!res.ok) throw new Error("Failed to fetch retailers");
+      const json = await res.json();
+      return json.retailers;
     },
-    enabled: isDialogOpen && activeTab === 'mappings',
-  })
+    enabled: isDialogOpen && activeTab === "mappings",
+  });
 
   const { data: provinces } = useQuery({
-    queryKey: ['provinces'],
+    queryKey: ["provinces"],
     queryFn: async () => {
-      const res = await fetch('/api/admin/provinces')
-      if (!res.ok) throw new Error('Failed to fetch provinces')
-      const json = await res.json()
-      return json.provinces
+      const res = await fetch("/api/admin/provinces");
+      if (!res.ok) throw new Error("Failed to fetch provinces");
+      const json = await res.json();
+      return json.provinces;
     },
-    enabled: isDialogOpen && activeTab === 'mappings',
-  })
+    enabled: isDialogOpen && activeTab === "mappings",
+  });
 
   const { data: productTypes } = useQuery({
-    queryKey: ['product-types'],
+    queryKey: ["product-types"],
     queryFn: async () => {
-      const res = await fetch('/api/admin/product-types')
-      if (!res.ok) throw new Error('Failed to fetch product types')
-      const json = await res.json()
-      return json.productTypes
+      const res = await fetch("/api/admin/product-types");
+      if (!res.ok) throw new Error("Failed to fetch product types");
+      const json = await res.json();
+      return json.productTypes;
     },
-    enabled: isDialogOpen && activeTab === 'mappings',
-  })
+    enabled: isDialogOpen && activeTab === "mappings",
+  });
 
   const createMutation = useMutation({
     mutationFn: async (data: any) => {
-      const res = await fetch('/api/admin/crawler/sources', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+      const res = await fetch("/api/admin/crawler/sources", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify(data),
-      })
+      });
       if (!res.ok) {
-        const error = await res.json()
-        throw new Error(error.error || 'Failed to create source')
+        const error = await res.json();
+        throw new Error(error.error || "Failed to create source");
       }
-      return res.json()
+      return res.json();
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['crawler-sources'] })
-      setIsDialogOpen(false)
-      resetForm()
+      queryClient.invalidateQueries({ queryKey: ["crawler-sources"] });
+      setIsDialogOpen(false);
+      resetForm();
     },
     onError: (error: Error) => {
-      setError(error.message)
+      setError(error.message);
     },
-  })
+  });
 
   const updateMutation = useMutation({
     mutationFn: async ({ id, data }: { id: string; data: any }) => {
       const res = await fetch(`/api/admin/crawler/sources/${id}`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify(data),
-      })
-      if (!res.ok) throw new Error('Failed to update source')
-      return res.json()
+      });
+      if (!res.ok) throw new Error("Failed to update source");
+      return res.json();
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['crawler-sources'] })
+      queryClient.invalidateQueries({ queryKey: ["crawler-sources"] });
       // Don't close dialog on update - user might want to continue editing mappings
     },
     onError: (error: Error) => {
-      setError(error.message)
+      setError(error.message);
     },
-  })
+  });
 
   const deleteMutation = useMutation({
     mutationFn: async (id: string) => {
       const res = await fetch(`/api/admin/crawler/sources/${id}`, {
-        method: 'DELETE',
-      })
-      if (!res.ok) throw new Error('Failed to delete source')
-      return res.json()
+        method: "DELETE",
+      });
+      if (!res.ok) throw new Error("Failed to delete source");
+      return res.json();
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['crawler-sources'] })
+      queryClient.invalidateQueries({ queryKey: ["crawler-sources"] });
     },
-  })
+  });
 
   const toggleEnabledMutation = useMutation({
-    mutationFn: async ({ id, isEnabled }: { id: string; isEnabled: boolean }) => {
+    mutationFn: async ({
+      id,
+      isEnabled,
+    }: {
+      id: string;
+      isEnabled: boolean;
+    }) => {
       const res = await fetch(`/api/admin/crawler/sources/${id}`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ isEnabled }),
-      })
-      if (!res.ok) throw new Error('Failed to toggle status')
-      return res.json()
+      });
+      if (!res.ok) throw new Error("Failed to toggle status");
+      return res.json();
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['crawler-sources'] })
+      queryClient.invalidateQueries({ queryKey: ["crawler-sources"] });
     },
-  })
+  });
 
   // Mapping mutations
   const createMappingMutation = useMutation({
     mutationFn: async (data: any) => {
-      const res = await fetch('/api/admin/crawler/mappings', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+      const res = await fetch("/api/admin/crawler/mappings", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ ...data, sourceId: editingItem!.id }),
-      })
+      });
       if (!res.ok) {
-        const error = await res.json()
-        throw new Error(error.error || 'Failed to create mapping')
+        const error = await res.json();
+        throw new Error(error.error || "Failed to create mapping");
       }
-      return res.json()
+      return res.json();
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['crawler-mappings', editingItem?.id] })
-      setIsMappingDialogOpen(false)
-      resetMappingForm()
+      queryClient.invalidateQueries({
+        queryKey: ["crawler-mappings", editingItem?.id],
+      });
+      setIsMappingDialogOpen(false);
+      resetMappingForm();
     },
-  })
+  });
 
   const updateMappingMutation = useMutation({
     mutationFn: async (data: any) => {
       const res = await fetch(`/api/admin/crawler/mappings`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify(data),
-      })
-      if (!res.ok) throw new Error('Failed to update mapping')
-      return res.json()
+      });
+      if (!res.ok) throw new Error("Failed to update mapping");
+      return res.json();
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['crawler-mappings', editingItem?.id] })
-      setIsMappingDialogOpen(false)
-      resetMappingForm()
+      queryClient.invalidateQueries({
+        queryKey: ["crawler-mappings", editingItem?.id],
+      });
+      setIsMappingDialogOpen(false);
+      resetMappingForm();
     },
-  })
+  });
 
   const deleteMappingMutation = useMutation({
     mutationFn: async (id: string) => {
       const res = await fetch(`/api/admin/crawler/mappings?id=${id}`, {
-        method: 'DELETE',
-      })
-      if (!res.ok) throw new Error('Failed to delete mapping')
-      return res.json()
+        method: "DELETE",
+      });
+      if (!res.ok) throw new Error("Failed to delete mapping");
+      return res.json();
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['crawler-mappings', editingItem?.id] })
+      queryClient.invalidateQueries({
+        queryKey: ["crawler-mappings", editingItem?.id],
+      });
     },
-  })
+  });
 
   const toggleMappingEnabledMutation = useMutation({
-    mutationFn: async ({ id, isEnabled }: { id: string; isEnabled: boolean }) => {
+    mutationFn: async ({
+      id,
+      isEnabled,
+    }: {
+      id: string;
+      isEnabled: boolean;
+    }) => {
       const res = await fetch(`/api/admin/crawler/mappings`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ id, isEnabled }),
-      })
-      if (!res.ok) throw new Error('Failed to toggle mapping status')
-      return res.json()
+      });
+      if (!res.ok) throw new Error("Failed to toggle mapping status");
+      return res.json();
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['crawler-mappings', editingItem?.id] })
+      queryClient.invalidateQueries({
+        queryKey: ["crawler-mappings", editingItem?.id],
+      });
     },
-  })
+  });
 
   const resetForm = () => {
     setFormData({
-      name: '',
-      apiUrl: '',
-      apiType: 'vang_today',
+      name: "",
+      apiUrl: "",
+      apiType: "vang_today",
       priority: 1,
       rateLimitPerMinute: 60,
       timeoutSeconds: 30,
       fieldMappings: {
-        dataPath: 'prices',
+        dataPath: "prices",
         fields: {
-          typeCode: 'type',
-          buyPrice: 'buy',
-          sellPrice: 'sell',
-          timestamp: 'timestamp',
-          currency: 'currency',
+          typeCode: "type",
+          buyPrice: "buy",
+          sellPrice: "sell",
+          timestamp: "timestamp",
+          currency: "currency",
         },
         transforms: {
-          timestamp: 'unix' as const,
+          timestamp: "unix" as "iso8601" | "unix",
           priceMultiplier: 1,
         },
       },
-    })
-    setEditingItem(null)
-    setError(null)
-    setActiveTab('config')
-  }
+    });
+    setEditingItem(null);
+    setError(null);
+    setActiveTab("config");
+  };
 
   const resetMappingForm = () => {
     setMappingFormData({
-      externalCode: '',
-      retailerCode: '',
-      productTypeCode: '',
-      provinceCode: '',
-      label: '',
-    })
-    setEditingMapping(null)
-  }
+      externalCode: "",
+      retailerCode: "",
+      productTypeCode: "",
+      provinceCode: "",
+      label: "",
+    });
+    setEditingMapping(null);
+  };
 
   const handleOpenDialog = (item?: CrawlerSource) => {
     if (item) {
-      setEditingItem(item)
+      setEditingItem(item);
       setFormData({
         name: item.name,
         apiUrl: item.api_url,
@@ -341,26 +377,42 @@ export function CrawlerSources() {
         priority: item.priority,
         rateLimitPerMinute: item.rate_limit_per_minute || 60,
         timeoutSeconds: item.timeout_seconds || 30,
-        fieldMappings: item.field_mappings || {
-          dataPath: 'prices',
-          fields: {
-            typeCode: 'type',
-            buyPrice: 'buy',
-            sellPrice: 'sell',
-            timestamp: 'timestamp',
-            currency: 'currency',
-          },
-          transforms: {
-            timestamp: 'unix' as const,
-            priceMultiplier: 1,
-          },
-        },
-      })
+        fieldMappings: item.field_mappings
+          ? {
+              dataPath: item.field_mappings.dataPath,
+              fields: {
+                typeCode: item.field_mappings.fields.typeCode,
+                buyPrice: item.field_mappings.fields.buyPrice,
+                sellPrice: item.field_mappings.fields.sellPrice,
+                timestamp: item.field_mappings.fields.timestamp,
+                currency: item.field_mappings.fields.currency || "currency",
+              },
+              transforms: {
+                timestamp: item.field_mappings.transforms?.timestamp || "unix",
+                priceMultiplier:
+                  item.field_mappings.transforms?.priceMultiplier ?? 1,
+              },
+            }
+          : {
+              dataPath: "prices",
+              fields: {
+                typeCode: "type",
+                buyPrice: "buy",
+                sellPrice: "sell",
+                timestamp: "timestamp",
+                currency: "currency",
+              },
+              transforms: {
+                timestamp: "unix" as "iso8601" | "unix",
+                priceMultiplier: 1,
+              },
+            },
+      });
     } else {
-      resetForm()
+      resetForm();
     }
-    setIsDialogOpen(true)
-  }
+    setIsDialogOpen(true);
+  };
 
   const handleSubmit = () => {
     const data = {
@@ -371,30 +423,30 @@ export function CrawlerSources() {
       rateLimitPerMinute: formData.rateLimitPerMinute,
       timeoutSeconds: formData.timeoutSeconds,
       fieldMappings: formData.fieldMappings,
-    }
+    };
 
     if (editingItem) {
-      updateMutation.mutate({ id: editingItem.id, data })
+      updateMutation.mutate({ id: editingItem.id, data });
     } else {
-      createMutation.mutate(data)
+      createMutation.mutate(data);
     }
-  }
+  };
 
   const handleOpenMappingDialog = (mapping?: TypeMapping) => {
     if (mapping) {
-      setEditingMapping(mapping)
+      setEditingMapping(mapping);
       setMappingFormData({
         externalCode: mapping.external_code,
         retailerCode: mapping.retailer_code,
         productTypeCode: mapping.product_type_code,
-        provinceCode: mapping.province_code || '',
+        provinceCode: mapping.province_code || "",
         label: mapping.label,
-      })
+      });
     } else {
-      resetMappingForm()
+      resetMappingForm();
     }
-    setIsMappingDialogOpen(true)
-  }
+    setIsMappingDialogOpen(true);
+  };
 
   const handleMappingSubmit = () => {
     const data = {
@@ -403,14 +455,14 @@ export function CrawlerSources() {
       productTypeCode: mappingFormData.productTypeCode,
       provinceCode: mappingFormData.provinceCode || null,
       label: mappingFormData.label,
-    }
+    };
 
     if (editingMapping) {
-      updateMappingMutation.mutate({ ...data, id: editingMapping.id })
+      updateMappingMutation.mutate({ ...data, id: editingMapping.id });
     } else {
-      createMappingMutation.mutate(data)
+      createMappingMutation.mutate(data);
     }
-  }
+  };
 
   return (
     <div className="space-y-4">
@@ -454,7 +506,10 @@ export function CrawlerSources() {
               </TableRow>
             ) : !sources || sources.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
+                <TableCell
+                  colSpan={6}
+                  className="text-center py-8 text-muted-foreground"
+                >
                   Chưa có nguồn dữ liệu
                 </TableCell>
               </TableRow>
@@ -487,8 +542,10 @@ export function CrawlerSources() {
                           })
                         }
                       />
-                      <Badge variant={source.is_enabled ? 'default' : 'secondary'}>
-                        {source.is_enabled ? 'Kích hoạt' : 'Tắt'}
+                      <Badge
+                        variant={source.is_enabled ? "default" : "secondary"}
+                      >
+                        {source.is_enabled ? "Kích hoạt" : "Tắt"}
                       </Badge>
                     </div>
                   </TableCell>
@@ -506,8 +563,8 @@ export function CrawlerSources() {
                         size="sm"
                         variant="destructive"
                         onClick={() => {
-                          if (confirm('Bạn có chắc muốn xóa nguồn này?')) {
-                            deleteMutation.mutate(source.id)
+                          if (confirm("Bạn có chắc muốn xóa nguồn này?")) {
+                            deleteMutation.mutate(source.id);
                           }
                         }}
                       >
@@ -523,14 +580,17 @@ export function CrawlerSources() {
       </div>
 
       {/* Main Source Dialog with Tabs */}
-      <Dialog open={isDialogOpen} onOpenChange={(open) => {
-        setIsDialogOpen(open)
-        if (!open) resetForm()
-      }}>
+      <Dialog
+        open={isDialogOpen}
+        onOpenChange={(open) => {
+          setIsDialogOpen(open);
+          if (!open) resetForm();
+        }}
+      >
         <DialogContent className="max-w-6xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>
-              {editingItem ? 'Chỉnh sửa' : 'Thêm'} nguồn dữ liệu
+              {editingItem ? "Chỉnh sửa" : "Thêm"} nguồn dữ liệu
             </DialogTitle>
           </DialogHeader>
 
@@ -551,7 +611,9 @@ export function CrawlerSources() {
                     <Input
                       id="name"
                       value={formData.name}
-                      onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                      onChange={(e) =>
+                        setFormData({ ...formData, name: e.target.value })
+                      }
                       placeholder="VD: vang.today"
                     />
                   </div>
@@ -560,7 +622,9 @@ export function CrawlerSources() {
                     <Input
                       id="apiType"
                       value={formData.apiType}
-                      onChange={(e) => setFormData({ ...formData, apiType: e.target.value })}
+                      onChange={(e) =>
+                        setFormData({ ...formData, apiType: e.target.value })
+                      }
                       placeholder="VD: vang_today"
                     />
                   </div>
@@ -571,7 +635,9 @@ export function CrawlerSources() {
                   <Input
                     id="apiUrl"
                     value={formData.apiUrl}
-                    onChange={(e) => setFormData({ ...formData, apiUrl: e.target.value })}
+                    onChange={(e) =>
+                      setFormData({ ...formData, apiUrl: e.target.value })
+                    }
                     placeholder="https://api.example.com/prices"
                   />
                 </div>
@@ -583,9 +649,16 @@ export function CrawlerSources() {
                       id="priority"
                       type="number"
                       value={formData.priority}
-                      onChange={(e) => setFormData({ ...formData, priority: parseInt(e.target.value) || 1 })}
+                      onChange={(e) =>
+                        setFormData({
+                          ...formData,
+                          priority: parseInt(e.target.value) || 1,
+                        })
+                      }
                     />
-                    <p className="text-xs text-muted-foreground mt-1">Số nhỏ = ưu tiên cao</p>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      Số nhỏ = ưu tiên cao
+                    </p>
                   </div>
                   <div>
                     <Label htmlFor="rateLimit">Rate Limit (req/min)</Label>
@@ -593,7 +666,12 @@ export function CrawlerSources() {
                       id="rateLimit"
                       type="number"
                       value={formData.rateLimitPerMinute}
-                      onChange={(e) => setFormData({ ...formData, rateLimitPerMinute: parseInt(e.target.value) || 60 })}
+                      onChange={(e) =>
+                        setFormData({
+                          ...formData,
+                          rateLimitPerMinute: parseInt(e.target.value) || 60,
+                        })
+                      }
                     />
                   </div>
                   <div>
@@ -602,56 +680,84 @@ export function CrawlerSources() {
                       id="timeout"
                       type="number"
                       value={formData.timeoutSeconds}
-                      onChange={(e) => setFormData({ ...formData, timeoutSeconds: parseInt(e.target.value) || 30 })}
+                      onChange={(e) =>
+                        setFormData({
+                          ...formData,
+                          timeoutSeconds: parseInt(e.target.value) || 30,
+                        })
+                      }
                     />
                   </div>
                 </div>
 
                 <div className="border-t pt-4 mt-4">
-                  <h4 className="text-sm font-semibold mb-3">Cấu hình Field Mappings</h4>
+                  <h4 className="text-sm font-semibold mb-3">
+                    Cấu hình Field Mappings
+                  </h4>
                   <div className="space-y-3">
                     <div>
                       <Label htmlFor="dataPath">Data Path *</Label>
                       <Input
                         id="dataPath"
                         value={formData.fieldMappings.dataPath}
-                        onChange={(e) => setFormData({
-                          ...formData,
-                          fieldMappings: { ...formData.fieldMappings, dataPath: e.target.value }
-                        })}
+                        onChange={(e) =>
+                          setFormData({
+                            ...formData,
+                            fieldMappings: {
+                              ...formData.fieldMappings,
+                              dataPath: e.target.value,
+                            },
+                          })
+                        }
                         placeholder="VD: prices hoặc data.prices"
                       />
-                      <p className="text-xs text-muted-foreground mt-1">Đường dẫn đến mảng prices trong API response</p>
+                      <p className="text-xs text-muted-foreground mt-1">
+                        Đường dẫn đến mảng prices trong API response
+                      </p>
                     </div>
 
                     <div className="grid grid-cols-2 gap-3">
                       <div>
-                        <Label htmlFor="fieldBuyPrice">Field: Buy Price *</Label>
+                        <Label htmlFor="fieldBuyPrice">
+                          Field: Buy Price *
+                        </Label>
                         <Input
                           id="fieldBuyPrice"
                           value={formData.fieldMappings.fields.buyPrice}
-                          onChange={(e) => setFormData({
-                            ...formData,
-                            fieldMappings: {
-                              ...formData.fieldMappings,
-                              fields: { ...formData.fieldMappings.fields, buyPrice: e.target.value }
-                            }
-                          })}
+                          onChange={(e) =>
+                            setFormData({
+                              ...formData,
+                              fieldMappings: {
+                                ...formData.fieldMappings,
+                                fields: {
+                                  ...formData.fieldMappings.fields,
+                                  buyPrice: e.target.value,
+                                },
+                              },
+                            })
+                          }
                           placeholder="VD: buy"
                         />
                       </div>
                       <div>
-                        <Label htmlFor="fieldSellPrice">Field: Sell Price *</Label>
+                        <Label htmlFor="fieldSellPrice">
+                          Field: Sell Price *
+                        </Label>
                         <Input
                           id="fieldSellPrice"
                           value={formData.fieldMappings.fields.sellPrice}
-                          onChange={(e) => setFormData({
-                            ...formData,
-                            fieldMappings: {
-                              ...formData.fieldMappings,
-                              fields: { ...formData.fieldMappings.fields, sellPrice: e.target.value }
-                            }
-                          })}
+                          onChange={(e) =>
+                            setFormData({
+                              ...formData,
+                              fieldMappings: {
+                                ...formData.fieldMappings,
+                                fields: {
+                                  ...formData.fieldMappings.fields,
+                                  sellPrice: e.target.value,
+                                },
+                              },
+                            })
+                          }
                           placeholder="VD: sell"
                         />
                       </div>
@@ -663,54 +769,76 @@ export function CrawlerSources() {
                         <Input
                           id="fieldTimestamp"
                           value={formData.fieldMappings.fields.timestamp}
-                          onChange={(e) => setFormData({
-                            ...formData,
-                            fieldMappings: {
-                              ...formData.fieldMappings,
-                              fields: { ...formData.fieldMappings.fields, timestamp: e.target.value }
-                            }
-                          })}
+                          onChange={(e) =>
+                            setFormData({
+                              ...formData,
+                              fieldMappings: {
+                                ...formData.fieldMappings,
+                                fields: {
+                                  ...formData.fieldMappings.fields,
+                                  timestamp: e.target.value,
+                                },
+                              },
+                            })
+                          }
                           placeholder="VD: timestamp"
                         />
                       </div>
                       <div>
-                        <Label htmlFor="timestampFormat">Format Timestamp</Label>
+                        <Label htmlFor="timestampFormat">
+                          Format Timestamp
+                        </Label>
                         <select
                           id="timestampFormat"
                           className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background"
-                          value={formData.fieldMappings.transforms?.timestamp || 'unix'}
-                          onChange={(e) => setFormData({
-                            ...formData,
-                            fieldMappings: {
-                              ...formData.fieldMappings,
-                              transforms: {
-                                ...formData.fieldMappings.transforms,
-                                timestamp: e.target.value as 'iso8601' | 'unix'
-                              }
-                            }
-                          })}
+                          value={
+                            formData.fieldMappings.transforms?.timestamp ||
+                            "unix"
+                          }
+                          onChange={(e) =>
+                            setFormData({
+                              ...formData,
+                              fieldMappings: {
+                                ...formData.fieldMappings,
+                                transforms: {
+                                  ...formData.fieldMappings.transforms,
+                                  timestamp: e.target.value as
+                                    | "iso8601"
+                                    | "unix",
+                                },
+                              },
+                            })
+                          }
                         >
                           <option value="unix">Unix (seconds)</option>
                           <option value="iso8601">ISO 8601</option>
                         </select>
                       </div>
                       <div>
-                        <Label htmlFor="priceMultiplier">Price Multiplier</Label>
+                        <Label htmlFor="priceMultiplier">
+                          Price Multiplier
+                        </Label>
                         <Input
                           id="priceMultiplier"
                           type="number"
                           step="0.01"
-                          value={formData.fieldMappings.transforms?.priceMultiplier || 1}
-                          onChange={(e) => setFormData({
-                            ...formData,
-                            fieldMappings: {
-                              ...formData.fieldMappings,
-                              transforms: {
-                                ...formData.fieldMappings.transforms,
-                                priceMultiplier: parseFloat(e.target.value) || 1
-                              }
-                            }
-                          })}
+                          value={
+                            formData.fieldMappings.transforms
+                              ?.priceMultiplier || 1
+                          }
+                          onChange={(e) =>
+                            setFormData({
+                              ...formData,
+                              fieldMappings: {
+                                ...formData.fieldMappings,
+                                transforms: {
+                                  ...formData.fieldMappings.transforms,
+                                  priceMultiplier:
+                                    parseFloat(e.target.value) || 1,
+                                },
+                              },
+                            })
+                          }
                         />
                       </div>
                     </div>
@@ -719,11 +847,17 @@ export function CrawlerSources() {
               </div>
 
               <DialogFooter>
-                <Button variant="outline" onClick={() => setIsDialogOpen(false)}>
-                  {editingItem ? 'Đóng' : 'Hủy'}
+                <Button
+                  variant="outline"
+                  onClick={() => setIsDialogOpen(false)}
+                >
+                  {editingItem ? "Đóng" : "Hủy"}
                 </Button>
-                <Button onClick={handleSubmit} disabled={!formData.name || !formData.apiUrl}>
-                  {editingItem ? 'Cập nhật' : 'Thêm mới'}
+                <Button
+                  onClick={handleSubmit}
+                  disabled={!formData.name || !formData.apiUrl}
+                >
+                  {editingItem ? "Cập nhật" : "Thêm mới"}
                 </Button>
               </DialogFooter>
             </TabsContent>
@@ -756,26 +890,39 @@ export function CrawlerSources() {
                   <TableBody>
                     {!mappings || mappings.length === 0 ? (
                       <TableRow>
-                        <TableCell colSpan={7} className="text-center py-8 text-muted-foreground">
+                        <TableCell
+                          colSpan={7}
+                          className="text-center py-8 text-muted-foreground"
+                        >
                           Chưa có ánh xạ
                         </TableCell>
                       </TableRow>
                     ) : (
                       mappings.map((mapping) => (
                         <TableRow key={mapping.id}>
-                          <TableCell className="font-mono">{mapping.external_code}</TableCell>
+                          <TableCell className="font-mono">
+                            {mapping.external_code}
+                          </TableCell>
                           <TableCell>{mapping.label}</TableCell>
                           <TableCell>
-                            <Badge variant="outline">{mapping.retailer_code}</Badge>
+                            <Badge variant="outline">
+                              {mapping.retailer_code}
+                            </Badge>
                           </TableCell>
                           <TableCell>
-                            <Badge variant="outline">{mapping.product_type_code}</Badge>
+                            <Badge variant="outline">
+                              {mapping.product_type_code}
+                            </Badge>
                           </TableCell>
                           <TableCell>
                             {mapping.province_code ? (
-                              <Badge variant="outline">{mapping.province_code}</Badge>
+                              <Badge variant="outline">
+                                {mapping.province_code}
+                              </Badge>
                             ) : (
-                              <span className="text-muted-foreground text-sm">-</span>
+                              <span className="text-muted-foreground text-sm">
+                                -
+                              </span>
                             )}
                           </TableCell>
                           <TableCell>
@@ -789,8 +936,12 @@ export function CrawlerSources() {
                                   })
                                 }
                               />
-                              <Badge variant={mapping.is_enabled ? 'default' : 'secondary'}>
-                                {mapping.is_enabled ? 'On' : 'Off'}
+                              <Badge
+                                variant={
+                                  mapping.is_enabled ? "default" : "secondary"
+                                }
+                              >
+                                {mapping.is_enabled ? "On" : "Off"}
                               </Badge>
                             </div>
                           </TableCell>
@@ -807,8 +958,10 @@ export function CrawlerSources() {
                                 size="sm"
                                 variant="destructive"
                                 onClick={() => {
-                                  if (confirm('Bạn có chắc muốn xóa ánh xạ này?')) {
-                                    deleteMappingMutation.mutate(mapping.id)
+                                  if (
+                                    confirm("Bạn có chắc muốn xóa ánh xạ này?")
+                                  ) {
+                                    deleteMappingMutation.mutate(mapping.id);
                                   }
                                 }}
                               >
@@ -828,14 +981,17 @@ export function CrawlerSources() {
       </Dialog>
 
       {/* Mapping Add/Edit Dialog */}
-      <Dialog open={isMappingDialogOpen} onOpenChange={(open) => {
-        setIsMappingDialogOpen(open)
-        if (!open) resetMappingForm()
-      }}>
+      <Dialog
+        open={isMappingDialogOpen}
+        onOpenChange={(open) => {
+          setIsMappingDialogOpen(open);
+          if (!open) resetMappingForm();
+        }}
+      >
         <DialogContent className="max-w-2xl">
           <DialogHeader>
             <DialogTitle>
-              {editingMapping ? 'Chỉnh sửa' : 'Thêm'} ánh xạ
+              {editingMapping ? "Chỉnh sửa" : "Thêm"} ánh xạ
             </DialogTitle>
           </DialogHeader>
 
@@ -846,7 +1002,12 @@ export function CrawlerSources() {
                 <Input
                   id="externalCode"
                   value={mappingFormData.externalCode}
-                  onChange={(e) => setMappingFormData({ ...mappingFormData, externalCode: e.target.value })}
+                  onChange={(e) =>
+                    setMappingFormData({
+                      ...mappingFormData,
+                      externalCode: e.target.value,
+                    })
+                  }
                   placeholder="VD: SJL1L10, DOHNL"
                 />
               </div>
@@ -855,7 +1016,12 @@ export function CrawlerSources() {
                 <Input
                   id="label"
                   value={mappingFormData.label}
-                  onChange={(e) => setMappingFormData({ ...mappingFormData, label: e.target.value })}
+                  onChange={(e) =>
+                    setMappingFormData({
+                      ...mappingFormData,
+                      label: e.target.value,
+                    })
+                  }
                   placeholder="VD: Vàng SJC 1 lượng"
                 />
               </div>
@@ -866,7 +1032,12 @@ export function CrawlerSources() {
                 <Label htmlFor="retailer">Retailer *</Label>
                 <Select
                   value={mappingFormData.retailerCode}
-                  onValueChange={(value) => setMappingFormData({ ...mappingFormData, retailerCode: value })}
+                  onValueChange={(value) =>
+                    setMappingFormData({
+                      ...mappingFormData,
+                      retailerCode: value,
+                    })
+                  }
                 >
                   <SelectTrigger>
                     <SelectValue placeholder="Chọn" />
@@ -885,7 +1056,12 @@ export function CrawlerSources() {
                 <Label htmlFor="productType">Product Type *</Label>
                 <Select
                   value={mappingFormData.productTypeCode}
-                  onValueChange={(value) => setMappingFormData({ ...mappingFormData, productTypeCode: value })}
+                  onValueChange={(value) =>
+                    setMappingFormData({
+                      ...mappingFormData,
+                      productTypeCode: value,
+                    })
+                  }
                 >
                   <SelectTrigger>
                     <SelectValue placeholder="Chọn" />
@@ -904,7 +1080,12 @@ export function CrawlerSources() {
                 <Label htmlFor="province">Province</Label>
                 <Select
                   value={mappingFormData.provinceCode}
-                  onValueChange={(value) => setMappingFormData({ ...mappingFormData, provinceCode: value })}
+                  onValueChange={(value) =>
+                    setMappingFormData({
+                      ...mappingFormData,
+                      provinceCode: value,
+                    })
+                  }
                 >
                   <SelectTrigger>
                     <SelectValue placeholder="Không chọn" />
@@ -923,7 +1104,10 @@ export function CrawlerSources() {
           </div>
 
           <DialogFooter>
-            <Button variant="outline" onClick={() => setIsMappingDialogOpen(false)}>
+            <Button
+              variant="outline"
+              onClick={() => setIsMappingDialogOpen(false)}
+            >
               Hủy
             </Button>
             <Button
@@ -935,11 +1119,11 @@ export function CrawlerSources() {
                 !mappingFormData.label
               }
             >
-              {editingMapping ? 'Cập nhật' : 'Thêm mới'}
+              {editingMapping ? "Cập nhật" : "Thêm mới"}
             </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
     </div>
-  )
+  );
 }
