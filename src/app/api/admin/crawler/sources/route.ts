@@ -3,6 +3,21 @@ import { requireRole } from '@/lib/auth/server'
 import { createClient } from '@/lib/supabase/server'
 import { z } from 'zod'
 
+const fieldMappingsSchema = z.object({
+  dataPath: z.string(),
+  fields: z.object({
+    typeCode: z.string(),
+    buyPrice: z.string(),
+    sellPrice: z.string(),
+    timestamp: z.string(),
+    currency: z.string().optional(),
+  }),
+  transforms: z.object({
+    timestamp: z.enum(['iso8601', 'unix']).optional(),
+    priceMultiplier: z.number().optional(),
+  }).optional(),
+})
+
 const sourceSchema = z.object({
   name: z.string().min(1).max(100),
   apiUrl: z.string().url(),
@@ -14,6 +29,7 @@ const sourceSchema = z.object({
   rateLimitPerMinute: z.number().int().min(1).max(1000).optional().default(60),
   timeoutSeconds: z.number().int().min(1).max(300).optional().default(30),
   priority: z.number().int().min(1).max(100).optional().default(1),
+  fieldMappings: fieldMappingsSchema.optional(),
 })
 
 /**
@@ -69,6 +85,7 @@ export async function POST(request: NextRequest) {
         rate_limit_per_minute: validated.rateLimitPerMinute,
         timeout_seconds: validated.timeoutSeconds,
         priority: validated.priority,
+        field_mappings: validated.fieldMappings || {},
       })
       .select()
       .single()

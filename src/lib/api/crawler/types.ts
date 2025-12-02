@@ -1,6 +1,27 @@
 import type { PriceData } from '@/lib/types'
 
 /**
+ * Field mapping configuration for parsing API responses
+ */
+export interface FieldMappings {
+  /** Path to the prices array in API response (e.g., "data.prices") */
+  dataPath: string
+  /** Mapping of internal field names to API field names */
+  fields: {
+    typeCode: string    // API field for external type code
+    buyPrice: string    // API field for buy price
+    sellPrice: string   // API field for sell price
+    timestamp: string   // API field for timestamp
+    currency?: string   // Optional: API field for currency
+  }
+  /** Optional transformations to apply to the data */
+  transforms?: {
+    timestamp?: 'iso8601' | 'unix'  // Timestamp format
+    priceMultiplier?: number         // Multiply prices by this value
+  }
+}
+
+/**
  * Crawler configuration from database
  */
 export interface CrawlerConfig {
@@ -13,6 +34,7 @@ export interface CrawlerConfig {
   isEnabled: boolean
   rateLimit?: number
   priority?: number
+  fieldMappings?: FieldMappings
 }
 
 /**
@@ -128,6 +150,7 @@ export interface DbCrawlerSource {
   rate_limit_per_minute?: number
   timeout_seconds?: number
   priority?: number
+  field_mappings?: FieldMappings
   created_at: string
   updated_at: string
 }
@@ -190,6 +213,7 @@ export function dbSourceToConfig(db: DbCrawlerSource): CrawlerConfig {
     isEnabled: db.is_enabled,
     rateLimit: db.rate_limit_per_minute,
     priority: db.priority,
+    fieldMappings: db.field_mappings,
   }
 }
 

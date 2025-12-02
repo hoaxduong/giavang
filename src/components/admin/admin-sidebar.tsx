@@ -9,7 +9,6 @@ import {
   MapPin,
   Gem,
   Database,
-  GitBranch,
   RefreshCw,
   ScrollText,
   LayoutDashboard,
@@ -49,11 +48,6 @@ const navigation = [
         name: 'Nguồn dữ liệu',
         href: '/admin/crawler/sources',
         icon: Database,
-      },
-      {
-        name: 'Ánh xạ',
-        href: '/admin/crawler/mappings',
-        icon: GitBranch,
       },
       {
         name: 'Đồng bộ',

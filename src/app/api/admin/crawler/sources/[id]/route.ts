@@ -3,6 +3,21 @@ import { requireRole } from "@/lib/auth/server";
 import { createClient } from "@/lib/supabase/server";
 import { z } from "zod";
 
+const fieldMappingsSchema = z.object({
+  dataPath: z.string(),
+  fields: z.object({
+    typeCode: z.string(),
+    buyPrice: z.string(),
+    sellPrice: z.string(),
+    timestamp: z.string(),
+    currency: z.string().optional(),
+  }),
+  transforms: z.object({
+    timestamp: z.enum(['iso8601', 'unix']).optional(),
+    priceMultiplier: z.number().optional(),
+  }).optional(),
+})
+
 const updateSourceSchema = z.object({
   name: z.string().min(1).max(100).optional(),
   apiUrl: z.string().url().optional(),
@@ -14,6 +29,7 @@ const updateSourceSchema = z.object({
   rateLimitPerMinute: z.number().int().min(1).max(1000).optional(),
   timeoutSeconds: z.number().int().min(1).max(300).optional(),
   priority: z.number().int().min(1).max(100).optional(),
+  fieldMappings: fieldMappingsSchema.optional(),
 });
 
 /**
@@ -79,6 +95,8 @@ export async function PUT(
       updateData.timeout_seconds = validated.timeoutSeconds;
     if (validated.priority !== undefined)
       updateData.priority = validated.priority;
+    if (validated.fieldMappings !== undefined)
+      updateData.field_mappings = validated.fieldMappings;
 
     const { data, error } = await supabase
       .from("crawler_sources")

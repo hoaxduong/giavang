@@ -256,6 +256,17 @@ export class VangTodayCrawler extends BaseCrawler {
     const prices: PriceData[] = [];
     const errors: Array<{ item: string; error: string }> = [];
 
+    // Check if field mappings are configured
+    if (!this.config.fieldMappings) {
+      errors.push({
+        item: 'config',
+        error: 'Field mappings not configured for this source',
+      });
+      return { prices, errors };
+    }
+
+    const fieldMappings = this.config.fieldMappings;
+
     // Fetch all enabled mappings, retailers, provinces, product types
     const { mappings, retailers, provinces, productTypes } =
       await this.fetchReferenceData();
@@ -273,10 +284,21 @@ export class VangTodayCrawler extends BaseCrawler {
     const productTypeMap = new Map<string, ProductType>();
     productTypes.forEach((pt) => productTypeMap.set(pt.code, pt));
 
-    const timestamp = new Date(apiResponse.timestamp * 1000).toISOString();
+    // Extract timestamp using field mapping
+    const timestamp = this.extractTimestamp(apiResponse, fieldMappings);
+
+    // Extract prices data using field mapping
+    const pricesData = this.extractNestedValue(apiResponse, fieldMappings.dataPath);
+    if (!pricesData || typeof pricesData !== 'object') {
+      errors.push({
+        item: 'dataPath',
+        error: `Could not extract prices from path: ${fieldMappings.dataPath}`,
+      });
+      return { prices, errors };
+    }
 
     // Parse each price entry
-    for (const [typeCode, priceInfo] of Object.entries(apiResponse.prices)) {
+    for (const [typeCode, priceInfo] of Object.entries(pricesData)) {
       try {
         const mapping = mappingMap.get(typeCode);
 
@@ -324,6 +346,26 @@ export class VangTodayCrawler extends BaseCrawler {
           }
         }
 
+        // Extract price values using field mappings
+        const buyPrice = this.extractPriceValue(
+          priceInfo,
+          fieldMappings.fields.buyPrice,
+          fieldMappings.transforms?.priceMultiplier
+        );
+        const sellPrice = this.extractPriceValue(
+          priceInfo,
+          fieldMappings.fields.sellPrice,
+          fieldMappings.transforms?.priceMultiplier
+        );
+
+        if (buyPrice === null || sellPrice === null) {
+          errors.push({
+            item: typeCode,
+            error: "Could not extract buy/sell prices",
+          });
+          continue;
+        }
+
         // Handle XAUUSD separately (world gold in USD/oz)
         if (typeCode === "XAUUSD") {
           prices.push({
@@ -333,17 +375,17 @@ export class VangTodayCrawler extends BaseCrawler {
             province: provinceCode as unknown as ProvinceLiteral,
             productType:
               mapping.productTypeCode as unknown as ProductTypeLiteral,
-            buyPrice: priceInfo.buy,
-            sellPrice: priceInfo.sell,
+            buyPrice,
+            sellPrice,
             unit: "USD/oz",
-            change: priceInfo.change_buy || undefined,
+            change: this.extractNestedValue(priceInfo, 'change_buy') as number || undefined,
           });
           continue;
         }
 
         // Convert from VND/lượng to VND/chi (1 lượng = 10 chỉ)
-        const buyPriceInChi = this.convertLuongToChi(priceInfo.buy);
-        const sellPriceInChi = this.convertLuongToChi(priceInfo.sell);
+        const buyPriceInChi = this.convertLuongToChi(buyPrice);
+        const sellPriceInChi = this.convertLuongToChi(sellPrice);
 
         prices.push({
           id: "",
@@ -354,8 +396,8 @@ export class VangTodayCrawler extends BaseCrawler {
           buyPrice: buyPriceInChi,
           sellPrice: sellPriceInChi,
           unit: "VND/chi",
-          change: priceInfo.change_buy
-            ? this.convertLuongToChi(priceInfo.change_buy)
+          change: this.extractNestedValue(priceInfo, 'change_buy') as number
+            ? this.convertLuongToChi(this.extractNestedValue(priceInfo, 'change_buy') as number)
             : undefined,
         });
       } catch (error) {
@@ -447,5 +489,56 @@ export class VangTodayCrawler extends BaseCrawler {
    */
   private convertLuongToChi(priceInLuong: number): number {
     return Math.round(priceInLuong / 10);
+  }
+
+  /**
+   * Extract a nested value from an object using a dot-notation path
+   * Example: extractNestedValue(obj, "data.prices") => obj.data.prices
+   */
+  private extractNestedValue(obj: any, path: string): any {
+    return path.split('.').reduce((current, key) => current?.[key], obj);
+  }
+
+  /**
+   * Extract and transform a price value from the price info object
+   */
+  private extractPriceValue(
+    priceInfo: any,
+    fieldName: string,
+    multiplier: number = 1
+  ): number | null {
+    const value = this.extractNestedValue(priceInfo, fieldName);
+    if (typeof value !== 'number') {
+      return null;
+    }
+    return value * multiplier;
+  }
+
+  /**
+   * Extract and transform timestamp from API response
+   * Note: Timestamp is typically at the response level, not per-price item
+   */
+  private extractTimestamp(apiResponse: any, fieldMappings: any): string {
+    // For vang.today, timestamp is at root level as a unix timestamp
+    // The field mapping points to where the timestamp is in the response
+    const timestampValue = apiResponse.timestamp;
+
+    if (!timestampValue) {
+      return new Date().toISOString();
+    }
+
+    // Handle different timestamp formats
+    const format = fieldMappings.transforms?.timestamp || 'unix';
+
+    if (format === 'unix') {
+      // Unix timestamp (seconds since epoch)
+      return new Date(timestampValue * 1000).toISOString();
+    } else if (format === 'iso8601') {
+      // ISO 8601 string
+      return new Date(timestampValue).toISOString();
+    }
+
+    // Default: try to parse as date
+    return new Date(timestampValue).toISOString();
   }
 }
