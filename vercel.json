@@ -1,8 +1,10 @@
 {
+  "$schema": "https://openapi.vercel.sh/vercel.json",
   "crons": [
     {
       "path": "/api/prices/sync",
-      "schedule": "0 0 * * *"
+      "schedule": "0 0 * * *",
+      "comment": "NOTE: Vercel Cron Jobs require Pro plan. Currently using GitHub Actions instead (see .github/workflows/price-sync.yml)"
     }
   ]
 }
