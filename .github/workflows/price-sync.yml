@@ -2,8 +2,8 @@ name: Price Sync Cron Job
 
 on:
   schedule:
-    # Runs every 5 minutes
-    - cron: '*/5 * * * *'
+    # Runs daily at 00:00
+    - cron: '0 0 * * *'
   workflow_dispatch: # Allows manual trigger from GitHub Actions tab
 
 jobs:
