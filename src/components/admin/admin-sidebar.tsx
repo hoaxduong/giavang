@@ -13,6 +13,10 @@ import {
   ScrollText,
   LayoutDashboard,
   History,
+  FileText,
+  FolderOpen,
+  Tag,
+  MessageSquare,
 } from 'lucide-react'
 
 const navigation = [
@@ -40,6 +44,32 @@ const navigation = [
     name: 'Loại vàng',
     href: '/admin/product-types',
     icon: Gem,
+  },
+  {
+    name: 'Blog',
+    icon: FileText,
+    children: [
+      {
+        name: 'Bài viết',
+        href: '/admin/blog/posts',
+        icon: FileText,
+      },
+      {
+        name: 'Danh mục',
+        href: '/admin/blog/categories',
+        icon: FolderOpen,
+      },
+      {
+        name: 'Thẻ',
+        href: '/admin/blog/tags',
+        icon: Tag,
+      },
+      {
+        name: 'Bình luận',
+        href: '/admin/blog/comments',
+        icon: MessageSquare,
+      },
+    ],
   },
   {
     name: 'Crawler',
