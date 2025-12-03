@@ -1,6 +1,6 @@
-import { NextRequest, NextResponse } from 'next/server'
-import { requireRole } from '@/lib/auth/server'
-import { BackfillManager } from '@/lib/api/backfill/backfill-manager'
+import { NextRequest, NextResponse } from "next/server";
+import { requireRole } from "@/lib/auth/server";
+import { BackfillManager } from "@/lib/api/backfill/backfill-manager";
 
 /**
  * GET /api/admin/crawler/backfill/[id]
@@ -8,29 +8,27 @@ import { BackfillManager } from '@/lib/api/backfill/backfill-manager'
  */
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  props: { params: Promise<{ id: string }> }
 ) {
+  const params = await props.params;
   try {
-    await requireRole('admin')
+    await requireRole("admin");
 
-    const manager = new BackfillManager()
-    const job = await manager.getJob(params.id)
+    const manager = new BackfillManager();
+    const job = await manager.getJob(params.id);
 
     if (!job) {
-      return NextResponse.json(
-        { error: 'Job not found' },
-        { status: 404 }
-      )
+      return NextResponse.json({ error: "Job not found" }, { status: 404 });
     }
 
-    return NextResponse.json({ job })
+    return NextResponse.json({ job });
   } catch (error) {
-    console.error(`GET /api/admin/crawler/backfill/${params.id} error:`, error)
+    console.error(`GET /api/admin/crawler/backfill/${params.id} error:`, error);
 
     return NextResponse.json(
-      { error: error instanceof Error ? error.message : 'Failed to fetch job' },
+      { error: error instanceof Error ? error.message : "Failed to fetch job" },
       { status: 500 }
-    )
+    );
   }
 }
 
@@ -40,24 +38,30 @@ export async function GET(
  */
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  props: { params: Promise<{ id: string }> }
 ) {
+  const params = await props.params;
   try {
-    await requireRole('admin')
+    await requireRole("admin");
 
-    const manager = new BackfillManager()
-    await manager.deleteJob(params.id)
+    const manager = new BackfillManager();
+    await manager.deleteJob(params.id);
 
     return NextResponse.json(
-      { message: 'Job deleted successfully' },
+      { message: "Job deleted successfully" },
       { status: 200 }
-    )
+    );
   } catch (error) {
-    console.error(`DELETE /api/admin/crawler/backfill/${params.id} error:`, error)
+    console.error(
+      `DELETE /api/admin/crawler/backfill/${params.id} error:`,
+      error
+    );
 
     return NextResponse.json(
-      { error: error instanceof Error ? error.message : 'Failed to delete job' },
+      {
+        error: error instanceof Error ? error.message : "Failed to delete job",
+      },
       { status: 500 }
-    )
+    );
   }
 }
