@@ -1,49 +1,71 @@
-import { PostCard } from '@/components/blog/post-card'
-import { BlogBreadcrumb } from '@/components/blog/blog-breadcrumb'
-import { createClient } from '@/lib/supabase/server'
-import { dbPostToPost, dbCategoryToCategory, dbTagToTag } from '@/lib/blog/types'
-import { notFound } from 'next/navigation'
+import { PostCard } from "@/components/blog/post-card";
+import { BlogBreadcrumb } from "@/components/blog/blog-breadcrumb";
+import { createClient } from "@/lib/supabase/server";
+import {
+  dbPostToPost,
+  dbCategoryToCategory,
+  dbTagToTag,
+} from "@/lib/blog/types";
+import { notFound } from "next/navigation";
 
-export default async function CategoryPage({ params }: { params: Promise<{ slug: string }> }) {
-  const { slug } = await params
-  const supabase = await createClient()
+export default async function CategoryPage({
+  params,
+}: {
+  params: Promise<{ slug: string }>;
+}) {
+  const { slug } = await params;
+  const supabase = await createClient();
 
   const { data: category } = await supabase
-    .from('blog_categories')
-    .select('*')
-    .eq('slug', slug)
-    .eq('is_enabled', true)
-    .single()
+    .from("blog_categories")
+    .select("*")
+    .eq("slug", slug)
+    .eq("is_enabled", true)
+    .single();
 
   if (!category) {
-    notFound()
+    notFound();
   }
 
   const { data } = await supabase
-    .from('blog_posts')
-    .select(`
+    .from("blog_posts")
+    .select(
+      `
       *,
       category:blog_categories(*),
       post_tags:blog_post_tags(tag:blog_tags(*))
-    `)
-    .eq('status', 'published')
-    .eq('category_id', category.id)
-    .order('published_at', { ascending: false })
+    `
+    )
+    .eq("status", "published")
+    .eq("category_id", category.id)
+    .order("published_at", { ascending: false });
 
-  const posts = data?.map(item => {
-    const post = dbPostToPost(item)
-    const cat = item.category ? dbCategoryToCategory(item.category) : null
-    const tags = item.post_tags?.map((pt: any) => dbTagToTag(pt.tag)) || []
-    return { ...post, category: cat, tags }
-  }) || []
+  const posts =
+    data
+      ?.map((item) => {
+        const post = dbPostToPost(item);
+        const cat = item.category ? dbCategoryToCategory(item.category) : null;
+        const tags =
+          item.post_tags?.map((pt: { tag: any }) => dbTagToTag(pt.tag)) || [];
+        return {
+          id: post.id,
+          slug: post.slug,
+          title: post.title,
+          excerpt: post.excerpt,
+          featuredImageUrl: post.featuredImageUrl,
+          publishedAt: post.publishedAt || new Date().toISOString(),
+          viewCount: post.viewCount,
+          commentCount: post.commentCount,
+          category: cat,
+          tags,
+        };
+      })
+      .filter((post) => post.publishedAt) || [];
 
   return (
     <div className="container mx-auto px-6 py-12">
       <BlogBreadcrumb
-        items={[
-          { label: 'Blog', href: '/blog' },
-          { label: category.name }
-        ]}
+        items={[{ label: "Blog", href: "/blog" }, { label: category.name }]}
       />
 
       <div className="mb-12">
@@ -65,5 +87,5 @@ export default async function CategoryPage({ params }: { params: Promise<{ slug:
         </div>
       )}
     </div>
-  )
+  );
 }

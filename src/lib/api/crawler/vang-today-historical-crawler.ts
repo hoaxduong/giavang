@@ -1,60 +1,60 @@
-import { VangTodayCrawler } from './vang-today-crawler'
-import type { PriceData } from '@/lib/types'
-import type { TypeMapping, Retailer, ProductType, Province } from './types'
+import { VangTodayCrawler } from "./vang-today-crawler";
+import type { PriceData } from "@/lib/types";
+import type { TypeMapping, Retailer, ProductType, Province } from "./types";
 import {
   Retailer as RetailerLiteral,
   ProductType as ProductTypeLiteral,
   Province as ProvinceLiteral,
-} from '@/lib/constants'
+} from "@/lib/constants";
 
 /**
  * API Response from vang.today historical endpoint
  */
 interface VangTodayHistoricalResponse {
-  success: boolean
-  days: number
-  type: string
+  success: boolean;
+  days: number;
+  type: string;
   history: Array<{
-    date: string                  // YYYY-MM-DD
+    date: string; // YYYY-MM-DD
     prices: Record<
       string,
       {
-        name: string
-        buy: number
-        sell: number
-        day_change_buy: number
-        day_change_sell: number
-        updates: number
-        currency?: string
+        name: string;
+        buy: number;
+        sell: number;
+        day_change_buy: number;
+        day_change_sell: number;
+        updates: number;
+        currency?: string;
       }
-    >
-  }>
+    >;
+  }>;
 }
 
 /**
  * Daily price data extracted from historical response
  */
 export interface DailyPriceData {
-  date: string                    // YYYY-MM-DD
-  type: string                    // External type code
-  buyPrice: number
-  sellPrice: number
-  currency?: string
-  change?: number
+  date: string; // YYYY-MM-DD
+  type: string; // External type code
+  buyPrice: number;
+  sellPrice: number;
+  currency?: string;
+  change?: number;
 }
 
 /**
  * Result from historical crawler fetch
  */
 export interface HistoricalCrawlerResult {
-  success: boolean
-  data: DailyPriceData[]
-  errors: Array<{ date: string; error: string }>
+  success: boolean;
+  data: DailyPriceData[];
+  errors: Array<{ date: string; error: string }>;
   metadata: {
-    daysRequested: number
-    daysReturned: number
-    typeCode: string
-  }
+    daysRequested: number;
+    daysReturned: number;
+    typeCode: string;
+  };
 }
 
 /**
@@ -75,7 +75,7 @@ export class VangTodayHistoricalCrawler extends VangTodayCrawler {
     typeCode: string,
     days: number
   ): Promise<HistoricalCrawlerResult> {
-    const startTime = Date.now()
+    const startTime = Date.now();
 
     try {
       // Validate days parameter
@@ -83,44 +83,46 @@ export class VangTodayHistoricalCrawler extends VangTodayCrawler {
         return {
           success: false,
           data: [],
-          errors: [{ date: '', error: 'Days must be between 1 and 30' }],
+          errors: [{ date: "", error: "Days must be between 1 and 30" }],
           metadata: {
             daysRequested: days,
             daysReturned: 0,
             typeCode,
           },
-        }
+        };
       }
 
       // Build historical API URL
-      const url = new URL(this.config.apiUrl)
-      url.searchParams.set('type', typeCode)
-      url.searchParams.set('days', days.toString())
-      url.searchParams.set('action', 'summary')
+      const url = new URL(this.config.apiUrl);
+      url.searchParams.set("type", typeCode);
+      url.searchParams.set("days", days.toString());
+      url.searchParams.set("action", "summary");
 
       // Fetch from API
       const response = await fetch(
         url.toString(),
         this.createFetchOptions({
-          method: 'GET',
+          method: "GET",
           headers: {
-            Accept: 'application/json',
-            'User-Agent': 'Mozilla/5.0',
+            Accept: "application/json",
+            "User-Agent": "Mozilla/5.0",
           },
         })
-      )
+      );
 
-      const responseTime = Date.now() - startTime
+      const responseTime = Date.now() - startTime;
 
       if (!response.ok) {
-        const errorText = await response.text()
+        const errorText = await response.text();
         return {
           success: false,
           data: [],
           errors: [
             {
-              date: '',
-              error: `HTTP ${response.status}: ${response.statusText} - ${errorText.substring(0, 200)}`,
+              date: "",
+              error: `HTTP ${response.status}: ${
+                response.statusText
+              } - ${errorText.substring(0, 200)}`,
             },
           ],
           metadata: {
@@ -128,20 +130,23 @@ export class VangTodayHistoricalCrawler extends VangTodayCrawler {
             daysReturned: 0,
             typeCode,
           },
-        }
+        };
       }
 
       // Check content type
-      const contentType = response.headers.get('content-type')
-      if (!contentType || !contentType.includes('application/json')) {
-        const errorText = await response.text()
+      const contentType = response.headers.get("content-type");
+      if (!contentType || !contentType.includes("application/json")) {
+        const errorText = await response.text();
         return {
           success: false,
           data: [],
           errors: [
             {
-              date: '',
-              error: `Invalid content type: ${contentType}. Response: ${errorText.substring(0, 200)}`,
+              date: "",
+              error: `Invalid content type: ${contentType}. Response: ${errorText.substring(
+                0,
+                200
+              )}`,
             },
           ],
           metadata: {
@@ -149,30 +154,30 @@ export class VangTodayHistoricalCrawler extends VangTodayCrawler {
             daysReturned: 0,
             typeCode,
           },
-        }
+        };
       }
 
       // Parse JSON
-      const data: VangTodayHistoricalResponse = await response.json()
+      const data: VangTodayHistoricalResponse = await response.json();
 
       if (!data.success || !data.history || data.history.length === 0) {
         return {
           success: false,
           data: [],
-          errors: [{ date: '', error: 'No historical data in API response' }],
+          errors: [{ date: "", error: "No historical data in API response" }],
           metadata: {
             daysRequested: days,
             daysReturned: 0,
             typeCode,
           },
-        }
+        };
       }
 
       // Parse historical data
       const { prices, errors } = await this.parseHistoricalResponse(
         data,
         typeCode
-      )
+      );
 
       return {
         success: prices.length > 0,
@@ -183,19 +188,19 @@ export class VangTodayHistoricalCrawler extends VangTodayCrawler {
           daysReturned: data.history.length,
           typeCode,
         },
-      }
+      };
     } catch (error) {
-      const errorObj = this.handleFetchError(error)
+      const errorObj = this.handleFetchError(error);
       return {
         success: false,
         data: [],
-        errors: [{ date: '', error: errorObj.message }],
+        errors: [{ date: "", error: errorObj.message }],
         metadata: {
           daysRequested: days,
           daysReturned: 0,
           typeCode,
         },
-      }
+      };
     }
   }
 
@@ -210,43 +215,43 @@ export class VangTodayHistoricalCrawler extends VangTodayCrawler {
     apiResponse: VangTodayHistoricalResponse,
     typeCode: string
   ): Promise<{
-    prices: DailyPriceData[]
-    errors: Array<{ date: string; error: string }>
+    prices: DailyPriceData[];
+    errors: Array<{ date: string; error: string }>;
   }> {
-    const prices: DailyPriceData[] = []
-    const errors: Array<{ date: string; error: string }> = []
+    const prices: DailyPriceData[] = [];
+    const errors: Array<{ date: string; error: string }> = [];
 
     // Process each day in the history
     for (const dayData of apiResponse.history) {
       try {
-        const date = dayData.date
+        const date = dayData.date;
 
         // Get price info for this type code
-        const priceInfo = dayData.prices[typeCode]
+        const priceInfo = dayData.prices[typeCode];
 
         if (!priceInfo) {
           errors.push({
             date,
             error: `No price data for type ${typeCode} on this date`,
-          })
-          continue
+          });
+          continue;
         }
 
         // Extract prices
-        const buyPrice = priceInfo.buy
-        const sellPrice = priceInfo.sell
+        const buyPrice = priceInfo.buy;
+        const sellPrice = priceInfo.sell;
 
         if (
-          typeof buyPrice !== 'number' ||
-          typeof sellPrice !== 'number' ||
+          typeof buyPrice !== "number" ||
+          typeof sellPrice !== "number" ||
           buyPrice <= 0 ||
           sellPrice <= 0
         ) {
           errors.push({
             date,
-            error: 'Invalid buy/sell prices',
-          })
-          continue
+            error: "Invalid buy/sell prices",
+          });
+          continue;
         }
 
         prices.push({
@@ -256,17 +261,17 @@ export class VangTodayHistoricalCrawler extends VangTodayCrawler {
           sellPrice,
           currency: priceInfo.currency,
           change: priceInfo.day_change_buy,
-        })
+        });
       } catch (error) {
         errors.push({
           date: dayData.date,
           error:
-            error instanceof Error ? error.message : 'Unknown parsing error',
-        })
+            error instanceof Error ? error.message : "Unknown parsing error",
+        });
       }
     }
 
-    return { prices, errors }
+    return { prices, errors };
   }
 
   /**
@@ -287,48 +292,40 @@ export class VangTodayHistoricalCrawler extends VangTodayCrawler {
     province: Province,
     productType: ProductType
   ): PriceData {
-    const typeCode = dailyPrice.type
+    const typeCode = dailyPrice.type;
 
     // Handle XAUUSD separately (world gold in USD/oz)
-    if (typeCode === 'XAUUSD') {
+    if (typeCode === "XAUUSD") {
       return {
-        id: '',
+        id: "",
         createdAt: `${dailyPrice.date}T00:00:00.000Z`, // Use date at midnight UTC
         retailer: mapping.retailerCode as unknown as RetailerLiteral,
         province: province.code as unknown as ProvinceLiteral,
         productType: mapping.productTypeCode as unknown as ProductTypeLiteral,
         buyPrice: dailyPrice.buyPrice,
         sellPrice: dailyPrice.sellPrice,
-        unit: 'USD/oz',
+        unit: "USD/oz",
         change: dailyPrice.change,
-      }
+      };
     }
 
     // Convert from VND/lượng to VND/chi (1 lượng = 10 chỉ)
-    const buyPriceInChi = this.convertLuongToChi(dailyPrice.buyPrice)
-    const sellPriceInChi = this.convertLuongToChi(dailyPrice.sellPrice)
+    const buyPriceInChi = this.convertLuongToChi(dailyPrice.buyPrice);
+    const sellPriceInChi = this.convertLuongToChi(dailyPrice.sellPrice);
     const changeInChi = dailyPrice.change
       ? this.convertLuongToChi(dailyPrice.change)
-      : undefined
+      : undefined;
 
     return {
-      id: '',
+      id: "",
       createdAt: `${dailyPrice.date}T00:00:00.000Z`, // Use date at midnight UTC
       retailer: mapping.retailerCode as unknown as RetailerLiteral,
       province: province.code as unknown as ProvinceLiteral,
       productType: mapping.productTypeCode as unknown as ProductTypeLiteral,
       buyPrice: buyPriceInChi,
       sellPrice: sellPriceInChi,
-      unit: 'VND/chi',
+      unit: "VND/chi",
       change: changeInChi,
-    }
-  }
-
-  /**
-   * Convert price from VND/lượng to VND/chi
-   * 1 lượng = 10 chỉ
-   */
-  private convertLuongToChi(priceInLuong: number): number {
-    return Math.round(priceInLuong / 10)
+    };
   }
 }

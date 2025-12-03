@@ -259,8 +259,8 @@ export class VangTodayCrawler extends BaseCrawler {
     // Check if field mappings are configured
     if (!this.config.fieldMappings) {
       errors.push({
-        item: 'config',
-        error: 'Field mappings not configured for this source',
+        item: "config",
+        error: "Field mappings not configured for this source",
       });
       return { prices, errors };
     }
@@ -288,10 +288,13 @@ export class VangTodayCrawler extends BaseCrawler {
     const timestamp = this.extractTimestamp(apiResponse, fieldMappings);
 
     // Extract prices data using field mapping
-    const pricesData = this.extractNestedValue(apiResponse, fieldMappings.dataPath);
-    if (!pricesData || typeof pricesData !== 'object') {
+    const pricesData = this.extractNestedValue(
+      apiResponse,
+      fieldMappings.dataPath
+    );
+    if (!pricesData || typeof pricesData !== "object") {
       errors.push({
-        item: 'dataPath',
+        item: "dataPath",
         error: `Could not extract prices from path: ${fieldMappings.dataPath}`,
       });
       return { prices, errors };
@@ -378,7 +381,9 @@ export class VangTodayCrawler extends BaseCrawler {
             buyPrice,
             sellPrice,
             unit: "USD/oz",
-            change: this.extractNestedValue(priceInfo, 'change_buy') as number || undefined,
+            change:
+              (this.extractNestedValue(priceInfo, "change_buy") as number) ||
+              undefined,
           });
           continue;
         }
@@ -396,8 +401,10 @@ export class VangTodayCrawler extends BaseCrawler {
           buyPrice: buyPriceInChi,
           sellPrice: sellPriceInChi,
           unit: "VND/chi",
-          change: this.extractNestedValue(priceInfo, 'change_buy') as number
-            ? this.convertLuongToChi(this.extractNestedValue(priceInfo, 'change_buy') as number)
+          change: (this.extractNestedValue(priceInfo, "change_buy") as number)
+            ? this.convertLuongToChi(
+                this.extractNestedValue(priceInfo, "change_buy") as number
+              )
             : undefined,
         });
       } catch (error) {
@@ -487,7 +494,7 @@ export class VangTodayCrawler extends BaseCrawler {
    * Convert price from VND/lượng to VND/chi
    * 1 lượng = 10 chỉ
    */
-  private convertLuongToChi(priceInLuong: number): number {
+  protected convertLuongToChi(priceInLuong: number): number {
     return Math.round(priceInLuong / 10);
   }
 
@@ -496,7 +503,7 @@ export class VangTodayCrawler extends BaseCrawler {
    * Example: extractNestedValue(obj, "data.prices") => obj.data.prices
    */
   private extractNestedValue(obj: any, path: string): any {
-    return path.split('.').reduce((current, key) => current?.[key], obj);
+    return path.split(".").reduce((current, key) => current?.[key], obj);
   }
 
   /**
@@ -508,7 +515,7 @@ export class VangTodayCrawler extends BaseCrawler {
     multiplier: number = 1
   ): number | null {
     const value = this.extractNestedValue(priceInfo, fieldName);
-    if (typeof value !== 'number') {
+    if (typeof value !== "number") {
       return null;
     }
     return value * multiplier;
@@ -528,12 +535,12 @@ export class VangTodayCrawler extends BaseCrawler {
     }
 
     // Handle different timestamp formats
-    const format = fieldMappings.transforms?.timestamp || 'unix';
+    const format = fieldMappings.transforms?.timestamp || "unix";
 
-    if (format === 'unix') {
+    if (format === "unix") {
       // Unix timestamp (seconds since epoch)
       return new Date(timestampValue * 1000).toISOString();
-    } else if (format === 'iso8601') {
+    } else if (format === "iso8601") {
       // ISO 8601 string
       return new Date(timestampValue).toISOString();
     }

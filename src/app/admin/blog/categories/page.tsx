@@ -1,27 +1,32 @@
-'use client'
+"use client";
 
-import { useQuery } from '@tanstack/react-query'
-import { ConfigTable } from '@/components/admin/config/config-table'
+import { useQuery } from "@tanstack/react-query";
+import { ConfigTable } from "@/components/admin/config/config-table";
 
 interface BlogCategory {
-  id: string
-  slug: string
-  name: string
-  description?: string
-  is_enabled: boolean
-  sort_order: number
+  id: string;
+  code: string;
+  slug: string;
+  name: string;
+  description?: string;
+  is_enabled: boolean;
+  sort_order: number;
 }
 
 export default function BlogCategoriesPage() {
   const { data, isLoading } = useQuery({
-    queryKey: ['blog-categories'],
+    queryKey: ["blog-categories"],
     queryFn: async () => {
-      const res = await fetch('/api/admin/blog/categories')
-      if (!res.ok) throw new Error('Failed to fetch categories')
-      const json = await res.json()
-      return json.categories as BlogCategory[]
+      const res = await fetch("/api/admin/blog/categories");
+      if (!res.ok) throw new Error("Failed to fetch categories");
+      const json = await res.json();
+      // Map slug to code for ConfigTable compatibility
+      return json.categories.map((cat: Omit<BlogCategory, "code">) => ({
+        ...cat,
+        code: cat.slug,
+      })) as BlogCategory[];
     },
-  })
+  });
 
   return (
     <div className="container mx-auto px-6 py-8">
@@ -41,15 +46,15 @@ export default function BlogCategoriesPage() {
         queryKey="blog-categories"
         fields={{
           code: {
-            label: 'Slug',
-            placeholder: 'VD: tin-tuc-vang, huong-dan',
+            label: "Slug",
+            placeholder: "VD: tin-tuc-vang, huong-dan",
           },
           name: {
-            label: 'Tên danh mục',
-            placeholder: 'VD: Tin tức vàng, Hướng dẫn',
+            label: "Tên danh mục",
+            placeholder: "VD: Tin tức vàng, Hướng dẫn",
           },
         }}
       />
     </div>
-  )
+  );
 }

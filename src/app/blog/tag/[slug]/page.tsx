@@ -1,40 +1,45 @@
-import { PostCard } from '@/components/blog/post-card'
-import { BlogBreadcrumb } from '@/components/blog/blog-breadcrumb'
-import { createClient } from '@/lib/supabase/server'
-import { dbPostToPost, dbCategoryToCategory, dbTagToTag } from '@/lib/blog/types'
-import { notFound } from 'next/navigation'
+import { PostCard } from "@/components/blog/post-card";
+import { BlogBreadcrumb } from "@/components/blog/blog-breadcrumb";
+import { createClient } from "@/lib/supabase/server";
+import {
+  dbPostToPost,
+  dbCategoryToCategory,
+  dbTagToTag,
+} from "@/lib/blog/types";
+import { notFound } from "next/navigation";
 
-export default async function TagPage({ params }: { params: Promise<{ slug: string }> }) {
-  const { slug } = await params
-  const supabase = await createClient()
+export default async function TagPage({
+  params,
+}: {
+  params: Promise<{ slug: string }>;
+}) {
+  const { slug } = await params;
+  const supabase = await createClient();
 
   const { data: tag } = await supabase
-    .from('blog_tags')
-    .select('*')
-    .eq('slug', slug)
-    .eq('is_enabled', true)
-    .single()
+    .from("blog_tags")
+    .select("*")
+    .eq("slug", slug)
+    .eq("is_enabled", true)
+    .single();
 
   if (!tag) {
-    notFound()
+    notFound();
   }
 
   // Get posts with this tag
   const { data: postTags } = await supabase
-    .from('blog_post_tags')
-    .select('post_id')
-    .eq('tag_id', tag.id)
+    .from("blog_post_tags")
+    .select("post_id")
+    .eq("tag_id", tag.id);
 
-  const postIds = postTags?.map(pt => pt.post_id) || []
+  const postIds = postTags?.map((pt) => pt.post_id) || [];
 
   if (postIds.length === 0) {
     return (
       <div className="container mx-auto px-6 py-12">
         <BlogBreadcrumb
-          items={[
-            { label: 'Blog', href: '/blog' },
-            { label: `#${tag.name}` }
-          ]}
+          items={[{ label: "Blog", href: "/blog" }, { label: `#${tag.name}` }]}
         />
 
         <div className="mb-12">
@@ -44,34 +49,50 @@ export default async function TagPage({ params }: { params: Promise<{ slug: stri
           Chưa có bài viết với thẻ này
         </div>
       </div>
-    )
+    );
   }
 
   const { data } = await supabase
-    .from('blog_posts')
-    .select(`
+    .from("blog_posts")
+    .select(
+      `
       *,
       category:blog_categories(*),
       post_tags:blog_post_tags(tag:blog_tags(*))
-    `)
-    .eq('status', 'published')
-    .in('id', postIds)
-    .order('published_at', { ascending: false })
+    `
+    )
+    .eq("status", "published")
+    .in("id", postIds)
+    .order("published_at", { ascending: false });
 
-  const posts = data?.map(item => {
-    const post = dbPostToPost(item)
-    const category = item.category ? dbCategoryToCategory(item.category) : null
-    const tags = item.post_tags?.map((pt: any) => dbTagToTag(pt.tag)) || []
-    return { ...post, category, tags }
-  }) || []
+  const posts =
+    data
+      ?.map((item) => {
+        const post = dbPostToPost(item);
+        const category = item.category
+          ? dbCategoryToCategory(item.category)
+          : null;
+        const tags =
+          item.post_tags?.map((pt: { tag: any }) => dbTagToTag(pt.tag)) || [];
+        return {
+          id: post.id,
+          slug: post.slug,
+          title: post.title,
+          excerpt: post.excerpt,
+          featuredImageUrl: post.featuredImageUrl,
+          publishedAt: post.publishedAt || new Date().toISOString(),
+          viewCount: post.viewCount,
+          commentCount: post.commentCount,
+          category,
+          tags,
+        };
+      })
+      .filter((post) => post.publishedAt) || [];
 
   return (
     <div className="container mx-auto px-6 py-12">
       <BlogBreadcrumb
-        items={[
-          { label: 'Blog', href: '/blog' },
-          { label: `#${tag.name}` }
-        ]}
+        items={[{ label: "Blog", href: "/blog" }, { label: `#${tag.name}` }]}
       />
 
       <div className="mb-12">
@@ -84,5 +105,5 @@ export default async function TagPage({ params }: { params: Promise<{ slug: stri
         ))}
       </div>
     </div>
-  )
+  );
 }

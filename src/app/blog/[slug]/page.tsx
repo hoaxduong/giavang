@@ -1,27 +1,33 @@
-import { Metadata } from 'next'
-import { notFound } from 'next/navigation'
-import { createClient } from '@/lib/supabase/server'
-import { dbPostToPost, dbCategoryToCategory, dbTagToTag } from '@/lib/blog/types'
-import { PostContent } from '@/components/blog/post-content'
-import { PostMeta } from '@/components/blog/post-meta'
-import { BlogBreadcrumb } from '@/components/blog/blog-breadcrumb'
+import { Metadata } from "next";
+import { notFound } from "next/navigation";
+import { createClient } from "@/lib/supabase/server";
+import {
+  dbPostToPost,
+  dbCategoryToCategory,
+  dbTagToTag,
+} from "@/lib/blog/types";
+import { PostContent } from "@/components/blog/post-content";
+import { PostMeta } from "@/components/blog/post-meta";
+import { BlogBreadcrumb } from "@/components/blog/blog-breadcrumb";
 
 interface PageProps {
-  params: Promise<{ slug: string }>
+  params: Promise<{ slug: string }>;
 }
 
-export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
-  const { slug } = await params
-  const supabase = await createClient()
+export async function generateMetadata({
+  params,
+}: PageProps): Promise<Metadata> {
+  const { slug } = await params;
+  const supabase = await createClient();
 
   const { data } = await supabase
-    .from('blog_posts')
-    .select('*')
-    .eq('slug', slug)
-    .eq('status', 'published')
-    .single()
+    .from("blog_posts")
+    .select("*")
+    .eq("slug", slug)
+    .eq("status", "published")
+    .single();
 
-  if (!data) return {}
+  if (!data) return {};
 
   return {
     title: data.meta_title || data.title,
@@ -29,54 +35,57 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
     openGraph: {
       title: data.meta_title || data.title,
       description: data.meta_description || data.excerpt,
-      images: data.og_image_url || data.featured_image_url ? [data.og_image_url || data.featured_image_url] : [],
-      type: 'article',
+      images:
+        data.og_image_url || data.featured_image_url
+          ? [data.og_image_url || data.featured_image_url]
+          : [],
+      type: "article",
       publishedTime: data.published_at,
     },
-  }
+  };
 }
 
 export default async function BlogPostPage({ params }: PageProps) {
-  const { slug } = await params
-  const supabase = await createClient()
+  const { slug } = await params;
+  const supabase = await createClient();
 
   const { data, error } = await supabase
-    .from('blog_posts')
-    .select(`
+    .from("blog_posts")
+    .select(
+      `
       *,
       category:blog_categories(*),
       post_tags:blog_post_tags(tag:blog_tags(*))
-    `)
-    .eq('slug', slug)
-    .eq('status', 'published')
-    .single()
+    `
+    )
+    .eq("slug", slug)
+    .eq("status", "published")
+    .single();
 
   if (error || !data) {
-    notFound()
+    notFound();
   }
 
-  const post = dbPostToPost(data)
-  const category = data.category ? dbCategoryToCategory(data.category) : null
-  const tags = data.post_tags?.map((pt: any) => dbTagToTag(pt.tag)) || []
+  const post = dbPostToPost(data);
+  const category = data.category ? dbCategoryToCategory(data.category) : null;
+  const tags =
+    data.post_tags?.map((pt: { tag: any }) => dbTagToTag(pt.tag)) || [];
 
   // Fetch author separately if author_id exists
-  let author = null
+  let author = null;
   if (data.author_id) {
     const { data: authorData } = await supabase
-      .from('user_profiles')
-      .select('id, full_name, avatar_url')
-      .eq('id', data.author_id)
-      .single()
-    author = authorData
+      .from("user_profiles")
+      .select("id, full_name, avatar_url")
+      .eq("id", data.author_id)
+      .single();
+    author = authorData;
   }
 
   return (
     <article className="container mx-auto px-6 py-12 max-w-4xl">
       <BlogBreadcrumb
-        items={[
-          { label: 'Blog', href: '/blog' },
-          { label: post.title }
-        ]}
+        items={[{ label: "Blog", href: "/blog" }, { label: post.title }]}
       />
 
       {post.featuredImageUrl && (
@@ -98,10 +107,14 @@ export default async function BlogPostPage({ params }: PageProps) {
 
         <PostMeta
           post={{
-            ...post,
+            publishedAt: post.publishedAt || new Date().toISOString(),
+            viewCount: post.viewCount,
+            commentCount: post.commentCount,
             category,
             tags,
-            author,
+            author: author
+              ? { fullName: author.full_name }
+              : { fullName: "Unknown" },
           }}
         />
       </header>
@@ -116,14 +129,14 @@ export default async function BlogPostPage({ params }: PageProps) {
           type="application/ld+json"
           dangerouslySetInnerHTML={{
             __html: JSON.stringify({
-              '@context': 'https://schema.org',
-              '@type': 'Article',
+              "@context": "https://schema.org",
+              "@type": "Article",
               headline: post.title,
               image: post.featuredImageUrl,
               datePublished: post.publishedAt,
               dateModified: post.updatedAt,
               author: {
-                '@type': 'Person',
+                "@type": "Person",
                 name: author.full_name,
               },
             }),
@@ -131,5 +144,5 @@ export default async function BlogPostPage({ params }: PageProps) {
         />
       )}
     </article>
-  )
+  );
 }

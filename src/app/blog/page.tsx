@@ -1,36 +1,55 @@
-import { PostCard } from '@/components/blog/post-card'
-import { BlogBreadcrumb } from '@/components/blog/blog-breadcrumb'
-import { createClient } from '@/lib/supabase/server'
-import { dbPostToPost, dbCategoryToCategory, dbTagToTag } from '@/lib/blog/types'
+import { PostCard } from "@/components/blog/post-card";
+import { BlogBreadcrumb } from "@/components/blog/blog-breadcrumb";
+import { createClient } from "@/lib/supabase/server";
+import {
+  dbPostToPost,
+  dbCategoryToCategory,
+  dbTagToTag,
+} from "@/lib/blog/types";
 
 export default async function BlogPage() {
-  const supabase = await createClient()
+  const supabase = await createClient();
 
   const { data } = await supabase
-    .from('blog_posts')
-    .select(`
+    .from("blog_posts")
+    .select(
+      `
       *,
       category:blog_categories(*),
       post_tags:blog_post_tags(tag:blog_tags(*))
-    `)
-    .eq('status', 'published')
-    .order('published_at', { ascending: false })
-    .limit(12)
+    `
+    )
+    .eq("status", "published")
+    .order("published_at", { ascending: false })
+    .limit(12);
 
-  const posts = data?.map(item => {
-    const post = dbPostToPost(item)
-    const category = item.category ? dbCategoryToCategory(item.category) : null
-    const tags = item.post_tags?.map((pt: any) => dbTagToTag(pt.tag)) || []
-    return { ...post, category, tags }
-  }) || []
+  const posts =
+    data
+      ?.map((item) => {
+        const post = dbPostToPost(item);
+        const category = item.category
+          ? dbCategoryToCategory(item.category)
+          : null;
+        const tags =
+          item.post_tags?.map((pt: { tag: any }) => dbTagToTag(pt.tag)) || [];
+        return {
+          id: post.id,
+          slug: post.slug,
+          title: post.title,
+          excerpt: post.excerpt,
+          featuredImageUrl: post.featuredImageUrl,
+          publishedAt: post.publishedAt || new Date().toISOString(),
+          viewCount: post.viewCount,
+          commentCount: post.commentCount,
+          category,
+          tags,
+        };
+      })
+      .filter((post) => post.publishedAt) || [];
 
   return (
     <div className="container mx-auto px-6 py-12">
-      <BlogBreadcrumb
-        items={[
-          { label: 'Blog' }
-        ]}
-      />
+      <BlogBreadcrumb items={[{ label: "Blog" }]} />
 
       <div className="mb-12">
         <h1 className="text-4xl font-bold tracking-tight">Blog</h1>
@@ -51,5 +70,5 @@ export default async function BlogPage() {
         </div>
       )}
     </div>
-  )
+  );
 }

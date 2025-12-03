@@ -1,26 +1,32 @@
-'use client'
+"use client";
 
-import { useQuery } from '@tanstack/react-query'
-import { ConfigTable } from '@/components/admin/config/config-table'
+import { useQuery } from "@tanstack/react-query";
+import { ConfigTable } from "@/components/admin/config/config-table";
 
 interface BlogTag {
-  id: string
-  slug: string
-  name: string
-  is_enabled: boolean
-  sort_order?: number
+  id: string;
+  code: string;
+  slug: string;
+  name: string;
+  is_enabled: boolean;
+  sort_order: number;
 }
 
 export default function BlogTagsPage() {
   const { data, isLoading } = useQuery({
-    queryKey: ['blog-tags'],
+    queryKey: ["blog-tags"],
     queryFn: async () => {
-      const res = await fetch('/api/admin/blog/tags')
-      if (!res.ok) throw new Error('Failed to fetch tags')
-      const json = await res.json()
-      return json.tags as BlogTag[]
+      const res = await fetch("/api/admin/blog/tags");
+      if (!res.ok) throw new Error("Failed to fetch tags");
+      const json = await res.json();
+      // Map slug to code for ConfigTable compatibility
+      return json.tags.map((tag: Omit<BlogTag, "code">) => ({
+        ...tag,
+        code: tag.slug,
+        sort_order: tag.sort_order ?? 0,
+      })) as BlogTag[];
     },
-  })
+  });
 
   return (
     <div className="container mx-auto px-6 py-8">
@@ -40,15 +46,15 @@ export default function BlogTagsPage() {
         queryKey="blog-tags"
         fields={{
           code: {
-            label: 'Slug',
-            placeholder: 'VD: dau-tu, phan-tich-thi-truong',
+            label: "Slug",
+            placeholder: "VD: dau-tu, phan-tich-thi-truong",
           },
           name: {
-            label: 'Tên thẻ',
-            placeholder: 'VD: Đầu tư, Phân tích thị trường',
+            label: "Tên thẻ",
+            placeholder: "VD: Đầu tư, Phân tích thị trường",
           },
         }}
       />
     </div>
-  )
+  );
 }
