@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import { QueryProvider } from "@/providers/query-provider";
 import { ThemeProvider } from "@/providers/theme-provider";
+import { Toaster } from "sonner";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -33,6 +34,7 @@ export default function RootLayout({
         <ThemeProvider defaultTheme="system" storageKey="giavang-theme">
           <QueryProvider>
             {children}
+            <Toaster position="top-right" />
           </QueryProvider>
         </ThemeProvider>
       </body>

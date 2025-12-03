@@ -12,6 +12,7 @@ import {
   RefreshCw,
   ScrollText,
   LayoutDashboard,
+  History,
 } from 'lucide-react'
 
 const navigation = [
@@ -53,6 +54,11 @@ const navigation = [
         name: 'Đồng bộ',
         href: '/admin/crawler/sync',
         icon: RefreshCw,
+      },
+      {
+        name: 'Thu thập lịch sử',
+        href: '/admin/crawler/backfill',
+        icon: History,
       },
       {
         name: 'Lịch sử',
