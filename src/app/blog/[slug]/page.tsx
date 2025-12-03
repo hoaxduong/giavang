@@ -4,6 +4,7 @@ import { createClient } from '@/lib/supabase/server'
 import { dbPostToPost, dbCategoryToCategory, dbTagToTag } from '@/lib/blog/types'
 import { PostContent } from '@/components/blog/post-content'
 import { PostMeta } from '@/components/blog/post-meta'
+import { BlogBreadcrumb } from '@/components/blog/blog-breadcrumb'
 
 interface PageProps {
   params: Promise<{ slug: string }>
@@ -71,6 +72,13 @@ export default async function BlogPostPage({ params }: PageProps) {
 
   return (
     <article className="container mx-auto px-6 py-12 max-w-4xl">
+      <BlogBreadcrumb
+        items={[
+          { label: 'Blog', href: '/blog' },
+          { label: post.title }
+        ]}
+      />
+
       {post.featuredImageUrl && (
         <div className="aspect-video overflow-hidden rounded-lg mb-8">
           <img

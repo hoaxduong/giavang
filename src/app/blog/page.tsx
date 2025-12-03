@@ -1,4 +1,5 @@
 import { PostCard } from '@/components/blog/post-card'
+import { BlogBreadcrumb } from '@/components/blog/blog-breadcrumb'
 import { createClient } from '@/lib/supabase/server'
 import { dbPostToPost, dbCategoryToCategory, dbTagToTag } from '@/lib/blog/types'
 
@@ -25,6 +26,12 @@ export default async function BlogPage() {
 
   return (
     <div className="container mx-auto px-6 py-12">
+      <BlogBreadcrumb
+        items={[
+          { label: 'Blog' }
+        ]}
+      />
+
       <div className="mb-12">
         <h1 className="text-4xl font-bold tracking-tight">Blog</h1>
         <p className="text-muted-foreground mt-4">

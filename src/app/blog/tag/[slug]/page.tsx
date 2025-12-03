@@ -1,4 +1,5 @@
 import { PostCard } from '@/components/blog/post-card'
+import { BlogBreadcrumb } from '@/components/blog/blog-breadcrumb'
 import { createClient } from '@/lib/supabase/server'
 import { dbPostToPost, dbCategoryToCategory, dbTagToTag } from '@/lib/blog/types'
 import { notFound } from 'next/navigation'
@@ -29,6 +30,13 @@ export default async function TagPage({ params }: { params: Promise<{ slug: stri
   if (postIds.length === 0) {
     return (
       <div className="container mx-auto px-6 py-12">
+        <BlogBreadcrumb
+          items={[
+            { label: 'Blog', href: '/blog' },
+            { label: `#${tag.name}` }
+          ]}
+        />
+
         <div className="mb-12">
           <h1 className="text-4xl font-bold tracking-tight">#{tag.name}</h1>
         </div>
@@ -59,6 +67,13 @@ export default async function TagPage({ params }: { params: Promise<{ slug: stri
 
   return (
     <div className="container mx-auto px-6 py-12">
+      <BlogBreadcrumb
+        items={[
+          { label: 'Blog', href: '/blog' },
+          { label: `#${tag.name}` }
+        ]}
+      />
+
       <div className="mb-12">
         <h1 className="text-4xl font-bold tracking-tight">#{tag.name}</h1>
       </div>
