@@ -1,6 +1,7 @@
 import { createServiceRoleClient } from '@/lib/supabase/service-role'
 import { priceDataToSnapshot } from '../price-normalizer'
 import { VangTodayHistoricalCrawler } from '../crawler/vang-today-historical-crawler'
+import { SjcHistoricalCrawler } from '../crawler/sjc-historical-crawler'
 import { RateLimiter } from './rate-limiter'
 import { PriceDeduplicator } from './deduplicator'
 import type {
@@ -27,7 +28,7 @@ export class BackfillExecutor {
   private isCancelled: boolean = false
   private rateLimiter: RateLimiter | null = null
   private deduplicator: PriceDeduplicator
-  private crawler: VangTodayHistoricalCrawler | null = null
+  private crawler: VangTodayHistoricalCrawler | SjcHistoricalCrawler | null = null
 
   // Progress tracking
   private itemsProcessed: number = 0
@@ -353,8 +354,17 @@ export class BackfillExecutor {
       fieldMappings: source.field_mappings,
     }
 
-    // Create crawler instance
-    this.crawler = new VangTodayHistoricalCrawler(crawlerConfig)
+    // Create crawler instance based on source type
+    switch (source.api_type) {
+      case 'vang_today':
+        this.crawler = new VangTodayHistoricalCrawler(crawlerConfig)
+        break
+      case 'sjc':
+        this.crawler = new SjcHistoricalCrawler(crawlerConfig)
+        break
+      default:
+        throw new Error(`Unsupported crawler type for backfill: ${source.api_type}`)
+    }
 
     // Create rate limiter
     this.rateLimiter = new RateLimiter(
@@ -449,8 +459,9 @@ export class BackfillExecutor {
     }
 
     // Convert each daily price to snapshot
+    // Use type assertion since we know the crawler type matches the daily price type
     return dailyPrices.map((daily) =>
-      this.crawler!.convertDailyToSnapshot(daily, mapping, retailer, province, productType)
+      this.crawler!.convertDailyToSnapshot(daily as any, mapping, retailer, province, productType)
     )
   }
 

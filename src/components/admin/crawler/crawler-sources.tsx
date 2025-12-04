@@ -41,9 +41,11 @@ interface FieldMappings {
     sellPrice: string;
     timestamp: string;
     currency?: string;
+    branch?: string; // SJC-specific field
+    [key: string]: string | undefined; // Allow additional source-specific fields
   };
   transforms?: {
-    timestamp?: "iso8601" | "unix";
+    timestamp?: "iso8601" | "unix" | "custom"; // Added 'custom' for SJC
     priceMultiplier?: number;
   };
 }
@@ -93,7 +95,7 @@ export function CrawlerSources() {
         currency: "currency",
       },
       transforms: {
-        timestamp: "unix" as "iso8601" | "unix",
+        timestamp: "unix" as "iso8601" | "unix" | "custom",
         priceMultiplier: 1,
       },
     },
@@ -377,7 +379,7 @@ export function CrawlerSources() {
         priority: item.priority,
         rateLimitPerMinute: item.rate_limit_per_minute || 60,
         timeoutSeconds: item.timeout_seconds || 30,
-        fieldMappings: item.field_mappings
+        fieldMappings: item.field_mappings?.fields
           ? {
               dataPath: item.field_mappings.dataPath,
               fields: {
@@ -693,7 +695,13 @@ export function CrawlerSources() {
                 <div className="border-t pt-4 mt-4">
                   <h4 className="text-sm font-semibold mb-3">
                     Cấu hình Field Mappings
+                    <span className="ml-2 text-xs font-normal text-muted-foreground">
+                      (Tùy chọn - chỉ cho nguồn dùng generic mapping)
+                    </span>
                   </h4>
+                  <p className="text-xs text-muted-foreground mb-3">
+                    Lưu ý: SJC và một số nguồn khác dùng logic parse riêng, không cần chỉnh field mappings
+                  </p>
                   <div className="space-y-3">
                     <div>
                       <Label htmlFor="dataPath">Data Path *</Label>
@@ -804,7 +812,8 @@ export function CrawlerSources() {
                                   ...formData.fieldMappings.transforms,
                                   timestamp: e.target.value as
                                     | "iso8601"
-                                    | "unix",
+                                    | "unix"
+                                    | "custom",
                                 },
                               },
                             })
@@ -812,6 +821,7 @@ export function CrawlerSources() {
                         >
                           <option value="unix">Unix (seconds)</option>
                           <option value="iso8601">ISO 8601</option>
+                          <option value="custom">Custom (source-specific)</option>
                         </select>
                       </div>
                       <div>
