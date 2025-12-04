@@ -1,8 +1,8 @@
-'use client'
+"use client";
 
-import { useQuery } from '@tanstack/react-query'
-import { format } from 'date-fns'
-import type { HistoricalFilters, HistoricalPricesResponse } from '../types'
+import { useQuery } from "@tanstack/react-query";
+import { format, addDays } from "date-fns";
+import type { HistoricalFilters, HistoricalPricesResponse } from "../types";
 
 /**
  * Hook to fetch historical gold prices for charts
@@ -15,34 +15,36 @@ import type { HistoricalFilters, HistoricalPricesResponse } from '../types'
  */
 export function useHistoricalPrices(filters: HistoricalFilters) {
   return useQuery({
-    queryKey: ['prices', 'historical', filters],
+    queryKey: ["prices", "historical", filters],
     queryFn: async () => {
       const params = new URLSearchParams({
-        startDate: format(filters.startDate, 'yyyy-MM-dd'),
-        endDate: format(filters.endDate, 'yyyy-MM-dd'),
-        interval: filters.interval || 'daily',
-      })
+        startDate: format(filters.startDate, "yyyy-MM-dd"),
+        endDate: format(addDays(filters.endDate, 1), "yyyy-MM-dd"),
+        interval: filters.interval || "daily",
+      });
 
       if (filters.productType) {
-        params.append('productType', filters.productType)
+        params.append("productType", filters.productType);
       }
       if (filters.retailer) {
-        params.append('retailer', filters.retailer)
+        params.append("retailer", filters.retailer);
       }
       if (filters.province) {
-        params.append('province', filters.province)
+        params.append("province", filters.province);
       }
 
-      const response = await fetch(`/api/prices/historical?${params}`)
+      const response = await fetch(`/api/prices/historical?${params}`);
 
       if (!response.ok) {
-        throw new Error(`Failed to fetch historical prices: ${response.statusText}`)
+        throw new Error(
+          `Failed to fetch historical prices: ${response.statusText}`
+        );
       }
 
-      return response.json() as Promise<HistoricalPricesResponse>
+      return response.json() as Promise<HistoricalPricesResponse>;
     },
     staleTime: 10 * 60 * 1000, // 10 minutes
     gcTime: 30 * 60 * 1000, // 30 minutes
     enabled: !!filters.productType && !!filters.startDate && !!filters.endDate,
-  })
+  });
 }
