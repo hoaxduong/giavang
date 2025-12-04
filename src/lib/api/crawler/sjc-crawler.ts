@@ -114,17 +114,8 @@ export class SjcCrawler extends BaseCrawler {
       // Convert to Buffer for proper content-length handling
       const bodyBuffer = Buffer.from(formBody, 'utf-8');
 
-      console.log('[SJC Crawler] Request details:', {
-        url: this.config.apiUrl,
-        formBody,
-        bodyLength: bodyBuffer.length,
-        today,
-      });
-
       // Fetch from API using undici for better control
       const timeout = this.config.timeout || 30000;
-
-      console.log('[SJC Crawler] Making request with undici...');
 
       const { statusCode, headers, body } = await request(this.config.apiUrl, {
         method: "POST",
@@ -140,8 +131,6 @@ export class SjcCrawler extends BaseCrawler {
         bodyTimeout: timeout,
         headersTimeout: timeout,
       });
-
-      console.log('[SJC Crawler] Response received:', { statusCode, headers });
 
       const responseTime = Date.now() - startTime;
 
@@ -206,13 +195,6 @@ export class SjcCrawler extends BaseCrawler {
 
       // Parse JSON
       const data = (await body.json()) as SjcResponse;
-
-      console.log('[SJC Crawler] Parsed response:', {
-        success: data.success,
-        latestDate: data.latestDate,
-        dataLength: data.data?.length || 0,
-        sampleItem: data.data?.[0],
-      });
 
       if (!data.success || !data.data || data.data.length === 0) {
         await crawlerLogger.updateLog(logId, {
@@ -288,13 +270,6 @@ export class SjcCrawler extends BaseCrawler {
       };
     } catch (error) {
       const responseTime = Date.now() - startTime;
-
-      console.error('[SJC Crawler] Fetch error:', error);
-      console.error('[SJC Crawler] Error details:', {
-        name: error instanceof Error ? error.name : 'Unknown',
-        message: error instanceof Error ? error.message : String(error),
-        cause: error instanceof Error && 'cause' in error ? error.cause : undefined,
-      });
 
       const errorObj = this.handleFetchError(error);
 
