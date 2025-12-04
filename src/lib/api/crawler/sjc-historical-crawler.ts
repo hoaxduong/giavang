@@ -68,23 +68,6 @@ export interface HistoricalCrawlerResult {
  */
 export class SjcHistoricalCrawler extends SjcCrawler {
   /**
-   * Parse .NET date serialization format
-   * Converts "/Date(1764811673890)/" to ISO 8601 string
-   *
-   * @param groupDate - .NET date string from API
-   * @returns ISO 8601 timestamp string
-   */
-  private parseDotNetDate(groupDate: string): string {
-    // Extract timestamp from /Date(timestamp)/
-    const match = groupDate.match(/\/Date\((\d+)\)\//);
-    if (!match) {
-      throw new Error(`Invalid .NET date format: ${groupDate}`);
-    }
-
-    const timestamp = parseInt(match[1], 10);
-    return new Date(timestamp).toISOString();
-  }
-  /**
    * Fetch historical prices for a specific type
    *
    * Makes a single API call with a date range to fetch all historical data.
@@ -96,7 +79,7 @@ export class SjcHistoricalCrawler extends SjcCrawler {
    */
   async fetchHistoricalPrices(
     typeCode: string,
-    days: number,
+    days: number
   ): Promise<HistoricalCrawlerResult> {
     const startTime = Date.now();
 
@@ -202,7 +185,7 @@ export class SjcHistoricalCrawler extends SjcCrawler {
       const { prices, errors } = await this.parseHistoricalResponse(
         data,
         typeCode,
-        `${startDate.toISOString().split("T")[0]} to ${endDate.toISOString().split("T")[0]}`,
+        `${startDate.toISOString().split("T")[0]} to ${endDate.toISOString().split("T")[0]}`
       );
 
       return {
@@ -242,7 +225,7 @@ export class SjcHistoricalCrawler extends SjcCrawler {
   private async parseHistoricalResponse(
     apiResponse: SjcHistoricalResponse,
     typeCode: string,
-    referenceDate: string,
+    referenceDate: string
   ): Promise<{
     prices: SjcDailyPriceData[];
     errors: Array<{ date: string; error: string }>;
@@ -252,7 +235,7 @@ export class SjcHistoricalCrawler extends SjcCrawler {
 
     // Filter and process items that match the requested typeCode
     const matchingItems = apiResponse.data.filter(
-      (item) => item.TypeName === typeCode,
+      (item) => item.TypeName === typeCode
     );
 
     if (matchingItems.length === 0) {
@@ -337,7 +320,7 @@ export class SjcHistoricalCrawler extends SjcCrawler {
     mapping: TypeMapping,
     retailer: Retailer,
     province: Province,
-    productType: ProductType,
+    productType: ProductType
   ): PriceData {
     // Map branch name to province code (using the same logic as SjcCrawler)
     const provinceCode = this.mapBranchToProvince(dailyPrice.branchName);

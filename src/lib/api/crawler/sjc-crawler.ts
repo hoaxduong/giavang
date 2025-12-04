@@ -92,7 +92,7 @@ export class SjcCrawler extends BaseCrawler {
    * @param groupDate - .NET date string from API
    * @returns ISO 8601 timestamp string
    */
-  private parseDotNetDate(groupDate: string): string {
+  protected parseDotNetDate(groupDate: string): string {
     // Extract timestamp from /Date(timestamp)/
     const match = groupDate.match(/\/Date\((\d+)\)\//);
     if (!match) {
@@ -115,7 +115,7 @@ export class SjcCrawler extends BaseCrawler {
       logId = await crawlerLogger.createLog(
         this.config.id,
         this.triggerType,
-        this.triggerUserId,
+        this.triggerUserId
       );
 
       // Format today's date for SJC API (DD/MM/YYYY)
@@ -430,7 +430,7 @@ export class SjcCrawler extends BaseCrawler {
           // Fallback to current time if GroupDate parsing fails
           console.warn(
             `[SJC Crawler] Failed to parse GroupDate for ${externalCode}:`,
-            error instanceof Error ? error.message : error,
+            error instanceof Error ? error.message : error
           );
           timestamp = new Date().toISOString();
         }
@@ -563,19 +563,19 @@ export class SjcCrawler extends BaseCrawler {
       // Handle undefined or empty timestamp
       if (!sjcTimestamp) {
         console.warn(
-          "[SJC Crawler] Timestamp is undefined, using current time",
+          "[SJC Crawler] Timestamp is undefined, using current time"
         );
         return new Date().toISOString();
       }
 
       // Example: "13:07 04/12/2025"
       const match = sjcTimestamp.match(
-        /(\d{2}):(\d{2})\s+(\d{2})\/(\d{2})\/(\d{4})/,
+        /(\d{2}):(\d{2})\s+(\d{2})\/(\d{2})\/(\d{4})/
       );
       if (!match) {
         console.warn(
           "[SJC Crawler] Failed to parse timestamp format:",
-          sjcTimestamp,
+          sjcTimestamp
         );
         return new Date().toISOString();
       }
@@ -586,7 +586,7 @@ export class SjcCrawler extends BaseCrawler {
         parseInt(month) - 1,
         parseInt(day),
         parseInt(hours),
-        parseInt(minutes),
+        parseInt(minutes)
       );
 
       return date.toISOString();
