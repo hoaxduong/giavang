@@ -1,5 +1,6 @@
 import { PostCard } from "@/components/blog/post-card";
 import { BlogBreadcrumb } from "@/components/blog/blog-breadcrumb";
+import { Header } from "@/components/layout/header";
 import { createClient } from "@/lib/supabase/server";
 import {
   dbPostToPost,
@@ -63,10 +64,12 @@ export default async function CategoryPage({
       .filter((post) => post.publishedAt) || [];
 
   return (
-    <div className="container mx-auto px-6 py-12">
-      <BlogBreadcrumb
-        items={[{ label: "Blog", href: "/blog" }, { label: category.name }]}
-      />
+    <>
+      <Header />
+      <div className="container mx-auto px-6 py-12">
+        <BlogBreadcrumb
+          items={[{ label: "Blog", href: "/blog" }, { label: category.name }]}
+        />
 
       <div className="mb-12">
         <h1 className="text-4xl font-bold tracking-tight">{category.name}</h1>
@@ -86,6 +89,7 @@ export default async function CategoryPage({
           Chưa có bài viết trong danh mục này
         </div>
       )}
-    </div>
+      </div>
+    </>
   );
 }

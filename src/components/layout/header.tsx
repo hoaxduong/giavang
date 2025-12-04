@@ -34,6 +34,12 @@ export function Header() {
               Biểu Đồ
             </Link>
             <Link
+              href="/blog"
+              className="text-sm font-medium transition-colors hover:text-primary"
+            >
+              Blog
+            </Link>
+            <Link
               href="/cong-cu-tinh-so-vang"
               className="text-sm font-medium transition-colors hover:text-primary"
             >

@@ -1,5 +1,6 @@
 import { PostCard } from "@/components/blog/post-card";
 import { BlogBreadcrumb } from "@/components/blog/blog-breadcrumb";
+import { Header } from "@/components/layout/header";
 import { createClient } from "@/lib/supabase/server";
 import {
   dbPostToPost,
@@ -37,10 +38,12 @@ export default async function TagPage({
 
   if (postIds.length === 0) {
     return (
-      <div className="container mx-auto px-6 py-12">
-        <BlogBreadcrumb
-          items={[{ label: "Blog", href: "/blog" }, { label: `#${tag.name}` }]}
-        />
+      <>
+        <Header />
+        <div className="container mx-auto px-6 py-12">
+          <BlogBreadcrumb
+            items={[{ label: "Blog", href: "/blog" }, { label: `#${tag.name}` }]}
+          />
 
         <div className="mb-12">
           <h1 className="text-4xl font-bold tracking-tight">#{tag.name}</h1>
@@ -48,7 +51,8 @@ export default async function TagPage({
         <div className="text-center py-12 text-muted-foreground">
           Chưa có bài viết với thẻ này
         </div>
-      </div>
+        </div>
+      </>
     );
   }
 
@@ -90,10 +94,12 @@ export default async function TagPage({
       .filter((post) => post.publishedAt) || [];
 
   return (
-    <div className="container mx-auto px-6 py-12">
-      <BlogBreadcrumb
-        items={[{ label: "Blog", href: "/blog" }, { label: `#${tag.name}` }]}
-      />
+    <>
+      <Header />
+      <div className="container mx-auto px-6 py-12">
+        <BlogBreadcrumb
+          items={[{ label: "Blog", href: "/blog" }, { label: `#${tag.name}` }]}
+        />
 
       <div className="mb-12">
         <h1 className="text-4xl font-bold tracking-tight">#{tag.name}</h1>
@@ -104,6 +110,7 @@ export default async function TagPage({
           <PostCard key={post.id} post={post} />
         ))}
       </div>
-    </div>
+      </div>
+    </>
   );
 }
