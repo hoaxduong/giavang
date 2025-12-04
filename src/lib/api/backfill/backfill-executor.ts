@@ -3,7 +3,6 @@ import { priceDataToSnapshot } from '../price-normalizer'
 import { VangTodayHistoricalCrawler } from '../crawler/vang-today-historical-crawler'
 import { SjcHistoricalCrawler } from '../crawler/sjc-historical-crawler'
 import { RateLimiter } from './rate-limiter'
-import { PriceDeduplicator } from './deduplicator'
 import type {
   BackfillJob,
   FullHistoricalConfig,
@@ -19,7 +18,8 @@ import type { PriceData } from '@/lib/types'
  * BackfillExecutor
  *
  * Executes backfill jobs with checkpoint/resume capability.
- * Handles long-running operations by saving progress periodically.
+ * Fetches historical data and inserts into database.
+ * Database handles duplicate detection via unique constraint.
  */
 export class BackfillExecutor {
   private jobId: string
@@ -27,7 +27,6 @@ export class BackfillExecutor {
   private isPaused: boolean = false
   private isCancelled: boolean = false
   private rateLimiter: RateLimiter | null = null
-  private deduplicator: PriceDeduplicator
   private crawler: VangTodayHistoricalCrawler | SjcHistoricalCrawler | null = null
 
   // Progress tracking
@@ -43,7 +42,6 @@ export class BackfillExecutor {
 
   constructor(jobId: string) {
     this.jobId = jobId
-    this.deduplicator = new PriceDeduplicator()
   }
 
   /**
@@ -164,14 +162,9 @@ export class BackfillExecutor {
         // Convert daily prices to snapshots
         const snapshots = await this.convertToSnapshots(result.data, mapping)
 
-        // Filter duplicates
-        const { unique } = await this.deduplicator.filterDuplicatesBatch(snapshots)
-
-        this.itemsSkipped += snapshots.length - unique.length
-
-        // Save to database
-        if (unique.length > 0) {
-          const saved = await this.savePriceSnapshots(unique)
+        // Save to database (let DB handle duplicates with unique constraint)
+        if (snapshots.length > 0) {
+          const saved = await this.savePriceSnapshots(snapshots)
           this.recordsInserted += saved
           this.itemsSucceeded++
         } else {
@@ -282,14 +275,9 @@ export class BackfillExecutor {
           // Convert daily prices to snapshots
           const snapshots = await this.convertToSnapshots(filteredData, mapping)
 
-          // Filter duplicates
-          const { unique } = await this.deduplicator.filterDuplicatesBatch(snapshots)
-
-          this.itemsSkipped += snapshots.length - unique.length
-
-          // Save to database
-          if (unique.length > 0) {
-            const saved = await this.savePriceSnapshots(unique)
+          // Save to database (let DB handle duplicates with unique constraint)
+          if (snapshots.length > 0) {
+            const saved = await this.savePriceSnapshots(snapshots)
             this.recordsInserted += saved
           }
         }

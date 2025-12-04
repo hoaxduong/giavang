@@ -12,7 +12,7 @@ import type {
 
 // Validation schemas
 const fullHistoricalConfigSchema = z.object({
-  days: z.number().int().min(1).max(30),
+  days: z.number().int().min(1).default(30),
   types: z.union([z.literal("all"), z.array(z.string())]),
 });
 

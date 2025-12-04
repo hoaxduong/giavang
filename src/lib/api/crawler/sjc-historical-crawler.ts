@@ -36,6 +36,7 @@ interface SjcHistoricalResponse {
  */
 export interface SjcDailyPriceData {
   date: string; // YYYY-MM-DD
+  timestamp: string; // ISO 8601 timestamp from GroupDate
   type: string; // TypeName from API (to match vang.today pattern)
   buyPrice: number; // VND per lượng
   sellPrice: number; // VND per lượng
@@ -67,10 +68,27 @@ export interface HistoricalCrawlerResult {
  */
 export class SjcHistoricalCrawler extends SjcCrawler {
   /**
+   * Parse .NET date serialization format
+   * Converts "/Date(1764811673890)/" to ISO 8601 string
+   *
+   * @param groupDate - .NET date string from API
+   * @returns ISO 8601 timestamp string
+   */
+  private parseDotNetDate(groupDate: string): string {
+    // Extract timestamp from /Date(timestamp)/
+    const match = groupDate.match(/\/Date\((\d+)\)\//)
+    if (!match) {
+      throw new Error(`Invalid .NET date format: ${groupDate}`)
+    }
+
+    const timestamp = parseInt(match[1], 10)
+    return new Date(timestamp).toISOString()
+  }
+  /**
    * Fetch historical prices for a specific type
    *
-   * Note: SJC API returns all types in one response, but we filter to match
-   * the requested typeCode (TypeName) for compatibility with BackfillExecutor.
+   * Makes a single API call with a date range to fetch all historical data.
+   * Filters the response to match the requested typeCode (TypeName).
    *
    * @param typeCode - TypeName to filter for (e.g., "Vàng SJC 1L, 10L, 1KG")
    * @param days - Number of historical days to fetch (1-365)
@@ -97,104 +115,99 @@ export class SjcHistoricalCrawler extends SjcCrawler {
         };
       }
 
-      // Fetch prices for each day individually (SJC API returns current prices for date range)
-      const allPrices: SjcDailyPriceData[] = [];
-      const allErrors: Array<{ date: string; error: string }> = [];
+      // Calculate date range (fetch entire range in one API call)
+      const endDate = new Date();
+      const startDate = new Date();
+      startDate.setDate(startDate.getDate() - days + 1);
 
-      // Generate array of dates to fetch
-      const dates: Date[] = [];
-      for (let i = 0; i < days; i++) {
-        const date = new Date();
-        date.setDate(date.getDate() - i);
-        dates.push(date);
-      }
+      const fromDateFormatted = this.formatDate(startDate); // DD/MM/YYYY
+      const toDateFormatted = this.formatDate(endDate); // DD/MM/YYYY
 
-      // Fetch prices for each date
-      for (const date of dates) {
-        const dateStr = date.toISOString().split('T')[0]; // YYYY-MM-DD
-        const formattedDate = this.formatDate(date); // DD/MM/YYYY for API
+      // Build form-urlencoded body for date range
+      const formBody = new URLSearchParams({
+        method: "GetGoldPriceHistory",
+        goldPriceId: "1",
+        fromDate: fromDateFormatted,
+        toDate: toDateFormatted,
+      }).toString();
 
-        try {
-          // Build form-urlencoded body for single day
-          const formBody = new URLSearchParams({
-            method: "GetGoldPriceHistory",
-            goldPriceId: "1",
-            fromDate: formattedDate,
-            toDate: formattedDate,
-          }).toString();
+      const bodyBuffer = Buffer.from(formBody, 'utf-8');
 
-          const bodyBuffer = Buffer.from(formBody, 'utf-8');
+      // Fetch from API
+      const timeout = this.config.timeout || 30000;
+      const { statusCode, headers, body } = await request(this.config.apiUrl, {
+        method: "POST",
+        headers: {
+          Accept: "application/json, text/plain, */*",
+          "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8",
+          "Content-Length": String(bodyBuffer.length),
+          "User-Agent":
+            "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/142.0.0.0 Safari/537.36",
+          "Accept-Language": "en-US,en;q=0.9,vi;q=0.8",
+        },
+        body: bodyBuffer,
+        bodyTimeout: timeout,
+        headersTimeout: timeout,
+      });
 
-          // Fetch from API
-          const timeout = this.config.timeout || 30000;
-          const { statusCode, headers, body } = await request(this.config.apiUrl, {
-            method: "POST",
-            headers: {
-              Accept: "application/json, text/plain, */*",
-              "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8",
-              "Content-Length": String(bodyBuffer.length),
-              "User-Agent":
-                "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/142.0.0.0 Safari/537.36",
-              "Accept-Language": "en-US,en;q=0.9,vi;q=0.8",
-            },
-            body: bodyBuffer,
-            bodyTimeout: timeout,
-            headersTimeout: timeout,
-          });
-
-          if (statusCode < 200 || statusCode >= 300) {
-            allErrors.push({
-              date: dateStr,
-              error: `HTTP ${statusCode}`,
-            });
-            continue;
-          }
-
-          // Check content type
-          const contentType = headers["content-type"] as string | undefined;
-          if (!contentType || (!contentType.includes("application/json") && !contentType.includes("text/json"))) {
-            allErrors.push({
-              date: dateStr,
-              error: `Invalid content type: ${contentType}`,
-            });
-            continue;
-          }
-
-          // Parse JSON
-          const data = (await body.json()) as SjcHistoricalResponse;
-
-          if (!data.success || !data.data || data.data.length === 0) {
-            allErrors.push({
-              date: dateStr,
-              error: "No data in API response",
-            });
-            continue;
-          }
-
-          // Parse and add prices for this date
-          const { prices, errors } = await this.parseHistoricalResponse(
-            data,
+      if (statusCode < 200 || statusCode >= 300) {
+        return {
+          success: false,
+          data: [],
+          errors: [{ date: "", error: `HTTP ${statusCode}` }],
+          metadata: {
+            daysRequested: days,
+            daysReturned: 0,
             typeCode,
-            dateStr
-          );
-
-          allPrices.push(...prices);
-          allErrors.push(...errors);
-        } catch (error) {
-          allErrors.push({
-            date: dateStr,
-            error: error instanceof Error ? error.message : "Unknown error",
-          });
-        }
+          },
+        };
       }
+
+      // Check content type
+      const contentType = headers["content-type"] as string | undefined;
+      if (!contentType || (!contentType.includes("application/json") && !contentType.includes("text/json"))) {
+        return {
+          success: false,
+          data: [],
+          errors: [{ date: "", error: `Invalid content type: ${contentType}` }],
+          metadata: {
+            daysRequested: days,
+            daysReturned: 0,
+            typeCode,
+          },
+        };
+      }
+
+      // Parse JSON
+      const data = (await body.json()) as SjcHistoricalResponse;
+
+      if (!data.success || !data.data || data.data.length === 0) {
+        return {
+          success: false,
+          data: [],
+          errors: [{ date: "", error: "No data in API response" }],
+          metadata: {
+            daysRequested: days,
+            daysReturned: 0,
+            typeCode,
+          },
+        };
+      }
+
+      // Parse all prices from the date range response
+      const { prices, errors } = await this.parseHistoricalResponse(
+        data,
+        typeCode,
+        `${startDate.toISOString().split('T')[0]} to ${endDate.toISOString().split('T')[0]}`
+      );
 
       return {
-        success: allPrices.length > 0,
-        data: allPrices,
-        errors: allErrors,
+        success: prices.length > 0,
+        data: prices,
+        errors: errors,
         metadata: {
           daysRequested: days,
-          daysReturned: allPrices.length,
+          daysReturned: prices.length,
           typeCode,
         },
       };
@@ -246,20 +259,11 @@ export class SjcHistoricalCrawler extends SjcCrawler {
       return { prices, errors };
     }
 
-    // Deduplicate by province (multiple branches may map to same province)
-    const seenProvinces = new Set<string>();
-
-    // Process each matching item (one per branch/province)
+    // Process all matching items
     for (const item of matchingItems) {
       try {
         // Map branch name to province code
         const provinceCode = this.mapBranchToProvince(item.BranchName);
-
-        // Skip if we've already processed this province for this date
-        if (seenProvinces.has(provinceCode)) {
-          continue;
-        }
-        seenProvinces.add(provinceCode);
 
         // Extract prices
         const buyPrice = item.BuyValue;
@@ -278,8 +282,21 @@ export class SjcHistoricalCrawler extends SjcCrawler {
           continue;
         }
 
+        // Parse timestamp from GroupDate
+        let timestamp: string
+        try {
+          timestamp = this.parseDotNetDate(item.GroupDate)
+        } catch (error) {
+          errors.push({
+            date: referenceDate,
+            error: `Failed to parse GroupDate: ${error instanceof Error ? error.message : 'Unknown error'}`,
+          })
+          continue
+        }
+
         prices.push({
           date: referenceDate,
+          timestamp,
           type: item.TypeName,
           branchName: item.BranchName,
           buyPrice,
@@ -330,10 +347,10 @@ export class SjcHistoricalCrawler extends SjcCrawler {
       ? this.convertLuongToChi(dailyPrice.change)
       : undefined;
 
-    // Use the date from dailyPrice and set to midnight UTC
+    // Use the timestamp from API response (parsed from GroupDate)
     return {
       id: "",
-      createdAt: `${dailyPrice.date}T00:00:00.000Z`,
+      createdAt: dailyPrice.timestamp,
       retailer: mapping.retailerCode as unknown as RetailerLiteral,
       province: provinceCode as unknown as ProvinceLiteral,
       productType: mapping.productTypeCode as unknown as ProductTypeLiteral,

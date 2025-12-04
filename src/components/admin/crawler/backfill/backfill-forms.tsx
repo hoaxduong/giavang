@@ -122,7 +122,7 @@ export function BackfillForms({ onJobCreated }: BackfillFormsProps) {
         <CardHeader>
           <CardTitle>Thu thập toàn bộ lịch sử</CardTitle>
           <CardDescription>
-            Thu thập dữ liệu lịch sử tối đa 30 ngày từ nguồn dữ liệu
+            Thu thập dữ liệu lịch sử từ nguồn dữ liệu (mặc định: 30 ngày)
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -147,12 +147,12 @@ export function BackfillForms({ onJobCreated }: BackfillFormsProps) {
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="fh-days">Số ngày (1-30)</Label>
+              <Label htmlFor="fh-days">Số ngày</Label>
               <Input
                 id="fh-days"
                 type="number"
                 min="1"
-                max="30"
+                placeholder="30"
                 value={fullHistoricalData.days}
                 onChange={(e) => setFullHistoricalData({ ...fullHistoricalData, days: parseInt(e.target.value) })}
               />
@@ -208,7 +208,7 @@ export function BackfillForms({ onJobCreated }: BackfillFormsProps) {
         <CardHeader>
           <CardTitle>Thu thập theo khoảng thời gian</CardTitle>
           <CardDescription>
-            Thu thập dữ liệu trong khoảng thời gian cụ thể (tối đa 30 ngày)
+            Thu thập dữ liệu trong khoảng thời gian cụ thể
           </CardDescription>
         </CardHeader>
         <CardContent>

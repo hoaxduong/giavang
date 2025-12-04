@@ -86,6 +86,24 @@ export class SjcCrawler extends BaseCrawler {
   }
 
   /**
+   * Parse .NET date serialization format
+   * Converts "/Date(1764811673890)/" to ISO 8601 string
+   *
+   * @param groupDate - .NET date string from API
+   * @returns ISO 8601 timestamp string
+   */
+  private parseDotNetDate(groupDate: string): string {
+    // Extract timestamp from /Date(timestamp)/
+    const match = groupDate.match(/\/Date\((\d+)\)\//)
+    if (!match) {
+      throw new Error(`Invalid .NET date format: ${groupDate}`)
+    }
+
+    const timestamp = parseInt(match[1], 10)
+    return new Date(timestamp).toISOString()
+  }
+
+  /**
    * Fetch prices from SJC API
    */
   async fetchPrices(): Promise<CrawlerResult> {
@@ -319,9 +337,6 @@ export class SjcCrawler extends BaseCrawler {
     const productTypeMap = new Map<string, ProductType>();
     productTypes.forEach((pt) => productTypeMap.set(pt.code, pt));
 
-    // Extract timestamp from latestDate field
-    const timestamp = this.parseTimestamp(apiResponse.latestDate);
-
     // Parse each price entry
     for (const item of apiResponse.data) {
       try {
@@ -400,6 +415,19 @@ export class SjcCrawler extends BaseCrawler {
           item.BuyDifferValue !== 0
             ? this.convertLuongToChi(item.BuyDifferValue)
             : undefined;
+
+        // Parse timestamp from GroupDate for precise per-item timestamps
+        let timestamp: string;
+        try {
+          timestamp = this.parseDotNetDate(item.GroupDate);
+        } catch (error) {
+          // Fallback to current time if GroupDate parsing fails
+          console.warn(
+            `[SJC Crawler] Failed to parse GroupDate for ${externalCode}:`,
+            error instanceof Error ? error.message : error
+          );
+          timestamp = new Date().toISOString();
+        }
 
         prices.push({
           id: "",

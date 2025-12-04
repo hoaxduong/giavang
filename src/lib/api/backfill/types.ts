@@ -26,7 +26,7 @@ export type BackfillJobStatus =
  * Configuration for full historical backfill
  */
 export interface FullHistoricalConfig {
-  days: number                    // 1-30
+  days: number                    // Number of days to backfill (default: 30)
   types: 'all' | string[]         // 'all' or specific type codes
 }
 
