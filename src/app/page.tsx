@@ -18,15 +18,17 @@ import { Skeleton } from '@/components/ui/skeleton'
 import { Card, CardContent, CardHeader } from '@/components/ui/card'
 
 export default function Home() {
-  const [province, setProvince] = useState<Province | undefined>()
-  const [retailer, setRetailer] = useState<Retailer | undefined>()
-  const [productType, setProductType] = useState<ProductType | undefined>()
+  // Chart-specific filters
+  const [chartProvince, setChartProvince] = useState<Province | undefined>('TP. Hồ Chí Minh')
+  const [chartRetailer, setChartRetailer] = useState<Retailer | undefined>('SJC')
+  const [chartProductType, setChartProductType] = useState<ProductType>('SJC_BARS')
   const [timeRange, setTimeRange] = useState<TimeRange>('month')
 
+  // Price table shows all data (no filters)
   const { data, isLoading } = useCurrentPrices({
-    province,
-    retailer,
-    productType,
+    province: undefined,
+    retailer: undefined,
+    productType: undefined,
   })
 
   const { startDate, endDate } = useMemo(() => {
@@ -57,9 +59,9 @@ export default function Home() {
   }, [timeRange])
 
   const { data: chartData, isLoading: chartLoading, error: chartError } = useHistoricalPrices({
-    productType: productType || 'SJC_BARS',
-    retailer,
-    province,
+    productType: chartProductType,
+    retailer: chartRetailer,
+    province: chartProvince,
     startDate,
     endDate,
     interval: timeRange === 'day' ? 'hourly' : 'daily',
@@ -69,7 +71,7 @@ export default function Home() {
     <div className="min-h-screen bg-background">
       <Header />
       <main className="container mx-auto px-4 py-8">
-        <div className="mb-8 space-y-6">
+        <div className="mb-8">
           <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
             <div>
               <h1 className="text-4xl font-bold tracking-tight">
@@ -80,12 +82,6 @@ export default function Home() {
               </p>
             </div>
             <RefreshIndicator />
-          </div>
-
-          <div className="flex flex-wrap gap-4">
-            <ProvinceFilter value={province} onValueChange={setProvince} />
-            <RetailerFilter value={retailer} onValueChange={setRetailer} />
-            <ProductTypeFilter value={productType} onValueChange={setProductType} />
           </div>
         </div>
 
@@ -104,9 +100,9 @@ export default function Home() {
 
           <div className="flex flex-wrap gap-4">
             <ChartTimeFilter value={timeRange} onChange={setTimeRange} />
-            <ProductTypeFilter value={productType} onValueChange={setProductType} />
-            <RetailerFilter value={retailer} onValueChange={setRetailer} />
-            <ProvinceFilter value={province} onValueChange={setProvince} />
+            <ProductTypeFilter value={chartProductType} onValueChange={(val) => setChartProductType(val || 'SJC_BARS')} />
+            <RetailerFilter value={chartRetailer} onValueChange={setChartRetailer} />
+            <ProvinceFilter value={chartProvince} onValueChange={setChartProvince} />
           </div>
 
           {chartLoading ? (
