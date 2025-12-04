@@ -1,4 +1,4 @@
-import { CrawlerSync } from '@/components/admin/crawler/crawler-sync'
+import { CrawlerSync } from "@/components/admin/crawler/crawler-sync";
 
 export default function CrawlerSyncPage() {
   return (
@@ -12,5 +12,5 @@ export default function CrawlerSyncPage() {
 
       <CrawlerSync />
     </div>
-  )
+  );
 }

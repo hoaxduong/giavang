@@ -1,4 +1,4 @@
-import { BackfillManager } from '@/components/admin/crawler/backfill/backfill-manager'
+import { BackfillManager } from "@/components/admin/crawler/backfill/backfill-manager";
 
 export default function BackfillPage() {
   return (
@@ -12,5 +12,5 @@ export default function BackfillPage() {
 
       <BackfillManager />
     </div>
-  )
+  );
 }

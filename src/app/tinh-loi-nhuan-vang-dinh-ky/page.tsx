@@ -1,9 +1,9 @@
-import { requireAuth } from '@/lib/auth/server'
-import { Header } from '@/components/layout/header'
-import { PortfolioClient } from '@/components/portfolio/portfolio-client'
+import { requireAuth } from "@/lib/auth/server";
+import { Header } from "@/components/layout/header";
+import { PortfolioClient } from "@/components/portfolio/portfolio-client";
 
 export default async function PortfolioPage() {
-  const { user, profile } = await requireAuth()
+  const { user, profile } = await requireAuth();
 
   return (
     <div className="min-h-screen bg-background">
@@ -19,6 +19,5 @@ export default async function PortfolioPage() {
         <PortfolioClient />
       </main>
     </div>
-  )
+  );
 }
-

@@ -76,13 +76,13 @@ export class SjcHistoricalCrawler extends SjcCrawler {
    */
   private parseDotNetDate(groupDate: string): string {
     // Extract timestamp from /Date(timestamp)/
-    const match = groupDate.match(/\/Date\((\d+)\)\//)
+    const match = groupDate.match(/\/Date\((\d+)\)\//);
     if (!match) {
-      throw new Error(`Invalid .NET date format: ${groupDate}`)
+      throw new Error(`Invalid .NET date format: ${groupDate}`);
     }
 
-    const timestamp = parseInt(match[1], 10)
-    return new Date(timestamp).toISOString()
+    const timestamp = parseInt(match[1], 10);
+    return new Date(timestamp).toISOString();
   }
   /**
    * Fetch historical prices for a specific type
@@ -96,7 +96,7 @@ export class SjcHistoricalCrawler extends SjcCrawler {
    */
   async fetchHistoricalPrices(
     typeCode: string,
-    days: number
+    days: number,
   ): Promise<HistoricalCrawlerResult> {
     const startTime = Date.now();
 
@@ -131,7 +131,7 @@ export class SjcHistoricalCrawler extends SjcCrawler {
         toDate: toDateFormatted,
       }).toString();
 
-      const bodyBuffer = Buffer.from(formBody, 'utf-8');
+      const bodyBuffer = Buffer.from(formBody, "utf-8");
 
       // Fetch from API
       const timeout = this.config.timeout || 30000;
@@ -165,7 +165,11 @@ export class SjcHistoricalCrawler extends SjcCrawler {
 
       // Check content type
       const contentType = headers["content-type"] as string | undefined;
-      if (!contentType || (!contentType.includes("application/json") && !contentType.includes("text/json"))) {
+      if (
+        !contentType ||
+        (!contentType.includes("application/json") &&
+          !contentType.includes("text/json"))
+      ) {
         return {
           success: false,
           data: [],
@@ -198,7 +202,7 @@ export class SjcHistoricalCrawler extends SjcCrawler {
       const { prices, errors } = await this.parseHistoricalResponse(
         data,
         typeCode,
-        `${startDate.toISOString().split('T')[0]} to ${endDate.toISOString().split('T')[0]}`
+        `${startDate.toISOString().split("T")[0]} to ${endDate.toISOString().split("T")[0]}`,
       );
 
       return {
@@ -238,7 +242,7 @@ export class SjcHistoricalCrawler extends SjcCrawler {
   private async parseHistoricalResponse(
     apiResponse: SjcHistoricalResponse,
     typeCode: string,
-    referenceDate: string
+    referenceDate: string,
   ): Promise<{
     prices: SjcDailyPriceData[];
     errors: Array<{ date: string; error: string }>;
@@ -248,7 +252,7 @@ export class SjcHistoricalCrawler extends SjcCrawler {
 
     // Filter and process items that match the requested typeCode
     const matchingItems = apiResponse.data.filter(
-      (item) => item.TypeName === typeCode
+      (item) => item.TypeName === typeCode,
     );
 
     if (matchingItems.length === 0) {
@@ -283,15 +287,15 @@ export class SjcHistoricalCrawler extends SjcCrawler {
         }
 
         // Parse timestamp from GroupDate
-        let timestamp: string
+        let timestamp: string;
         try {
-          timestamp = this.parseDotNetDate(item.GroupDate)
+          timestamp = this.parseDotNetDate(item.GroupDate);
         } catch (error) {
           errors.push({
             date: referenceDate,
-            error: `Failed to parse GroupDate: ${error instanceof Error ? error.message : 'Unknown error'}`,
-          })
-          continue
+            error: `Failed to parse GroupDate: ${error instanceof Error ? error.message : "Unknown error"}`,
+          });
+          continue;
         }
 
         prices.push({
@@ -307,9 +311,7 @@ export class SjcHistoricalCrawler extends SjcCrawler {
         errors.push({
           date: referenceDate,
           error:
-            error instanceof Error
-              ? error.message
-              : "Unknown parsing error",
+            error instanceof Error ? error.message : "Unknown parsing error",
         });
       }
     }
@@ -335,7 +337,7 @@ export class SjcHistoricalCrawler extends SjcCrawler {
     mapping: TypeMapping,
     retailer: Retailer,
     province: Province,
-    productType: ProductType
+    productType: ProductType,
   ): PriceData {
     // Map branch name to province code (using the same logic as SjcCrawler)
     const provinceCode = this.mapBranchToProvince(dailyPrice.branchName);
@@ -360,5 +362,4 @@ export class SjcHistoricalCrawler extends SjcCrawler {
       change: changeInChi,
     };
   }
-
 }

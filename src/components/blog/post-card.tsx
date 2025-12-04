@@ -1,26 +1,26 @@
-import Link from 'next/link'
-import { format } from 'date-fns'
-import { Badge } from '@/components/ui/badge'
-import { Calendar, Eye, MessageSquare } from 'lucide-react'
+import Link from "next/link";
+import { format } from "date-fns";
+import { Badge } from "@/components/ui/badge";
+import { Calendar, Eye, MessageSquare } from "lucide-react";
 
 interface PostCardProps {
   post: {
-    slug: string
-    title: string
-    excerpt: string | null
-    featuredImageUrl: string | null
-    publishedAt: string
-    viewCount: number
-    commentCount: number
+    slug: string;
+    title: string;
+    excerpt: string | null;
+    featuredImageUrl: string | null;
+    publishedAt: string;
+    viewCount: number;
+    commentCount: number;
     category: {
-      name: string
-      slug: string
-    } | null
+      name: string;
+      slug: string;
+    } | null;
     tags: Array<{
-      name: string
-      slug: string
-    }>
-  }
+      name: string;
+      slug: string;
+    }>;
+  };
 }
 
 export function PostCard({ post }: PostCardProps) {
@@ -41,7 +41,10 @@ export function PostCard({ post }: PostCardProps) {
       <div className="p-6 space-y-4">
         {post.category && (
           <Link href={`/blog/category/${post.category.slug}`}>
-            <Badge variant="secondary" className="hover:bg-primary hover:text-primary-foreground">
+            <Badge
+              variant="secondary"
+              className="hover:bg-primary hover:text-primary-foreground"
+            >
               {post.category.name}
             </Badge>
           </Link>
@@ -54,9 +57,7 @@ export function PostCard({ post }: PostCardProps) {
         </Link>
 
         {post.excerpt && (
-          <p className="text-muted-foreground line-clamp-3">
-            {post.excerpt}
-          </p>
+          <p className="text-muted-foreground line-clamp-3">{post.excerpt}</p>
         )}
 
         {post.tags.length > 0 && (
@@ -74,7 +75,7 @@ export function PostCard({ post }: PostCardProps) {
         <div className="flex items-center gap-4 text-sm text-muted-foreground">
           <div className="flex items-center gap-1">
             <Calendar className="h-4 w-4" />
-            {format(new Date(post.publishedAt), 'dd/MM/yyyy')}
+            {format(new Date(post.publishedAt), "dd/MM/yyyy")}
           </div>
           <div className="flex items-center gap-1">
             <Eye className="h-4 w-4" />
@@ -87,5 +88,5 @@ export function PostCard({ post }: PostCardProps) {
         </div>
       </div>
     </article>
-  )
+  );
 }

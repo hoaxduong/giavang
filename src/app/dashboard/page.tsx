@@ -1,12 +1,18 @@
-import { requireAuth } from '@/lib/auth/server'
-import { Header } from '@/components/layout/header'
-import { RefreshIndicator } from '@/components/shared/refresh-indicator'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
-import { DashboardClient } from './dashboard-client'
+import { requireAuth } from "@/lib/auth/server";
+import { Header } from "@/components/layout/header";
+import { RefreshIndicator } from "@/components/shared/refresh-indicator";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { DashboardClient } from "./dashboard-client";
 
 export default async function DashboardPage() {
-  const { user, profile } = await requireAuth()
+  const { user, profile } = await requireAuth();
 
   return (
     <div className="min-h-screen bg-background">
@@ -28,7 +34,9 @@ export default async function DashboardPage() {
           <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
             <Card>
               <CardHeader>
-                <CardTitle className="text-sm font-medium">Thông Tin Tài Khoản</CardTitle>
+                <CardTitle className="text-sm font-medium">
+                  Thông Tin Tài Khoản
+                </CardTitle>
               </CardHeader>
               <CardContent>
                 <div className="flex items-center space-x-4">
@@ -37,17 +45,17 @@ export default async function DashboardPage() {
                     <AvatarFallback>
                       {profile?.full_name
                         ? profile.full_name
-                            .split(' ')
+                            .split(" ")
                             .map((n) => n[0])
-                            .join('')
+                            .join("")
                             .toUpperCase()
                             .slice(0, 2)
-                        : user.email?.[0].toUpperCase() || 'U'}
+                        : user.email?.[0].toUpperCase() || "U"}
                     </AvatarFallback>
                   </Avatar>
                   <div className="space-y-1">
                     <p className="text-sm font-medium">
-                      {profile?.full_name || 'Người dùng'}
+                      {profile?.full_name || "Người dùng"}
                     </p>
                     <p className="text-xs text-muted-foreground">
                       {user.email}
@@ -67,6 +75,5 @@ export default async function DashboardPage() {
         </div>
       </main>
     </div>
-  )
+  );
 }
-

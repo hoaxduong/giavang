@@ -1,7 +1,7 @@
-import { NextRequest, NextResponse } from 'next/server'
-import { requireRole } from '@/lib/auth/server'
-import { createClient } from '@/lib/supabase/server'
-import { z } from 'zod'
+import { NextRequest, NextResponse } from "next/server";
+import { requireRole } from "@/lib/auth/server";
+import { createClient } from "@/lib/supabase/server";
+import { z } from "zod";
 
 const fieldMappingsSchema = z.object({
   dataPath: z.string(),
@@ -12,11 +12,13 @@ const fieldMappingsSchema = z.object({
     timestamp: z.string(),
     currency: z.string().optional(),
   }),
-  transforms: z.object({
-    timestamp: z.enum(['iso8601', 'unix']).optional(),
-    priceMultiplier: z.number().optional(),
-  }).optional(),
-})
+  transforms: z
+    .object({
+      timestamp: z.enum(["iso8601", "unix"]).optional(),
+      priceMultiplier: z.number().optional(),
+    })
+    .optional(),
+});
 
 const sourceSchema = z.object({
   name: z.string().min(1).max(100),
@@ -30,7 +32,7 @@ const sourceSchema = z.object({
   timeoutSeconds: z.number().int().min(1).max(300).optional().default(30),
   priority: z.number().int().min(1).max(100).optional().default(1),
   fieldMappings: fieldMappingsSchema.optional(),
-})
+});
 
 /**
  * GET /api/admin/crawler/sources
@@ -38,25 +40,22 @@ const sourceSchema = z.object({
  */
 export async function GET() {
   try {
-    await requireRole('admin')
-    const supabase = await createClient()
+    await requireRole("admin");
+    const supabase = await createClient();
 
     const { data, error } = await supabase
-      .from('crawler_sources')
-      .select('*')
-      .order('priority', { ascending: true })
-      .order('name', { ascending: true })
+      .from("crawler_sources")
+      .select("*")
+      .order("priority", { ascending: true })
+      .order("name", { ascending: true });
 
     if (error) {
-      return NextResponse.json({ error: error.message }, { status: 400 })
+      return NextResponse.json({ error: error.message }, { status: 400 });
     }
 
-    return NextResponse.json({ sources: data })
+    return NextResponse.json({ sources: data });
   } catch (error) {
-    return NextResponse.json(
-      { error: 'Unauthorized' },
-      { status: 401 }
-    )
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 }
 
@@ -66,14 +65,14 @@ export async function GET() {
  */
 export async function POST(request: NextRequest) {
   try {
-    await requireRole('admin')
-    const supabase = await createClient()
+    await requireRole("admin");
+    const supabase = await createClient();
 
-    const body = await request.json()
-    const validated = sourceSchema.parse(body)
+    const body = await request.json();
+    const validated = sourceSchema.parse(body);
 
     const { data, error } = await supabase
-      .from('crawler_sources')
+      .from("crawler_sources")
       .insert({
         name: validated.name,
         api_url: validated.apiUrl,
@@ -88,20 +87,20 @@ export async function POST(request: NextRequest) {
         field_mappings: validated.fieldMappings || {},
       })
       .select()
-      .single()
+      .single();
 
     if (error) {
-      return NextResponse.json({ error: error.message }, { status: 400 })
+      return NextResponse.json({ error: error.message }, { status: 400 });
     }
 
-    return NextResponse.json({ source: data }, { status: 201 })
+    return NextResponse.json({ source: data }, { status: 201 });
   } catch (error) {
     if (error instanceof z.ZodError) {
-      return NextResponse.json({ error: error.errors }, { status: 400 })
+      return NextResponse.json({ error: error.errors }, { status: 400 });
     }
     return NextResponse.json(
-      { error: 'Unauthorized or invalid request' },
-      { status: 401 }
-    )
+      { error: "Unauthorized or invalid request" },
+      { status: 401 },
+    );
   }
 }

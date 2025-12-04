@@ -1,4 +1,4 @@
-import { UserManagement } from '@/components/admin/user-management'
+import { UserManagement } from "@/components/admin/user-management";
 
 export default function UsersPage() {
   return (
@@ -12,5 +12,5 @@ export default function UsersPage() {
 
       <UserManagement />
     </div>
-  )
+  );
 }

@@ -1,7 +1,7 @@
-'use client'
+"use client";
 
-import { Header } from '@/components/layout/header'
-import { GoldAmountCalculator } from '@/components/calculator/gold-amount-calculator'
+import { Header } from "@/components/layout/header";
+import { GoldAmountCalculator } from "@/components/calculator/gold-amount-calculator";
 
 export default function GoldAmountCalculatorPage() {
   return (
@@ -17,5 +17,5 @@ export default function GoldAmountCalculatorPage() {
         <GoldAmountCalculator />
       </main>
     </div>
-  )
+  );
 }

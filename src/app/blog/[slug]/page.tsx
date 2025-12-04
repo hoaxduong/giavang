@@ -57,7 +57,7 @@ export default async function BlogPostPage({ params }: PageProps) {
       *,
       category:blog_categories(*),
       post_tags:blog_post_tags(tag:blog_tags(*))
-    `
+    `,
     )
     .eq("slug", slug)
     .eq("status", "published")
@@ -91,61 +91,63 @@ export default async function BlogPostPage({ params }: PageProps) {
           items={[{ label: "Blog", href: "/blog" }, { label: post.title }]}
         />
 
-      {post.featuredImageUrl && (
-        <div className="aspect-video overflow-hidden rounded-lg mb-8">
-          <img
-            src={post.featuredImageUrl}
-            alt={post.title}
-            className="w-full h-full object-cover"
-          />
-        </div>
-      )}
-
-      <header className="mb-8">
-        <h1 className="text-4xl font-bold tracking-tight mb-6">{post.title}</h1>
-
-        {post.excerpt && (
-          <p className="text-xl text-muted-foreground mb-6">{post.excerpt}</p>
+        {post.featuredImageUrl && (
+          <div className="aspect-video overflow-hidden rounded-lg mb-8">
+            <img
+              src={post.featuredImageUrl}
+              alt={post.title}
+              className="w-full h-full object-cover"
+            />
+          </div>
         )}
 
-        <PostMeta
-          post={{
-            publishedAt: post.publishedAt || new Date().toISOString(),
-            viewCount: post.viewCount,
-            commentCount: post.commentCount,
-            category,
-            tags,
-            author: author
-              ? { fullName: author.full_name }
-              : { fullName: "Unknown" },
-          }}
-        />
-      </header>
+        <header className="mb-8">
+          <h1 className="text-4xl font-bold tracking-tight mb-6">
+            {post.title}
+          </h1>
 
-      <div className="border-t pt-8">
-        <PostContent content={post.content} />
-      </div>
+          {post.excerpt && (
+            <p className="text-xl text-muted-foreground mb-6">{post.excerpt}</p>
+          )}
 
-      {/* JSON-LD Structured Data */}
-      {author && (
-        <script
-          type="application/ld+json"
-          dangerouslySetInnerHTML={{
-            __html: JSON.stringify({
-              "@context": "https://schema.org",
-              "@type": "Article",
-              headline: post.title,
-              image: post.featuredImageUrl,
-              datePublished: post.publishedAt,
-              dateModified: post.updatedAt,
-              author: {
-                "@type": "Person",
-                name: author.full_name,
-              },
-            }),
-          }}
-        />
-      )}
+          <PostMeta
+            post={{
+              publishedAt: post.publishedAt || new Date().toISOString(),
+              viewCount: post.viewCount,
+              commentCount: post.commentCount,
+              category,
+              tags,
+              author: author
+                ? { fullName: author.full_name }
+                : { fullName: "Unknown" },
+            }}
+          />
+        </header>
+
+        <div className="border-t pt-8">
+          <PostContent content={post.content} />
+        </div>
+
+        {/* JSON-LD Structured Data */}
+        {author && (
+          <script
+            type="application/ld+json"
+            dangerouslySetInnerHTML={{
+              __html: JSON.stringify({
+                "@context": "https://schema.org",
+                "@type": "Article",
+                headline: post.title,
+                image: post.featuredImageUrl,
+                datePublished: post.publishedAt,
+                dateModified: post.updatedAt,
+                author: {
+                  "@type": "Person",
+                  name: author.full_name,
+                },
+              }),
+            }}
+          />
+        )}
       </article>
     </>
   );

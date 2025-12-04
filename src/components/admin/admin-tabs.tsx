@@ -1,10 +1,10 @@
-'use client'
+"use client";
 
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import { UserManagement } from './user-management'
-import { RetailersTab } from './config/retailers-tab'
-import { ProvincesTab } from './config/provinces-tab'
-import { ProductTypesTab } from './config/product-types-tab'
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { UserManagement } from "./user-management";
+import { RetailersTab } from "./config/retailers-tab";
+import { ProvincesTab } from "./config/provinces-tab";
+import { ProductTypesTab } from "./config/product-types-tab";
 
 export function AdminTabs() {
   return (
@@ -32,5 +32,5 @@ export function AdminTabs() {
         <ProductTypesTab />
       </TabsContent>
     </Tabs>
-  )
+  );
 }

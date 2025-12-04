@@ -1,5 +1,5 @@
-import Link from 'next/link'
-import { Fragment } from 'react'
+import Link from "next/link";
+import { Fragment } from "react";
 import {
   Breadcrumb,
   BreadcrumbList,
@@ -7,15 +7,15 @@ import {
   BreadcrumbLink,
   BreadcrumbPage,
   BreadcrumbSeparator,
-} from '@/components/ui/breadcrumb'
+} from "@/components/ui/breadcrumb";
 
 interface BreadcrumbItem {
-  label: string
-  href?: string
+  label: string;
+  href?: string;
 }
 
 interface BlogBreadcrumbProps {
-  items: BreadcrumbItem[]
+  items: BreadcrumbItem[];
 }
 
 export function BlogBreadcrumb({ items }: BlogBreadcrumbProps) {
@@ -30,7 +30,7 @@ export function BlogBreadcrumb({ items }: BlogBreadcrumbProps) {
         <BreadcrumbSeparator />
 
         {items.map((item, index) => {
-          const isLast = index === items.length - 1
+          const isLast = index === items.length - 1;
 
           return (
             <Fragment key={index}>
@@ -45,9 +45,9 @@ export function BlogBreadcrumb({ items }: BlogBreadcrumbProps) {
               </BreadcrumbItem>
               {!isLast && <BreadcrumbSeparator />}
             </Fragment>
-          )
+          );
         })}
       </BreadcrumbList>
     </Breadcrumb>
-  )
+  );
 }

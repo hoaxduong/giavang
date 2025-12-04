@@ -1,88 +1,100 @@
-'use client'
+"use client";
 
-import { useState } from 'react'
-import { useQuery, useMutation } from '@tanstack/react-query'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { Button } from '@/components/ui/button'
-import { Badge } from '@/components/ui/badge'
-import { Alert, AlertDescription } from '@/components/ui/alert'
-import { RefreshCw, Play, CheckCircle2, XCircle, Clock } from 'lucide-react'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { format } from 'date-fns'
-import { vi } from 'date-fns/locale'
+import { useState } from "react";
+import { useQuery, useMutation } from "@tanstack/react-query";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { RefreshCw, Play, CheckCircle2, XCircle, Clock } from "lucide-react";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { format } from "date-fns";
+import { vi } from "date-fns/locale";
 
 interface CrawlerSource {
-  id: string
-  name: string
-  is_enabled: boolean
+  id: string;
+  name: string;
+  is_enabled: boolean;
 }
 
 interface SyncResult {
-  success: boolean
+  success: boolean;
   results: Array<{
-    source: string
-    success: boolean
-    recordsSaved: number
-    error?: string
-  }>
-  totalRecords: number
-  totalErrors: number
-  duration: number
-  timestamp: string
+    source: string;
+    success: boolean;
+    recordsSaved: number;
+    error?: string;
+  }>;
+  totalRecords: number;
+  totalErrors: number;
+  duration: number;
+  timestamp: string;
 }
 
 export function CrawlerSync() {
-  const [selectedSource, setSelectedSource] = useState<string>('all')
-  const [syncResult, setSyncResult] = useState<SyncResult | null>(null)
-  const [error, setError] = useState<string | null>(null)
+  const [selectedSource, setSelectedSource] = useState<string>("all");
+  const [syncResult, setSyncResult] = useState<SyncResult | null>(null);
+  const [error, setError] = useState<string | null>(null);
 
   const { data: sources } = useQuery({
-    queryKey: ['crawler-sources'],
+    queryKey: ["crawler-sources"],
     queryFn: async () => {
-      const res = await fetch('/api/admin/crawler/sources')
-      if (!res.ok) throw new Error('Failed to fetch sources')
-      const json = await res.json()
-      return json.sources as CrawlerSource[]
+      const res = await fetch("/api/admin/crawler/sources");
+      if (!res.ok) throw new Error("Failed to fetch sources");
+      const json = await res.json();
+      return json.sources as CrawlerSource[];
     },
-  })
+  });
 
   const { data: sourcesStatus } = useQuery({
-    queryKey: ['crawler-sources-status'],
+    queryKey: ["crawler-sources-status"],
     queryFn: async () => {
-      const res = await fetch('/api/prices/sync')
-      if (!res.ok) throw new Error('Failed to fetch status')
-      return res.json()
+      const res = await fetch("/api/prices/sync");
+      if (!res.ok) throw new Error("Failed to fetch status");
+      return res.json();
     },
-  })
+  });
 
   const syncMutation = useMutation({
     mutationFn: async (sourceId?: string) => {
-      const res = await fetch('/api/prices/sync', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+      const res = await fetch("/api/prices/sync", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify(sourceId ? { sourceId } : {}),
-      })
+      });
       if (!res.ok) {
-        const errorData = await res.json()
-        throw new Error(errorData.error || 'Failed to sync')
+        const errorData = await res.json();
+        throw new Error(errorData.error || "Failed to sync");
       }
-      return res.json() as Promise<SyncResult>
+      return res.json() as Promise<SyncResult>;
     },
     onSuccess: (data) => {
-      setSyncResult(data)
-      setError(null)
+      setSyncResult(data);
+      setError(null);
     },
     onError: (error: Error) => {
-      setError(error.message)
+      setError(error.message);
     },
-  })
+  });
 
   const handleSync = () => {
-    setSyncResult(null)
-    setError(null)
-    const sourceId = selectedSource === 'all' ? undefined : selectedSource
-    syncMutation.mutate(sourceId)
-  }
+    setSyncResult(null);
+    setError(null);
+    const sourceId = selectedSource === "all" ? undefined : selectedSource;
+    syncMutation.mutate(sourceId);
+  };
 
   return (
     <div className="space-y-6">
@@ -102,18 +114,17 @@ export function CrawlerSync() {
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">Tất cả nguồn</SelectItem>
-                {sources?.filter(s => s.is_enabled).map((source) => (
-                  <SelectItem key={source.id} value={source.id}>
-                    {source.name}
-                  </SelectItem>
-                ))}
+                {sources
+                  ?.filter((s) => s.is_enabled)
+                  .map((source) => (
+                    <SelectItem key={source.id} value={source.id}>
+                      {source.name}
+                    </SelectItem>
+                  ))}
               </SelectContent>
             </Select>
 
-            <Button
-              onClick={handleSync}
-              disabled={syncMutation.isPending}
-            >
+            <Button onClick={handleSync} disabled={syncMutation.isPending}>
               {syncMutation.isPending ? (
                 <>
                   <RefreshCw className="mr-2 h-4 w-4 animate-spin" />
@@ -136,12 +147,15 @@ export function CrawlerSync() {
           )}
 
           {syncResult && (
-            <Alert className="mt-4" variant={syncResult.success ? 'default' : 'destructive'}>
+            <Alert
+              className="mt-4"
+              variant={syncResult.success ? "default" : "destructive"}
+            >
               <CheckCircle2 className="h-4 w-4" />
               <AlertDescription>
                 <div className="space-y-2">
                   <p className="font-semibold">
-                    Đồng bộ {syncResult.success ? 'thành công' : 'thất bại'}!
+                    Đồng bộ {syncResult.success ? "thành công" : "thất bại"}!
                   </p>
                   <div className="text-sm space-y-1">
                     <p>• Tổng số bản ghi: {syncResult.totalRecords}</p>
@@ -186,8 +200,8 @@ export function CrawlerSync() {
                 <div className="space-y-1">
                   <div className="flex items-center gap-3">
                     <h4 className="font-medium">{source.name}</h4>
-                    <Badge variant={source.isEnabled ? 'default' : 'secondary'}>
-                      {source.isEnabled ? 'Kích hoạt' : 'Tắt'}
+                    <Badge variant={source.isEnabled ? "default" : "secondary"}>
+                      {source.isEnabled ? "Kích hoạt" : "Tắt"}
                     </Badge>
                   </div>
                   <div className="flex items-center gap-4 text-sm text-muted-foreground">
@@ -195,8 +209,12 @@ export function CrawlerSync() {
                       <>
                         <div className="flex items-center gap-1">
                           <Clock className="h-3 w-3" />
-                          Đồng bộ lần cuối:{' '}
-                          {format(new Date(source.lastSync), 'dd/MM/yyyy HH:mm', { locale: vi })}
+                          Đồng bộ lần cuối:{" "}
+                          {format(
+                            new Date(source.lastSync),
+                            "dd/MM/yyyy HH:mm",
+                            { locale: vi },
+                          )}
                         </div>
                         <div>Tỷ lệ thành công: {source.successRate}%</div>
                       </>
@@ -211,5 +229,5 @@ export function CrawlerSync() {
         </CardContent>
       </Card>
     </div>
-  )
+  );
 }

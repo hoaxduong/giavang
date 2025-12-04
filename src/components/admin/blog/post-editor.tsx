@@ -1,10 +1,10 @@
-'use client'
+"use client";
 
-import { useEditor, EditorContent } from '@tiptap/react'
-import { Button } from '@/components/ui/button'
-import { Separator } from '@/components/ui/separator'
-import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
+import { useEditor, EditorContent } from "@tiptap/react";
+import { Button } from "@/components/ui/button";
+import { Separator } from "@/components/ui/separator";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import {
   Bold,
   Italic,
@@ -17,89 +17,95 @@ import {
   Image as ImageIcon,
   Undo,
   Redo,
-} from 'lucide-react'
-import { extensions } from '@/lib/tiptap/extensions'
-import { useState, useCallback } from 'react'
-import { Alert, AlertDescription } from '@/components/ui/alert'
+} from "lucide-react";
+import { extensions } from "@/lib/tiptap/extensions";
+import { useState, useCallback } from "react";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 
 interface PostEditorProps {
-  content: any
-  onChange: (content: any) => void
+  content: any;
+  onChange: (content: any) => void;
 }
 
 export function PostEditor({ content, onChange }: PostEditorProps) {
-  const [isUploading, setIsUploading] = useState(false)
-  const [uploadError, setUploadError] = useState<string | null>(null)
+  const [isUploading, setIsUploading] = useState(false);
+  const [uploadError, setUploadError] = useState<string | null>(null);
 
   const editor = useEditor({
     extensions,
     content,
     immediatelyRender: false,
     onUpdate: ({ editor }) => {
-      onChange(editor.getJSON())
+      onChange(editor.getJSON());
     },
     editorProps: {
       attributes: {
-        class: 'prose prose-sm sm:prose lg:prose-lg xl:prose-xl focus:outline-none min-h-[400px] max-w-none p-4 border rounded-md',
+        class:
+          "prose prose-sm sm:prose lg:prose-lg xl:prose-xl focus:outline-none min-h-[400px] max-w-none p-4 border rounded-md",
       },
     },
-  })
+  });
 
   const handleImageUpload = useCallback(async () => {
-    const input = document.createElement('input')
-    input.type = 'file'
-    input.accept = 'image/jpeg,image/jpg,image/png,image/webp,image/gif'
+    const input = document.createElement("input");
+    input.type = "file";
+    input.accept = "image/jpeg,image/jpg,image/png,image/webp,image/gif";
     input.onchange = async (e) => {
-      const file = (e.target as HTMLInputElement).files?.[0]
-      if (!file) return
+      const file = (e.target as HTMLInputElement).files?.[0];
+      if (!file) return;
 
-      setIsUploading(true)
-      setUploadError(null)
+      setIsUploading(true);
+      setUploadError(null);
 
       try {
-        const formData = new FormData()
-        formData.append('file', file)
-        formData.append('folder', 'content')
+        const formData = new FormData();
+        formData.append("file", file);
+        formData.append("folder", "content");
 
-        const res = await fetch('/api/admin/blog/upload', {
-          method: 'POST',
+        const res = await fetch("/api/admin/blog/upload", {
+          method: "POST",
           body: formData,
-        })
+        });
 
         if (!res.ok) {
-          const error = await res.json()
-          throw new Error(error.error || 'Upload failed')
+          const error = await res.json();
+          throw new Error(error.error || "Upload failed");
         }
 
-        const { url } = await res.json()
-        editor?.chain().focus().setImage({ src: url }).run()
+        const { url } = await res.json();
+        editor?.chain().focus().setImage({ src: url }).run();
       } catch (error: any) {
-        setUploadError(error.message)
+        setUploadError(error.message);
       } finally {
-        setIsUploading(false)
+        setIsUploading(false);
       }
-    }
-    input.click()
-  }, [editor])
+    };
+    input.click();
+  }, [editor]);
 
   const handleSetLink = useCallback(() => {
-    const previousUrl = editor?.getAttributes('link').href
-    const url = window.prompt('URL', previousUrl)
+    const previousUrl = editor?.getAttributes("link").href;
+    const url = window.prompt("URL", previousUrl);
 
     if (url === null) {
-      return
+      return;
     }
 
-    if (url === '') {
-      editor?.chain().focus().extendMarkRange('link').unsetLink().run()
-      return
+    if (url === "") {
+      editor?.chain().focus().extendMarkRange("link").unsetLink().run();
+      return;
     }
 
-    editor?.chain().focus().extendMarkRange('link').setLink({ href: url }).run()
-  }, [editor])
+    editor
+      ?.chain()
+      .focus()
+      .extendMarkRange("link")
+      .setLink({ href: url })
+      .run();
+  }, [editor]);
 
   if (!editor) {
-    return <div>Loading editor...</div>
+    return <div>Loading editor...</div>;
   }
 
   return (
@@ -115,7 +121,7 @@ export function PostEditor({ content, onChange }: PostEditorProps) {
         <div className="bg-muted/50 p-2 border-b flex flex-wrap gap-1">
           <Button
             type="button"
-            variant={editor.isActive('bold') ? 'secondary' : 'ghost'}
+            variant={editor.isActive("bold") ? "secondary" : "ghost"}
             size="sm"
             onClick={() => editor.chain().focus().toggleBold().run()}
           >
@@ -123,7 +129,7 @@ export function PostEditor({ content, onChange }: PostEditorProps) {
           </Button>
           <Button
             type="button"
-            variant={editor.isActive('italic') ? 'secondary' : 'ghost'}
+            variant={editor.isActive("italic") ? "secondary" : "ghost"}
             size="sm"
             onClick={() => editor.chain().focus().toggleItalic().run()}
           >
@@ -134,25 +140,37 @@ export function PostEditor({ content, onChange }: PostEditorProps) {
 
           <Button
             type="button"
-            variant={editor.isActive('heading', { level: 1 }) ? 'secondary' : 'ghost'}
+            variant={
+              editor.isActive("heading", { level: 1 }) ? "secondary" : "ghost"
+            }
             size="sm"
-            onClick={() => editor.chain().focus().toggleHeading({ level: 1 }).run()}
+            onClick={() =>
+              editor.chain().focus().toggleHeading({ level: 1 }).run()
+            }
           >
             <Heading1 className="h-4 w-4" />
           </Button>
           <Button
             type="button"
-            variant={editor.isActive('heading', { level: 2 }) ? 'secondary' : 'ghost'}
+            variant={
+              editor.isActive("heading", { level: 2 }) ? "secondary" : "ghost"
+            }
             size="sm"
-            onClick={() => editor.chain().focus().toggleHeading({ level: 2 }).run()}
+            onClick={() =>
+              editor.chain().focus().toggleHeading({ level: 2 }).run()
+            }
           >
             <Heading2 className="h-4 w-4" />
           </Button>
           <Button
             type="button"
-            variant={editor.isActive('heading', { level: 3 }) ? 'secondary' : 'ghost'}
+            variant={
+              editor.isActive("heading", { level: 3 }) ? "secondary" : "ghost"
+            }
             size="sm"
-            onClick={() => editor.chain().focus().toggleHeading({ level: 3 }).run()}
+            onClick={() =>
+              editor.chain().focus().toggleHeading({ level: 3 }).run()
+            }
           >
             <Heading3 className="h-4 w-4" />
           </Button>
@@ -161,7 +179,7 @@ export function PostEditor({ content, onChange }: PostEditorProps) {
 
           <Button
             type="button"
-            variant={editor.isActive('bulletList') ? 'secondary' : 'ghost'}
+            variant={editor.isActive("bulletList") ? "secondary" : "ghost"}
             size="sm"
             onClick={() => editor.chain().focus().toggleBulletList().run()}
           >
@@ -169,7 +187,7 @@ export function PostEditor({ content, onChange }: PostEditorProps) {
           </Button>
           <Button
             type="button"
-            variant={editor.isActive('orderedList') ? 'secondary' : 'ghost'}
+            variant={editor.isActive("orderedList") ? "secondary" : "ghost"}
             size="sm"
             onClick={() => editor.chain().focus().toggleOrderedList().run()}
           >
@@ -180,7 +198,7 @@ export function PostEditor({ content, onChange }: PostEditorProps) {
 
           <Button
             type="button"
-            variant={editor.isActive('link') ? 'secondary' : 'ghost'}
+            variant={editor.isActive("link") ? "secondary" : "ghost"}
             size="sm"
             onClick={handleSetLink}
           >
@@ -222,5 +240,5 @@ export function PostEditor({ content, onChange }: PostEditorProps) {
         <EditorContent editor={editor} />
       </div>
     </div>
-  )
+  );
 }

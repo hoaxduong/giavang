@@ -1,10 +1,10 @@
-'use client'
+"use client";
 
-import { useState, useEffect, useMemo } from 'react'
-import { useForm, Controller } from 'react-hook-form'
-import { zodResolver } from '@hookform/resolvers/zod'
-import { format } from 'date-fns'
-import { vi } from 'date-fns/locale'
+import { useState, useEffect, useMemo } from "react";
+import { useForm, Controller } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { format } from "date-fns";
+import { vi } from "date-fns/locale";
 import {
   LineChart,
   Line,
@@ -14,21 +14,21 @@ import {
   Tooltip,
   Legend,
   ResponsiveContainer,
-} from 'recharts'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { Badge } from '@/components/ui/badge'
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
-import { Skeleton } from '@/components/ui/skeleton'
+} from "recharts";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Skeleton } from "@/components/ui/skeleton";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@/components/ui/select'
-import { formatCurrency, formatCurrencyCompact, cn } from '@/lib/utils'
+} from "@/components/ui/select";
+import { formatCurrency, formatCurrencyCompact, cn } from "@/lib/utils";
 import {
   RETAILERS,
   PRODUCT_TYPES,
@@ -36,35 +36,38 @@ import {
   type Retailer,
   type ProductType,
   type Province,
-} from '@/lib/constants'
-import { useHistoricalPrices } from '@/lib/queries/use-historical-prices'
-import { profitLossFormSchema, type ProfitLossFormData } from '@/lib/schemas/profit-loss'
+} from "@/lib/constants";
+import { useHistoricalPrices } from "@/lib/queries/use-historical-prices";
+import {
+  profitLossFormSchema,
+  type ProfitLossFormData,
+} from "@/lib/schemas/profit-loss";
 
 interface CalculationResults {
-  totalInvestment: number
-  totalRevenue: number
-  profitLoss: number
-  profitLossPercent: number
-  holdingDays: number
-  apy: number
+  totalInvestment: number;
+  totalRevenue: number;
+  profitLoss: number;
+  profitLossPercent: number;
+  holdingDays: number;
+  apy: number;
 }
 
 interface PriceState {
-  buyPrice: number | null
-  sellPrice: number | null
-  buyPriceMode: 'auto' | 'manual'
-  sellPriceMode: 'auto' | 'manual'
+  buyPrice: number | null;
+  sellPrice: number | null;
+  buyPriceMode: "auto" | "manual";
+  sellPriceMode: "auto" | "manual";
 }
 
 export function GoldProfitLossCalculator() {
   const [priceState, setPriceState] = useState<PriceState>({
     buyPrice: null,
     sellPrice: null,
-    buyPriceMode: 'auto',
-    sellPriceMode: 'auto',
-  })
-  const [results, setResults] = useState<CalculationResults | null>(null)
-  const [showResults, setShowResults] = useState(false)
+    buyPriceMode: "auto",
+    sellPriceMode: "auto",
+  });
+  const [results, setResults] = useState<CalculationResults | null>(null);
+  const [showResults, setShowResults] = useState(false);
 
   const {
     register,
@@ -75,121 +78,127 @@ export function GoldProfitLossCalculator() {
   } = useForm<ProfitLossFormData>({
     resolver: zodResolver(profitLossFormSchema),
     defaultValues: {
-      province: 'TP. Hồ Chí Minh',
+      province: "TP. Hồ Chí Minh",
     },
-  })
+  });
 
   // Watch form values for price fetching
-  const buyDate = watch('buy_date')
-  const sellDate = watch('sell_date')
-  const retailer = watch('retailer')
-  const productType = watch('product_type')
-  const province = watch('province')
-  const goldAmount = watch('gold_amount')
+  const buyDate = watch("buy_date");
+  const sellDate = watch("sell_date");
+  const retailer = watch("retailer");
+  const productType = watch("product_type");
+  const province = watch("province");
+  const goldAmount = watch("gold_amount");
 
   // Fetch historical prices for buy date
-  const {
-    data: buyPriceData,
-    isLoading: buyPriceLoading,
-  } = useHistoricalPrices({
-    startDate: buyDate ? new Date(buyDate) : new Date(),
-    endDate: buyDate ? new Date(buyDate) : new Date(),
-    retailer: retailer as Retailer,
-    productType: productType as ProductType,
-    province: (province || 'TP. Hồ Chí Minh') as Province,
-    interval: 'daily',
-  })
+  const { data: buyPriceData, isLoading: buyPriceLoading } =
+    useHistoricalPrices({
+      startDate: buyDate ? new Date(buyDate) : new Date(),
+      endDate: buyDate ? new Date(buyDate) : new Date(),
+      retailer: retailer as Retailer,
+      productType: productType as ProductType,
+      province: (province || "TP. Hồ Chí Minh") as Province,
+      interval: "daily",
+    });
 
   // Fetch historical prices for sell date
-  const {
-    data: sellPriceData,
-    isLoading: sellPriceLoading,
-  } = useHistoricalPrices({
-    startDate: sellDate ? new Date(sellDate) : new Date(),
-    endDate: sellDate ? new Date(sellDate) : new Date(),
-    retailer: retailer as Retailer,
-    productType: productType as ProductType,
-    province: (province || 'TP. Hồ Chí Minh') as Province,
-    interval: 'daily',
-  })
+  const { data: sellPriceData, isLoading: sellPriceLoading } =
+    useHistoricalPrices({
+      startDate: sellDate ? new Date(sellDate) : new Date(),
+      endDate: sellDate ? new Date(sellDate) : new Date(),
+      retailer: retailer as Retailer,
+      productType: productType as ProductType,
+      province: (province || "TP. Hồ Chí Minh") as Province,
+      interval: "daily",
+    });
 
   // Fetch historical prices for chart (full date range)
-  const {
-    data: chartPriceData,
-    isLoading: chartLoading,
-  } = useHistoricalPrices({
-    startDate: buyDate && showResults ? new Date(buyDate) : new Date(),
-    endDate: sellDate && showResults ? new Date(sellDate) : new Date(),
-    retailer: retailer as Retailer,
-    productType: productType as ProductType,
-    province: (province || 'TP. Hồ Chí Minh') as Province,
-    interval: 'daily',
-  })
+  const { data: chartPriceData, isLoading: chartLoading } = useHistoricalPrices(
+    {
+      startDate: buyDate && showResults ? new Date(buyDate) : new Date(),
+      endDate: sellDate && showResults ? new Date(sellDate) : new Date(),
+      retailer: retailer as Retailer,
+      productType: productType as ProductType,
+      province: (province || "TP. Hồ Chí Minh") as Province,
+      interval: "daily",
+    },
+  );
 
   // Auto-update buy price when data is fetched
   useEffect(() => {
     if (
-      priceState.buyPriceMode === 'auto' &&
+      priceState.buyPriceMode === "auto" &&
       buyPriceData?.data &&
       buyPriceData.data.length > 0
     ) {
       // For buying gold, customer pays the retailer's sell_price
-      const price = Number(buyPriceData.data[0].sell_price)
-      setPriceState((prev) => ({ ...prev, buyPrice: price }))
+      const price = Number(buyPriceData.data[0].sell_price);
+      setPriceState((prev) => ({ ...prev, buyPrice: price }));
     } else if (
-      priceState.buyPriceMode === 'auto' &&
+      priceState.buyPriceMode === "auto" &&
       buyPriceData?.data &&
       buyPriceData.data.length === 0
     ) {
       // No data found, switch to manual
-      setPriceState((prev) => ({ ...prev, buyPriceMode: 'manual', buyPrice: null }))
+      setPriceState((prev) => ({
+        ...prev,
+        buyPriceMode: "manual",
+        buyPrice: null,
+      }));
     }
-  }, [buyPriceData, priceState.buyPriceMode])
+  }, [buyPriceData, priceState.buyPriceMode]);
 
   // Auto-update sell price when data is fetched
   useEffect(() => {
     if (
-      priceState.sellPriceMode === 'auto' &&
+      priceState.sellPriceMode === "auto" &&
       sellPriceData?.data &&
       sellPriceData.data.length > 0
     ) {
       // For selling gold, customer receives the retailer's buy_price
-      const price = Number(sellPriceData.data[0].buy_price)
-      setPriceState((prev) => ({ ...prev, sellPrice: price }))
+      const price = Number(sellPriceData.data[0].buy_price);
+      setPriceState((prev) => ({ ...prev, sellPrice: price }));
     } else if (
-      priceState.sellPriceMode === 'auto' &&
+      priceState.sellPriceMode === "auto" &&
       sellPriceData?.data &&
       sellPriceData.data.length === 0
     ) {
       // No data found, switch to manual
-      setPriceState((prev) => ({ ...prev, sellPriceMode: 'manual', sellPrice: null }))
+      setPriceState((prev) => ({
+        ...prev,
+        sellPriceMode: "manual",
+        sellPrice: null,
+      }));
     }
-  }, [sellPriceData, priceState.sellPriceMode])
+  }, [sellPriceData, priceState.sellPriceMode]);
 
   // Calculate results
   const calculateProfitLoss = (data: ProfitLossFormData) => {
-    const { gold_amount, buy_date, sell_date } = data
-    const { buyPrice, sellPrice } = priceState
+    const { gold_amount, buy_date, sell_date } = data;
+    const { buyPrice, sellPrice } = priceState;
 
     if (!buyPrice || !sellPrice) {
-      alert('Vui lòng nhập giá mua và giá bán')
-      return
+      alert("Vui lòng nhập giá mua và giá bán");
+      return;
     }
 
     // Calculate investment and revenue
-    const totalInvestment = gold_amount * buyPrice
-    const totalRevenue = gold_amount * sellPrice
-    const profitLoss = totalRevenue - totalInvestment
-    const profitLossPercent = (profitLoss / totalInvestment) * 100
+    const totalInvestment = gold_amount * buyPrice;
+    const totalRevenue = gold_amount * sellPrice;
+    const profitLoss = totalRevenue - totalInvestment;
+    const profitLossPercent = (profitLoss / totalInvestment) * 100;
 
     // Calculate holding period
-    const buyDateTime = new Date(buy_date).getTime()
-    const sellDateTime = new Date(sell_date).getTime()
-    const holdingDays = Math.max(1, Math.floor((sellDateTime - buyDateTime) / 86400000))
+    const buyDateTime = new Date(buy_date).getTime();
+    const sellDateTime = new Date(sell_date).getTime();
+    const holdingDays = Math.max(
+      1,
+      Math.floor((sellDateTime - buyDateTime) / 86400000),
+    );
 
     // Calculate APY (Annual Percentage Yield)
-    const returnRate = profitLossPercent / 100
-    const apy = (Math.pow(1 + returnRate, 365 / holdingDays) - 1) * 100
+    const returnRate = profitLossPercent / 100;
+    const apy = (Math.pow(1 + returnRate, 365 / holdingDays) - 1) * 100;
 
     setResults({
       totalInvestment,
@@ -198,42 +207,42 @@ export function GoldProfitLossCalculator() {
       profitLossPercent,
       holdingDays,
       apy,
-    })
-    setShowResults(true)
-  }
+    });
+    setShowResults(true);
+  };
 
   // Process chart data
   const chartData = useMemo(() => {
-    if (!chartPriceData?.data || !results) return []
+    if (!chartPriceData?.data || !results) return [];
 
     return chartPriceData.data.map((item) => {
       // Use buy_price (what customer receives when selling)
-      const dailyValue = goldAmount * Number(item.buy_price)
-      const dailyProfitLoss = dailyValue - results.totalInvestment
+      const dailyValue = goldAmount * Number(item.buy_price);
+      const dailyProfitLoss = dailyValue - results.totalInvestment;
 
       return {
         date: item.created_at,
-        'Giá Trị': dailyValue,
-        'Vốn Đầu Tư': results.totalInvestment,
-      }
-    })
-  }, [chartPriceData, results, goldAmount])
+        "Giá Trị": dailyValue,
+        "Vốn Đầu Tư": results.totalInvestment,
+      };
+    });
+  }, [chartPriceData, results, goldAmount]);
 
   const formatDate = (dateString: string) => {
     try {
-      return format(new Date(dateString), 'dd/MM', { locale: vi })
+      return format(new Date(dateString), "dd/MM", { locale: vi });
     } catch {
-      return dateString
+      return dateString;
     }
-  }
+  };
 
   const formatPrice = (price: number) => {
-    return formatCurrencyCompact(price)
-  }
+    return formatCurrencyCompact(price);
+  };
 
   const onSubmit = (data: ProfitLossFormData) => {
-    calculateProfitLoss(data)
-  }
+    calculateProfitLoss(data);
+  };
 
   return (
     <div className="space-y-6">
@@ -251,7 +260,7 @@ export function GoldProfitLossCalculator() {
                 <Input
                   id="buy_date"
                   type="datetime-local"
-                  {...register('buy_date')}
+                  {...register("buy_date")}
                   className="mt-1"
                 />
                 {errors.buy_date && (
@@ -265,7 +274,7 @@ export function GoldProfitLossCalculator() {
                 <Input
                   id="sell_date"
                   type="datetime-local"
-                  {...register('sell_date')}
+                  {...register("sell_date")}
                   className="mt-1"
                 />
                 {errors.sell_date && (
@@ -284,7 +293,7 @@ export function GoldProfitLossCalculator() {
                   id="gold_amount"
                   type="number"
                   step="0.001"
-                  {...register('gold_amount', { valueAsNumber: true })}
+                  {...register("gold_amount", { valueAsNumber: true })}
                   className="mt-1"
                   placeholder="0.000"
                 />
@@ -357,7 +366,7 @@ export function GoldProfitLossCalculator() {
                   control={control}
                   render={({ field }) => (
                     <Select
-                      value={field.value || ''}
+                      value={field.value || ""}
                       onValueChange={field.onChange}
                     >
                       <SelectTrigger className="mt-1">
@@ -386,29 +395,38 @@ export function GoldProfitLossCalculator() {
               <div className="flex items-center justify-between">
                 <Label>Giá Mua (VND/chỉ)</Label>
                 <div className="flex items-center gap-2">
-                  <Badge variant={priceState.buyPriceMode === 'auto' ? 'default' : 'secondary'}>
-                    {priceState.buyPriceMode === 'auto' ? 'Tự động' : 'Thủ công'}
+                  <Badge
+                    variant={
+                      priceState.buyPriceMode === "auto"
+                        ? "default"
+                        : "secondary"
+                    }
+                  >
+                    {priceState.buyPriceMode === "auto"
+                      ? "Tự động"
+                      : "Thủ công"}
                   </Badge>
-                  {priceState.buyPrice && priceState.buyPriceMode === 'auto' && (
-                    <Button
-                      type="button"
-                      variant="outline"
-                      size="sm"
-                      onClick={() =>
-                        setPriceState((prev) => ({
-                          ...prev,
-                          buyPriceMode: 'manual',
-                        }))
-                      }
-                    >
-                      Nhập thủ công
-                    </Button>
-                  )}
+                  {priceState.buyPrice &&
+                    priceState.buyPriceMode === "auto" && (
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={() =>
+                          setPriceState((prev) => ({
+                            ...prev,
+                            buyPriceMode: "manual",
+                          }))
+                        }
+                      >
+                        Nhập thủ công
+                      </Button>
+                    )}
                 </div>
               </div>
               {buyPriceLoading ? (
                 <Skeleton className="h-10 w-full" />
-              ) : priceState.buyPriceMode === 'auto' && priceState.buyPrice ? (
+              ) : priceState.buyPriceMode === "auto" && priceState.buyPrice ? (
                 <Input
                   type="text"
                   value={formatCurrency(priceState.buyPrice)}
@@ -420,7 +438,7 @@ export function GoldProfitLossCalculator() {
                   <Input
                     type="number"
                     step="1"
-                    value={priceState.buyPrice || ''}
+                    value={priceState.buyPrice || ""}
                     onChange={(e) =>
                       setPriceState((prev) => ({
                         ...prev,
@@ -429,7 +447,7 @@ export function GoldProfitLossCalculator() {
                     }
                     placeholder="Nhập giá mua"
                   />
-                  {priceState.buyPriceMode === 'manual' &&
+                  {priceState.buyPriceMode === "manual" &&
                     buyPriceData?.data?.length === 0 && (
                       <p className="text-sm text-amber-600">
                         ⚠️ Không tìm thấy dữ liệu giá lịch sử
@@ -445,30 +463,38 @@ export function GoldProfitLossCalculator() {
                 <Label>Giá Bán (VND/chỉ)</Label>
                 <div className="flex items-center gap-2">
                   <Badge
-                    variant={priceState.sellPriceMode === 'auto' ? 'default' : 'secondary'}
+                    variant={
+                      priceState.sellPriceMode === "auto"
+                        ? "default"
+                        : "secondary"
+                    }
                   >
-                    {priceState.sellPriceMode === 'auto' ? 'Tự động' : 'Thủ công'}
+                    {priceState.sellPriceMode === "auto"
+                      ? "Tự động"
+                      : "Thủ công"}
                   </Badge>
-                  {priceState.sellPrice && priceState.sellPriceMode === 'auto' && (
-                    <Button
-                      type="button"
-                      variant="outline"
-                      size="sm"
-                      onClick={() =>
-                        setPriceState((prev) => ({
-                          ...prev,
-                          sellPriceMode: 'manual',
-                        }))
-                      }
-                    >
-                      Nhập thủ công
-                    </Button>
-                  )}
+                  {priceState.sellPrice &&
+                    priceState.sellPriceMode === "auto" && (
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={() =>
+                          setPriceState((prev) => ({
+                            ...prev,
+                            sellPriceMode: "manual",
+                          }))
+                        }
+                      >
+                        Nhập thủ công
+                      </Button>
+                    )}
                 </div>
               </div>
               {sellPriceLoading ? (
                 <Skeleton className="h-10 w-full" />
-              ) : priceState.sellPriceMode === 'auto' && priceState.sellPrice ? (
+              ) : priceState.sellPriceMode === "auto" &&
+                priceState.sellPrice ? (
                 <Input
                   type="text"
                   value={formatCurrency(priceState.sellPrice)}
@@ -480,7 +506,7 @@ export function GoldProfitLossCalculator() {
                   <Input
                     type="number"
                     step="1"
-                    value={priceState.sellPrice || ''}
+                    value={priceState.sellPrice || ""}
                     onChange={(e) =>
                       setPriceState((prev) => ({
                         ...prev,
@@ -489,7 +515,7 @@ export function GoldProfitLossCalculator() {
                     }
                     placeholder="Nhập giá bán"
                   />
-                  {priceState.sellPriceMode === 'manual' &&
+                  {priceState.sellPriceMode === "manual" &&
                     sellPriceData?.data?.length === 0 && (
                       <p className="text-sm text-amber-600">
                         ⚠️ Không tìm thấy dữ liệu giá lịch sử
@@ -534,10 +560,10 @@ export function GoldProfitLossCalculator() {
                 <Badge
                   variant={
                     results.profitLoss > 0
-                      ? 'success'
+                      ? "success"
                       : results.profitLoss < 0
-                      ? 'destructive'
-                      : 'secondary'
+                        ? "destructive"
+                        : "secondary"
                   }
                   className="text-lg font-bold px-3 py-1"
                 >
@@ -556,15 +582,15 @@ export function GoldProfitLossCalculator() {
               <CardContent>
                 <div
                   className={cn(
-                    'text-2xl font-bold',
+                    "text-2xl font-bold",
                     results.profitLoss > 0
-                      ? 'text-green-600'
+                      ? "text-green-600"
                       : results.profitLoss < 0
-                      ? 'text-red-600'
-                      : 'text-muted-foreground'
+                        ? "text-red-600"
+                        : "text-muted-foreground",
                   )}
                 >
-                  {results.profitLossPercent > 0 ? '+' : ''}
+                  {results.profitLossPercent > 0 ? "+" : ""}
                   {results.profitLossPercent.toFixed(2)}%
                 </div>
               </CardContent>
@@ -578,7 +604,9 @@ export function GoldProfitLossCalculator() {
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold">{results.holdingDays} ngày</div>
+                <div className="text-2xl font-bold">
+                  {results.holdingDays} ngày
+                </div>
               </CardContent>
             </Card>
 
@@ -592,15 +620,15 @@ export function GoldProfitLossCalculator() {
               <CardContent>
                 <div
                   className={cn(
-                    'text-2xl font-bold',
+                    "text-2xl font-bold",
                     results.apy > 0
-                      ? 'text-green-600'
+                      ? "text-green-600"
                       : results.apy < 0
-                      ? 'text-red-600'
-                      : 'text-muted-foreground'
+                        ? "text-red-600"
+                        : "text-muted-foreground",
                   )}
                 >
-                  {results.apy > 0 ? '+' : ''}
+                  {results.apy > 0 ? "+" : ""}
                   {results.apy.toFixed(2)}%
                 </div>
                 {results.holdingDays < 7 && (
@@ -649,7 +677,9 @@ export function GoldProfitLossCalculator() {
               <div className="space-y-2 text-sm">
                 <div className="flex justify-between py-2 border-b">
                   <span className="text-muted-foreground">Số lượng vàng:</span>
-                  <span className="font-semibold">{goldAmount.toFixed(3)} chỉ</span>
+                  <span className="font-semibold">
+                    {goldAmount.toFixed(3)} chỉ
+                  </span>
                 </div>
                 <div className="flex justify-between py-2 border-b">
                   <span className="text-muted-foreground">Giá mua:</span>
@@ -664,7 +694,9 @@ export function GoldProfitLossCalculator() {
                   </span>
                 </div>
                 <div className="flex justify-between py-2 border-b">
-                  <span className="text-muted-foreground">Tổng vốn đầu tư:</span>
+                  <span className="text-muted-foreground">
+                    Tổng vốn đầu tư:
+                  </span>
                   <span className="font-semibold">
                     {formatCurrency(results.totalInvestment)}
                   </span>
@@ -676,23 +708,27 @@ export function GoldProfitLossCalculator() {
                   </span>
                 </div>
                 <div className="flex justify-between py-2 border-b">
-                  <span className="text-muted-foreground">Thời gian nắm giữ:</span>
-                  <span className="font-semibold">{results.holdingDays} ngày</span>
+                  <span className="text-muted-foreground">
+                    Thời gian nắm giữ:
+                  </span>
+                  <span className="font-semibold">
+                    {results.holdingDays} ngày
+                  </span>
                 </div>
                 <div className="flex justify-between py-3 bg-muted/50 px-3 rounded-md mt-2">
                   <span className="font-semibold">Lãi/Lỗ:</span>
                   <span
                     className={cn(
-                      'font-bold',
+                      "font-bold",
                       results.profitLoss > 0
-                        ? 'text-green-600'
+                        ? "text-green-600"
                         : results.profitLoss < 0
-                        ? 'text-red-600'
-                        : 'text-muted-foreground'
+                          ? "text-red-600"
+                          : "text-muted-foreground",
                     )}
                   >
                     {formatCurrency(results.profitLoss)} (
-                    {results.profitLossPercent > 0 ? '+' : ''}
+                    {results.profitLossPercent > 0 ? "+" : ""}
                     {results.profitLossPercent.toFixed(2)}%)
                   </span>
                 </div>
@@ -715,7 +751,10 @@ export function GoldProfitLossCalculator() {
               ) : (
                 <ResponsiveContainer width="100%" height={400}>
                   <LineChart data={chartData}>
-                    <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
+                    <CartesianGrid
+                      strokeDasharray="3 3"
+                      className="stroke-muted"
+                    />
                     <XAxis
                       dataKey="date"
                       tickFormatter={formatDate}
@@ -731,15 +770,15 @@ export function GoldProfitLossCalculator() {
                       formatter={(value: number) => formatCurrency(value)}
                       labelFormatter={(label) => {
                         try {
-                          return format(new Date(label), 'PPP', { locale: vi })
+                          return format(new Date(label), "PPP", { locale: vi });
                         } catch {
-                          return label
+                          return label;
                         }
                       }}
                       contentStyle={{
-                        backgroundColor: 'hsl(var(--popover))',
-                        border: '1px solid hsl(var(--border))',
-                        borderRadius: '8px',
+                        backgroundColor: "hsl(var(--popover))",
+                        border: "1px solid hsl(var(--border))",
+                        borderRadius: "8px",
                       }}
                     />
                     <Legend />
@@ -778,5 +817,5 @@ export function GoldProfitLossCalculator() {
         </Card>
       )}
     </div>
-  )
+  );
 }

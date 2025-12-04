@@ -1,4 +1,4 @@
-import { CommentModerator } from '@/components/admin/blog/comment-moderator'
+import { CommentModerator } from "@/components/admin/blog/comment-moderator";
 
 export default function BlogCommentsPage() {
   return (
@@ -12,5 +12,5 @@ export default function BlogCommentsPage() {
 
       <CommentModerator />
     </div>
-  )
+  );
 }

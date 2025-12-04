@@ -179,7 +179,7 @@ export class GoldPriceAPI {
         const text = await response.text();
         console.warn(
           `vang.today API error: ${response.status} ${response.statusText}`,
-          text.substring(0, 200)
+          text.substring(0, 200),
         );
         return this.getMockData();
       }
@@ -190,15 +190,21 @@ export class GoldPriceAPI {
         const text = await response.text();
         console.warn(
           `vang.today API returned non-JSON response. Content-Type: ${contentType}`,
-          text.substring(0, 200)
+          text.substring(0, 200),
         );
         return this.getMockData();
       }
 
       const data: VangTodayResponse = await response.json();
 
-      if (!data.success || !data.prices || Object.keys(data.prices).length === 0) {
-        console.warn("No data from vang.today API, using mock data as fallback");
+      if (
+        !data.success ||
+        !data.prices ||
+        Object.keys(data.prices).length === 0
+      ) {
+        console.warn(
+          "No data from vang.today API, using mock data as fallback",
+        );
         return this.getMockData();
       }
 
@@ -253,7 +259,9 @@ export class GoldPriceAPI {
           sellPrice: sellPriceInChi,
           unit: "VND/chi",
           // Include change information if available
-          change: priceInfo.change_buy ? convertLuongToChi(priceInfo.change_buy) : undefined,
+          change: priceInfo.change_buy
+            ? convertLuongToChi(priceInfo.change_buy)
+            : undefined,
         });
       }
 

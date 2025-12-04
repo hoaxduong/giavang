@@ -1,23 +1,23 @@
-'use client'
+"use client";
 
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { Badge } from '@/components/ui/badge'
-import { Skeleton } from '@/components/ui/skeleton'
-import { formatCurrency, formatRelativeTime } from '@/lib/utils'
-import { PRODUCT_TYPES } from '@/lib/constants'
-import type { PriceSnapshot } from '@/lib/types'
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Skeleton } from "@/components/ui/skeleton";
+import { formatCurrency, formatRelativeTime } from "@/lib/utils";
+import { PRODUCT_TYPES } from "@/lib/constants";
+import type { PriceSnapshot } from "@/lib/types";
 
 /**
  * Get user-friendly label for product type
  */
 function getProductTypeLabel(productType: string): string {
-  const product = PRODUCT_TYPES.find((p) => p.value === productType)
-  return product?.label || productType
+  const product = PRODUCT_TYPES.find((p) => p.value === productType);
+  return product?.label || productType;
 }
 
 interface PriceTableProps {
-  data: PriceSnapshot[]
-  isLoading: boolean
+  data: PriceSnapshot[];
+  isLoading: boolean;
 }
 
 export function PriceTable({ data, isLoading }: PriceTableProps) {
@@ -35,7 +35,7 @@ export function PriceTable({ data, isLoading }: PriceTableProps) {
           </div>
         </CardContent>
       </Card>
-    )
+    );
   }
 
   if (!data || data.length === 0) {
@@ -50,7 +50,7 @@ export function PriceTable({ data, isLoading }: PriceTableProps) {
           </p>
         </CardContent>
       </Card>
-    )
+    );
   }
 
   return (
@@ -68,13 +68,16 @@ export function PriceTable({ data, isLoading }: PriceTableProps) {
                 <th className="pb-3 px-4 text-left font-semibold">Loại Vàng</th>
                 <th className="pb-3 px-4 text-right font-semibold">Giá Mua</th>
                 <th className="pb-3 px-4 text-right font-semibold">Giá Bán</th>
-                <th className="pb-3 px-4 text-right font-semibold">Chênh Lệch</th>
+                <th className="pb-3 px-4 text-right font-semibold">
+                  Chênh Lệch
+                </th>
                 <th className="pb-3 px-4 text-left font-semibold">Cập Nhật</th>
               </tr>
             </thead>
             <tbody>
               {data.map((price, index) => {
-                const spread = Number(price.sell_price) - Number(price.buy_price)
+                const spread =
+                  Number(price.sell_price) - Number(price.buy_price);
                 return (
                   <tr
                     key={`${price.retailer}-${price.province}-${price.product_type}-${index}`}
@@ -101,7 +104,7 @@ export function PriceTable({ data, isLoading }: PriceTableProps) {
                     </td>
                     <td className="py-4 px-4 text-right">
                       <Badge
-                        variant={spread > 0 ? 'default' : 'secondary'}
+                        variant={spread > 0 ? "default" : "secondary"}
                         className="text-xs"
                       >
                         {formatCurrency(spread)}
@@ -111,12 +114,12 @@ export function PriceTable({ data, isLoading }: PriceTableProps) {
                       {formatRelativeTime(price.created_at)}
                     </td>
                   </tr>
-                )
+                );
               })}
             </tbody>
           </table>
         </div>
       </CardContent>
     </Card>
-  )
+  );
 }

@@ -75,13 +75,13 @@ export async function GET(request: NextRequest) {
     if (error instanceof z.ZodError) {
       return NextResponse.json(
         { error: "Invalid parameters", details: error.errors },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
     return NextResponse.json(
       { error: error instanceof Error ? error.message : "Failed to list jobs" },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }
@@ -106,13 +106,13 @@ export async function POST(request: NextRequest) {
       jobId = await manager.createFullHistoricalJob(
         validated.sourceId,
         validated.config as FullHistoricalConfig,
-        user.id
+        user.id,
       );
     } else {
       jobId = await manager.createDateRangeJob(
         validated.sourceId,
         validated.config as DateRangeConfig,
-        user.id
+        user.id,
       );
     }
 
@@ -130,7 +130,7 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json(
       { job, message: "Backfill job created successfully" },
-      { status: 201 }
+      { status: 201 },
     );
   } catch (error) {
     console.error("POST /api/admin/crawler/backfill error:", error);
@@ -138,7 +138,7 @@ export async function POST(request: NextRequest) {
     if (error instanceof z.ZodError) {
       return NextResponse.json(
         { error: "Invalid request body", details: error.errors },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -146,7 +146,7 @@ export async function POST(request: NextRequest) {
       {
         error: error instanceof Error ? error.message : "Failed to create job",
       },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

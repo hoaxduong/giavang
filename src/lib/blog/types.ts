@@ -4,74 +4,74 @@
 // Enums
 // ============================================================================
 
-export type PostStatus = 'draft' | 'published' | 'archived'
-export type CommentStatus = 'pending' | 'approved' | 'rejected' | 'spam'
+export type PostStatus = "draft" | "published" | "archived";
+export type CommentStatus = "pending" | "approved" | "rejected" | "spam";
 
 // ============================================================================
 // Database Types (snake_case - matches Supabase)
 // ============================================================================
 
 export interface DbBlogCategory {
-  id: string
-  slug: string
-  name: string
-  description: string | null
-  is_enabled: boolean
-  sort_order: number
-  created_at: string
-  updated_at: string
+  id: string;
+  slug: string;
+  name: string;
+  description: string | null;
+  is_enabled: boolean;
+  sort_order: number;
+  created_at: string;
+  updated_at: string;
 }
 
 export interface DbBlogTag {
-  id: string
-  slug: string
-  name: string
-  is_enabled: boolean
-  created_at: string
-  updated_at: string
+  id: string;
+  slug: string;
+  name: string;
+  is_enabled: boolean;
+  created_at: string;
+  updated_at: string;
 }
 
 export interface DbBlogPost {
-  id: string
-  slug: string
-  title: string
-  excerpt: string | null
-  content: any // Tiptap JSON
-  featured_image_url: string | null
-  category_id: string | null
-  author_id: string
-  status: PostStatus
-  published_at: string | null
-  meta_title: string | null
-  meta_description: string | null
-  og_image_url: string | null
-  view_count: number
-  comment_count: number
-  search_vector: any
-  created_at: string
-  updated_at: string
+  id: string;
+  slug: string;
+  title: string;
+  excerpt: string | null;
+  content: any; // Tiptap JSON
+  featured_image_url: string | null;
+  category_id: string | null;
+  author_id: string;
+  status: PostStatus;
+  published_at: string | null;
+  meta_title: string | null;
+  meta_description: string | null;
+  og_image_url: string | null;
+  view_count: number;
+  comment_count: number;
+  search_vector: any;
+  created_at: string;
+  updated_at: string;
 }
 
 export interface DbBlogPostTag {
-  id: string
-  post_id: string
-  tag_id: string
-  created_at: string
+  id: string;
+  post_id: string;
+  tag_id: string;
+  created_at: string;
 }
 
 export interface DbBlogComment {
-  id: string
-  post_id: string
-  author_id: string | null
-  author_name: string | null
-  author_email: string | null
-  content: string
-  status: CommentStatus
-  moderated_by: string | null
-  moderated_at: string | null
-  parent_id: string | null
-  created_at: string
-  updated_at: string
+  id: string;
+  post_id: string;
+  author_id: string | null;
+  author_name: string | null;
+  author_email: string | null;
+  content: string;
+  status: CommentStatus;
+  moderated_by: string | null;
+  moderated_at: string | null;
+  parent_id: string | null;
+  created_at: string;
+  updated_at: string;
 }
 
 // ============================================================================
@@ -79,84 +79,84 @@ export interface DbBlogComment {
 // ============================================================================
 
 export interface BlogCategory {
-  id: string
-  slug: string
-  name: string
-  description: string | null
-  isEnabled: boolean
-  sortOrder: number
-  createdAt: string
-  updatedAt: string
+  id: string;
+  slug: string;
+  name: string;
+  description: string | null;
+  isEnabled: boolean;
+  sortOrder: number;
+  createdAt: string;
+  updatedAt: string;
 }
 
 export interface BlogTag {
-  id: string
-  slug: string
-  name: string
-  isEnabled: boolean
-  createdAt: string
-  updatedAt: string
+  id: string;
+  slug: string;
+  name: string;
+  isEnabled: boolean;
+  createdAt: string;
+  updatedAt: string;
 }
 
 export interface BlogPost {
-  id: string
-  slug: string
-  title: string
-  excerpt: string | null
-  content: any // Tiptap JSON
-  featuredImageUrl: string | null
-  categoryId: string | null
-  authorId: string
-  status: PostStatus
-  publishedAt: string | null
-  metaTitle: string | null
-  metaDescription: string | null
-  ogImageUrl: string | null
-  viewCount: number
-  commentCount: number
-  createdAt: string
-  updatedAt: string
+  id: string;
+  slug: string;
+  title: string;
+  excerpt: string | null;
+  content: any; // Tiptap JSON
+  featuredImageUrl: string | null;
+  categoryId: string | null;
+  authorId: string;
+  status: PostStatus;
+  publishedAt: string | null;
+  metaTitle: string | null;
+  metaDescription: string | null;
+  ogImageUrl: string | null;
+  viewCount: number;
+  commentCount: number;
+  createdAt: string;
+  updatedAt: string;
 }
 
 export interface BlogPostWithRelations extends BlogPost {
-  category: BlogCategory | null
-  tags: BlogTag[]
+  category: BlogCategory | null;
+  tags: BlogTag[];
   author: {
-    id: string
-    fullName: string
-    avatarUrl: string | null
-  }
+    id: string;
+    fullName: string;
+    avatarUrl: string | null;
+  };
 }
 
 export interface BlogComment {
-  id: string
-  postId: string
-  authorId: string | null
-  authorName: string | null
-  authorEmail: string | null
-  content: string
-  status: CommentStatus
-  moderatedBy: string | null
-  moderatedAt: string | null
-  parentId: string | null
-  createdAt: string
-  updatedAt: string
+  id: string;
+  postId: string;
+  authorId: string | null;
+  authorName: string | null;
+  authorEmail: string | null;
+  content: string;
+  status: CommentStatus;
+  moderatedBy: string | null;
+  moderatedAt: string | null;
+  parentId: string | null;
+  createdAt: string;
+  updatedAt: string;
 }
 
 export interface BlogCommentWithAuthor extends BlogComment {
   author: {
-    id: string
-    fullName: string
-    avatarUrl: string | null
-  } | null
+    id: string;
+    fullName: string;
+    avatarUrl: string | null;
+  } | null;
 }
 
 export interface BlogCommentWithPost extends BlogComment {
   post: {
-    id: string
-    title: string
-    slug: string
-  }
+    id: string;
+    title: string;
+    slug: string;
+  };
 }
 
 // ============================================================================
@@ -164,80 +164,80 @@ export interface BlogCommentWithPost extends BlogComment {
 // ============================================================================
 
 export interface CreatePostRequest {
-  title: string
-  slug: string
-  excerpt?: string
-  content: any // Tiptap JSON
-  featuredImageUrl?: string
-  categoryId?: string
-  tagIds?: string[]
-  status: PostStatus
-  publishedAt?: string
-  metaTitle?: string
-  metaDescription?: string
-  ogImageUrl?: string
+  title: string;
+  slug: string;
+  excerpt?: string;
+  content: any; // Tiptap JSON
+  featuredImageUrl?: string;
+  categoryId?: string;
+  tagIds?: string[];
+  status: PostStatus;
+  publishedAt?: string;
+  metaTitle?: string;
+  metaDescription?: string;
+  ogImageUrl?: string;
 }
 
 export interface UpdatePostRequest {
-  title?: string
-  slug?: string
-  excerpt?: string
-  content?: any
-  featuredImageUrl?: string
-  categoryId?: string
-  tagIds?: string[]
-  status?: PostStatus
-  publishedAt?: string
-  metaTitle?: string
-  metaDescription?: string
-  ogImageUrl?: string
+  title?: string;
+  slug?: string;
+  excerpt?: string;
+  content?: any;
+  featuredImageUrl?: string;
+  categoryId?: string;
+  tagIds?: string[];
+  status?: PostStatus;
+  publishedAt?: string;
+  metaTitle?: string;
+  metaDescription?: string;
+  ogImageUrl?: string;
 }
 
 export interface CreateCategoryRequest {
-  slug: string
-  name: string
-  description?: string
-  isEnabled?: boolean
-  sortOrder?: number
+  slug: string;
+  name: string;
+  description?: string;
+  isEnabled?: boolean;
+  sortOrder?: number;
 }
 
 export interface UpdateCategoryRequest {
-  id: string
-  slug?: string
-  name?: string
-  description?: string
-  isEnabled?: boolean
-  sortOrder?: number
+  id: string;
+  slug?: string;
+  name?: string;
+  description?: string;
+  isEnabled?: boolean;
+  sortOrder?: number;
 }
 
 export interface CreateTagRequest {
-  slug: string
-  name: string
-  isEnabled?: boolean
+  slug: string;
+  name: string;
+  isEnabled?: boolean;
 }
 
 export interface UpdateTagRequest {
-  id: string
-  slug?: string
-  name?: string
-  isEnabled?: boolean
+  id: string;
+  slug?: string;
+  name?: string;
+  isEnabled?: boolean;
 }
 
 export interface CreateCommentRequest {
-  postId: string
-  content: string
-  parentId?: string
+  postId: string;
+  content: string;
+  parentId?: string;
 }
 
 export interface ModerateCommentRequest {
-  id: string
-  status: CommentStatus
+  id: string;
+  status: CommentStatus;
 }
 
 export interface UploadMediaResponse {
-  url: string
-  path: string
-  type: 'image' | 'video'
+  url: string;
+  path: string;
+  type: "image" | "video";
 }
 
 // ============================================================================
@@ -254,7 +254,7 @@ export function dbCategoryToCategory(db: DbBlogCategory): BlogCategory {
     sortOrder: db.sort_order,
     createdAt: db.created_at,
     updatedAt: db.updated_at,
-  }
+  };
 }
 
 export function dbTagToTag(db: DbBlogTag): BlogTag {
@@ -265,7 +265,7 @@ export function dbTagToTag(db: DbBlogTag): BlogTag {
     isEnabled: db.is_enabled,
     createdAt: db.created_at,
     updatedAt: db.updated_at,
-  }
+  };
 }
 
 export function dbPostToPost(db: DbBlogPost): BlogPost {
@@ -287,7 +287,7 @@ export function dbPostToPost(db: DbBlogPost): BlogPost {
     commentCount: db.comment_count,
     createdAt: db.created_at,
     updatedAt: db.updated_at,
-  }
+  };
 }
 
 export function dbCommentToComment(db: DbBlogComment): BlogComment {
@@ -304,5 +304,5 @@ export function dbCommentToComment(db: DbBlogComment): BlogComment {
     parentId: db.parent_id,
     createdAt: db.created_at,
     updatedAt: db.updated_at,
-  }
+  };
 }

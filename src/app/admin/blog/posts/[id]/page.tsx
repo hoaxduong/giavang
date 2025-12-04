@@ -1,42 +1,46 @@
-'use client'
+"use client";
 
-import { useState, useEffect, use } from 'react'
-import { useRouter } from 'next/navigation'
-import { useQuery, useMutation } from '@tanstack/react-query'
-import { Button } from '@/components/ui/button'
-import { Alert, AlertDescription } from '@/components/ui/alert'
-import { PostEditor } from '@/components/admin/blog/post-editor'
-import { PostForm } from '@/components/admin/blog/post-form'
-import { ArrowLeft } from 'lucide-react'
-import Link from 'next/link'
+import { useState, useEffect, use } from "react";
+import { useRouter } from "next/navigation";
+import { useQuery, useMutation } from "@tanstack/react-query";
+import { Button } from "@/components/ui/button";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { PostEditor } from "@/components/admin/blog/post-editor";
+import { PostForm } from "@/components/admin/blog/post-form";
+import { ArrowLeft } from "lucide-react";
+import Link from "next/link";
 
-export default function EditPostPage({ params }: { params: Promise<{ id: string }> }) {
-  const { id } = use(params)
-  const router = useRouter()
+export default function EditPostPage({
+  params,
+}: {
+  params: Promise<{ id: string }>;
+}) {
+  const { id } = use(params);
+  const router = useRouter();
   const [formData, setFormData] = useState({
-    title: '',
-    slug: '',
-    excerpt: '',
-    featuredImageUrl: '',
-    categoryId: '',
+    title: "",
+    slug: "",
+    excerpt: "",
+    featuredImageUrl: "",
+    categoryId: "",
     tagIds: [] as string[],
-    status: 'draft' as 'draft' | 'published' | 'archived',
-    metaTitle: '',
-    metaDescription: '',
-    ogImageUrl: '',
-  })
-  const [content, setContent] = useState<any>(null)
-  const [error, setError] = useState<string | null>(null)
+    status: "draft" as "draft" | "published" | "archived",
+    metaTitle: "",
+    metaDescription: "",
+    ogImageUrl: "",
+  });
+  const [content, setContent] = useState<any>(null);
+  const [error, setError] = useState<string | null>(null);
 
   // Fetch post data
   const { data: postData, isLoading } = useQuery({
-    queryKey: ['blog-post', id],
+    queryKey: ["blog-post", id],
     queryFn: async () => {
-      const res = await fetch(`/api/admin/blog/posts/${id}`)
-      if (!res.ok) throw new Error('Failed to fetch post')
-      return res.json()
+      const res = await fetch(`/api/admin/blog/posts/${id}`);
+      if (!res.ok) throw new Error("Failed to fetch post");
+      return res.json();
     },
-  })
+  });
 
   // Initialize form when data is loaded
   useEffect(() => {
@@ -44,59 +48,59 @@ export default function EditPostPage({ params }: { params: Promise<{ id: string 
       setFormData({
         title: postData.post.title,
         slug: postData.post.slug,
-        excerpt: postData.post.excerpt || '',
-        featuredImageUrl: postData.post.featuredImageUrl || '',
-        categoryId: postData.post.categoryId || '',
+        excerpt: postData.post.excerpt || "",
+        featuredImageUrl: postData.post.featuredImageUrl || "",
+        categoryId: postData.post.categoryId || "",
         tagIds: postData.tagIds || [],
         status: postData.post.status,
-        metaTitle: postData.post.metaTitle || '',
-        metaDescription: postData.post.metaDescription || '',
-        ogImageUrl: postData.post.ogImageUrl || '',
-      })
-      setContent(postData.post.content)
+        metaTitle: postData.post.metaTitle || "",
+        metaDescription: postData.post.metaDescription || "",
+        ogImageUrl: postData.post.ogImageUrl || "",
+      });
+      setContent(postData.post.content);
     }
-  }, [postData])
+  }, [postData]);
 
   const updateMutation = useMutation({
     mutationFn: async (data: any) => {
       const res = await fetch(`/api/admin/blog/posts/${id}`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify(data),
-      })
+      });
 
       if (!res.ok) {
-        const error = await res.json()
-        throw new Error(error.error || 'Failed to update post')
+        const error = await res.json();
+        throw new Error(error.error || "Failed to update post");
       }
 
-      return res.json()
+      return res.json();
     },
     onSuccess: () => {
-      router.push('/admin/blog/posts')
+      router.push("/admin/blog/posts");
     },
     onError: (error: Error) => {
-      setError(error.message)
+      setError(error.message);
     },
-  })
+  });
 
   const handleSubmit = () => {
     if (!formData.title) {
-      setError('Tiêu đề là bắt buộc')
-      return
+      setError("Tiêu đề là bắt buộc");
+      return;
     }
 
     if (!formData.slug) {
-      setError('Slug là bắt buộc')
-      return
+      setError("Slug là bắt buộc");
+      return;
     }
 
     if (!content) {
-      setError('Nội dung bài viết là bắt buộc')
-      return
+      setError("Nội dung bài viết là bắt buộc");
+      return;
     }
 
-    setError(null)
+    setError(null);
 
     updateMutation.mutate({
       title: formData.title,
@@ -110,15 +114,15 @@ export default function EditPostPage({ params }: { params: Promise<{ id: string 
       metaTitle: formData.metaTitle || undefined,
       metaDescription: formData.metaDescription || undefined,
       ogImageUrl: formData.ogImageUrl || undefined,
-    })
-  }
+    });
+  };
 
   if (isLoading) {
     return (
       <div className="container mx-auto px-6 py-8">
         <div className="text-center py-8">Đang tải...</div>
       </div>
-    )
+    );
   }
 
   return (
@@ -130,7 +134,9 @@ export default function EditPostPage({ params }: { params: Promise<{ id: string 
             Quay lại
           </Button>
         </Link>
-        <h1 className="text-3xl font-bold tracking-tight mt-4">Chỉnh sửa bài viết</h1>
+        <h1 className="text-3xl font-bold tracking-tight mt-4">
+          Chỉnh sửa bài viết
+        </h1>
       </div>
 
       {error && (
@@ -153,11 +159,11 @@ export default function EditPostPage({ params }: { params: Promise<{ id: string 
                 type="text"
                 value={formData.title}
                 onChange={(e) => {
-                  const title = e.target.value
+                  const title = e.target.value;
                   setFormData({
                     ...formData,
                     title,
-                  })
+                  });
                 }}
                 placeholder="Nhập tiêu đề bài viết"
                 className="w-full px-3 py-2 border rounded-md"
@@ -172,7 +178,9 @@ export default function EditPostPage({ params }: { params: Promise<{ id: string 
                 id="slug"
                 type="text"
                 value={formData.slug}
-                onChange={(e) => setFormData({ ...formData, slug: e.target.value })}
+                onChange={(e) =>
+                  setFormData({ ...formData, slug: e.target.value })
+                }
                 placeholder="slug-url-bai-viet"
                 className="w-full px-3 py-2 border rounded-md"
               />
@@ -193,7 +201,9 @@ export default function EditPostPage({ params }: { params: Promise<{ id: string 
             <textarea
               id="excerpt"
               value={formData.excerpt}
-              onChange={(e) => setFormData({ ...formData, excerpt: e.target.value })}
+              onChange={(e) =>
+                setFormData({ ...formData, excerpt: e.target.value })
+              }
               placeholder="Tóm tắt ngắn gọn về bài viết"
               rows={3}
               className="w-full px-3 py-2 border rounded-md"
@@ -213,5 +223,5 @@ export default function EditPostPage({ params }: { params: Promise<{ id: string 
         </div>
       </div>
     </div>
-  )
+  );
 }

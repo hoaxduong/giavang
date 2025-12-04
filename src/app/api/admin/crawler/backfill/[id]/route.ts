@@ -8,7 +8,7 @@ import { BackfillManager } from "@/lib/api/backfill/backfill-manager";
  */
 export async function GET(
   request: NextRequest,
-  props: { params: Promise<{ id: string }> }
+  props: { params: Promise<{ id: string }> },
 ) {
   const params = await props.params;
   try {
@@ -27,7 +27,7 @@ export async function GET(
 
     return NextResponse.json(
       { error: error instanceof Error ? error.message : "Failed to fetch job" },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }
@@ -38,7 +38,7 @@ export async function GET(
  */
 export async function DELETE(
   request: NextRequest,
-  props: { params: Promise<{ id: string }> }
+  props: { params: Promise<{ id: string }> },
 ) {
   const params = await props.params;
   try {
@@ -49,19 +49,19 @@ export async function DELETE(
 
     return NextResponse.json(
       { message: "Job deleted successfully" },
-      { status: 200 }
+      { status: 200 },
     );
   } catch (error) {
     console.error(
       `DELETE /api/admin/crawler/backfill/${params.id} error:`,
-      error
+      error,
     );
 
     return NextResponse.json(
       {
         error: error instanceof Error ? error.message : "Failed to delete job",
       },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

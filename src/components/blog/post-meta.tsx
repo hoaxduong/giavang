@@ -1,25 +1,25 @@
-import Link from 'next/link'
-import { format } from 'date-fns'
-import { Badge } from '@/components/ui/badge'
-import { Calendar, Eye, MessageSquare, User } from 'lucide-react'
+import Link from "next/link";
+import { format } from "date-fns";
+import { Badge } from "@/components/ui/badge";
+import { Calendar, Eye, MessageSquare, User } from "lucide-react";
 
 interface PostMetaProps {
   post: {
-    publishedAt: string
-    viewCount: number
-    commentCount: number
+    publishedAt: string;
+    viewCount: number;
+    commentCount: number;
     category: {
-      name: string
-      slug: string
-    } | null
+      name: string;
+      slug: string;
+    } | null;
     tags: Array<{
-      name: string
-      slug: string
-    }>
+      name: string;
+      slug: string;
+    }>;
     author: {
-      fullName: string
-    }
-  }
+      fullName: string;
+    };
+  };
 }
 
 export function PostMeta({ post }: PostMetaProps) {
@@ -33,7 +33,7 @@ export function PostMeta({ post }: PostMetaProps) {
         </div>
         <div className="flex items-center gap-2">
           <Calendar className="h-4 w-4" />
-          <span>{format(new Date(post.publishedAt), 'dd/MM/yyyy')}</span>
+          <span>{format(new Date(post.publishedAt), "dd/MM/yyyy")}</span>
         </div>
       </div>
 
@@ -54,7 +54,10 @@ export function PostMeta({ post }: PostMetaProps) {
         <div>
           <span className="text-sm text-muted-foreground mr-2">Danh mục:</span>
           <Link href={`/blog/category/${post.category.slug}`}>
-            <Badge variant="secondary" className="hover:bg-primary hover:text-primary-foreground">
+            <Badge
+              variant="secondary"
+              className="hover:bg-primary hover:text-primary-foreground"
+            >
               {post.category.name}
             </Badge>
           </Link>
@@ -77,5 +80,5 @@ export function PostMeta({ post }: PostMetaProps) {
         </div>
       )}
     </div>
-  )
+  );
 }

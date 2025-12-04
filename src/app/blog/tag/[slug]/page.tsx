@@ -42,15 +42,18 @@ export default async function TagPage({
         <Header />
         <div className="container mx-auto px-6 py-12">
           <BlogBreadcrumb
-            items={[{ label: "Blog", href: "/blog" }, { label: `#${tag.name}` }]}
+            items={[
+              { label: "Blog", href: "/blog" },
+              { label: `#${tag.name}` },
+            ]}
           />
 
-        <div className="mb-12">
-          <h1 className="text-4xl font-bold tracking-tight">#{tag.name}</h1>
-        </div>
-        <div className="text-center py-12 text-muted-foreground">
-          Chưa có bài viết với thẻ này
-        </div>
+          <div className="mb-12">
+            <h1 className="text-4xl font-bold tracking-tight">#{tag.name}</h1>
+          </div>
+          <div className="text-center py-12 text-muted-foreground">
+            Chưa có bài viết với thẻ này
+          </div>
         </div>
       </>
     );
@@ -63,7 +66,7 @@ export default async function TagPage({
       *,
       category:blog_categories(*),
       post_tags:blog_post_tags(tag:blog_tags(*))
-    `
+    `,
     )
     .eq("status", "published")
     .in("id", postIds)
@@ -101,15 +104,15 @@ export default async function TagPage({
           items={[{ label: "Blog", href: "/blog" }, { label: `#${tag.name}` }]}
         />
 
-      <div className="mb-12">
-        <h1 className="text-4xl font-bold tracking-tight">#{tag.name}</h1>
-      </div>
+        <div className="mb-12">
+          <h1 className="text-4xl font-bold tracking-tight">#{tag.name}</h1>
+        </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-        {posts.map((post) => (
-          <PostCard key={post.id} post={post} />
-        ))}
-      </div>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+          {posts.map((post) => (
+            <PostCard key={post.id} post={post} />
+          ))}
+        </div>
       </div>
     </>
   );

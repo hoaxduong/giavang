@@ -12,11 +12,13 @@ const fieldMappingsSchema = z.object({
     timestamp: z.string(),
     currency: z.string().optional(),
   }),
-  transforms: z.object({
-    timestamp: z.enum(['iso8601', 'unix']).optional(),
-    priceMultiplier: z.number().optional(),
-  }).optional(),
-})
+  transforms: z
+    .object({
+      timestamp: z.enum(["iso8601", "unix"]).optional(),
+      priceMultiplier: z.number().optional(),
+    })
+    .optional(),
+});
 
 const updateSourceSchema = z.object({
   name: z.string().min(1).max(100).optional(),
@@ -38,7 +40,7 @@ const updateSourceSchema = z.object({
  */
 export async function GET(
   request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
+  { params }: { params: Promise<{ id: string }> },
 ) {
   const { id } = await params;
   try {
@@ -67,7 +69,7 @@ export async function GET(
  */
 export async function PUT(
   request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
+  { params }: { params: Promise<{ id: string }> },
 ) {
   const { id } = await params;
   try {
@@ -116,7 +118,7 @@ export async function PUT(
     }
     return NextResponse.json(
       { error: "Unauthorized or invalid request" },
-      { status: 401 }
+      { status: 401 },
     );
   }
 }
@@ -127,7 +129,7 @@ export async function PUT(
  */
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
+  { params }: { params: Promise<{ id: string }> },
 ) {
   const { id } = await params;
   try {

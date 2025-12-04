@@ -69,7 +69,7 @@ export class VangTodayCrawler extends BaseCrawler {
       logId = await crawlerLogger.createLog(
         this.config.id,
         this.triggerType,
-        this.triggerUserId
+        this.triggerUserId,
       );
 
       // Fetch from API
@@ -81,7 +81,7 @@ export class VangTodayCrawler extends BaseCrawler {
             Accept: "application/json",
             "User-Agent": "Mozilla/5.0",
           },
-        })
+        }),
       );
 
       const responseTime = Date.now() - startTime;
@@ -290,7 +290,7 @@ export class VangTodayCrawler extends BaseCrawler {
     // Extract prices data using field mapping
     const pricesData = this.extractNestedValue(
       apiResponse,
-      fieldMappings.dataPath
+      fieldMappings.dataPath,
     );
     if (!pricesData || typeof pricesData !== "object") {
       errors.push({
@@ -353,12 +353,12 @@ export class VangTodayCrawler extends BaseCrawler {
         const buyPrice = this.extractPriceValue(
           priceInfo,
           fieldMappings.fields.buyPrice,
-          fieldMappings.transforms?.priceMultiplier
+          fieldMappings.transforms?.priceMultiplier,
         );
         const sellPrice = this.extractPriceValue(
           priceInfo,
           fieldMappings.fields.sellPrice,
-          fieldMappings.transforms?.priceMultiplier
+          fieldMappings.transforms?.priceMultiplier,
         );
 
         if (buyPrice === null || sellPrice === null) {
@@ -403,7 +403,7 @@ export class VangTodayCrawler extends BaseCrawler {
           unit: "VND/chi",
           change: (this.extractNestedValue(priceInfo, "change_buy") as number)
             ? this.convertLuongToChi(
-                this.extractNestedValue(priceInfo, "change_buy") as number
+                this.extractNestedValue(priceInfo, "change_buy") as number,
               )
             : undefined,
         });
@@ -512,7 +512,7 @@ export class VangTodayCrawler extends BaseCrawler {
   private extractPriceValue(
     priceInfo: any,
     fieldName: string,
-    multiplier: number = 1
+    multiplier: number = 1,
   ): number | null {
     const value = this.extractNestedValue(priceInfo, fieldName);
     if (typeof value !== "number") {

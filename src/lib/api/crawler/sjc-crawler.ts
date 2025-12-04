@@ -48,7 +48,7 @@ const BRANCH_TO_PROVINCE: Record<string, string> = {
   "Hà Nội": "Hà Nội",
   "Hải Phòng": "Hải Phòng",
   "Hạ Long": "Quảng Ninh",
-  "Huế": "Thừa Thiên Huế",
+  Huế: "Thừa Thiên Huế",
   "Quảng Ngãi": "Quảng Ngãi",
   "Nha Trang": "Khánh Hòa",
   "Biên Hòa": "Đồng Nai",
@@ -94,13 +94,13 @@ export class SjcCrawler extends BaseCrawler {
    */
   private parseDotNetDate(groupDate: string): string {
     // Extract timestamp from /Date(timestamp)/
-    const match = groupDate.match(/\/Date\((\d+)\)\//)
+    const match = groupDate.match(/\/Date\((\d+)\)\//);
     if (!match) {
-      throw new Error(`Invalid .NET date format: ${groupDate}`)
+      throw new Error(`Invalid .NET date format: ${groupDate}`);
     }
 
-    const timestamp = parseInt(match[1], 10)
-    return new Date(timestamp).toISOString()
+    const timestamp = parseInt(match[1], 10);
+    return new Date(timestamp).toISOString();
   }
 
   /**
@@ -115,7 +115,7 @@ export class SjcCrawler extends BaseCrawler {
       logId = await crawlerLogger.createLog(
         this.config.id,
         this.triggerType,
-        this.triggerUserId
+        this.triggerUserId,
       );
 
       // Format today's date for SJC API (DD/MM/YYYY)
@@ -130,7 +130,7 @@ export class SjcCrawler extends BaseCrawler {
       }).toString();
 
       // Convert to Buffer for proper content-length handling
-      const bodyBuffer = Buffer.from(formBody, 'utf-8');
+      const bodyBuffer = Buffer.from(formBody, "utf-8");
 
       // Fetch from API using undici for better control
       const timeout = this.config.timeout || 30000;
@@ -183,7 +183,11 @@ export class SjcCrawler extends BaseCrawler {
 
       // Check content type (SJC returns "text/json" instead of "application/json")
       const contentType = headers["content-type"] as string | undefined;
-      if (!contentType || (!contentType.includes("application/json") && !contentType.includes("text/json"))) {
+      if (
+        !contentType ||
+        (!contentType.includes("application/json") &&
+          !contentType.includes("text/json"))
+      ) {
         const errorText = await body.text();
         await crawlerLogger.updateLog(logId, {
           status: "failed",
@@ -301,7 +305,9 @@ export class SjcCrawler extends BaseCrawler {
           requestMethod: "POST",
           responseTimeMs: responseTime,
           errorMessage: errorObj.message,
-          errorStack: errorObj.stack || JSON.stringify(error, Object.getOwnPropertyNames(error)),
+          errorStack:
+            errorObj.stack ||
+            JSON.stringify(error, Object.getOwnPropertyNames(error)),
         });
       }
 
@@ -424,7 +430,7 @@ export class SjcCrawler extends BaseCrawler {
           // Fallback to current time if GroupDate parsing fails
           console.warn(
             `[SJC Crawler] Failed to parse GroupDate for ${externalCode}:`,
-            error instanceof Error ? error.message : error
+            error instanceof Error ? error.message : error,
           );
           timestamp = new Date().toISOString();
         }
@@ -556,16 +562,21 @@ export class SjcCrawler extends BaseCrawler {
     try {
       // Handle undefined or empty timestamp
       if (!sjcTimestamp) {
-        console.warn('[SJC Crawler] Timestamp is undefined, using current time');
+        console.warn(
+          "[SJC Crawler] Timestamp is undefined, using current time",
+        );
         return new Date().toISOString();
       }
 
       // Example: "13:07 04/12/2025"
       const match = sjcTimestamp.match(
-        /(\d{2}):(\d{2})\s+(\d{2})\/(\d{2})\/(\d{4})/
+        /(\d{2}):(\d{2})\s+(\d{2})\/(\d{2})\/(\d{4})/,
       );
       if (!match) {
-        console.warn('[SJC Crawler] Failed to parse timestamp format:', sjcTimestamp);
+        console.warn(
+          "[SJC Crawler] Failed to parse timestamp format:",
+          sjcTimestamp,
+        );
         return new Date().toISOString();
       }
 
@@ -575,7 +586,7 @@ export class SjcCrawler extends BaseCrawler {
         parseInt(month) - 1,
         parseInt(day),
         parseInt(hours),
-        parseInt(minutes)
+        parseInt(minutes),
       );
 
       return date.toISOString();

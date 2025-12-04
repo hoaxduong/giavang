@@ -9,7 +9,7 @@ import { BackfillExecutor } from "@/lib/api/backfill/backfill-executor";
  */
 export async function POST(
   request: NextRequest,
-  props: { params: Promise<{ id: string }> }
+  props: { params: Promise<{ id: string }> },
 ) {
   const params = await props.params;
   try {
@@ -26,19 +26,19 @@ export async function POST(
 
     return NextResponse.json(
       { message: "Job resumed successfully" },
-      { status: 200 }
+      { status: 200 },
     );
   } catch (error) {
     console.error(
       `POST /api/admin/crawler/backfill/${params.id}/resume error:`,
-      error
+      error,
     );
 
     return NextResponse.json(
       {
         error: error instanceof Error ? error.message : "Failed to resume job",
       },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

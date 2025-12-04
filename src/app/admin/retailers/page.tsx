@@ -1,4 +1,4 @@
-import { RetailersTab } from '@/components/admin/config/retailers-tab'
+import { RetailersTab } from "@/components/admin/config/retailers-tab";
 
 export default function RetailersPage() {
   return (
@@ -12,5 +12,5 @@ export default function RetailersPage() {
 
       <RetailersTab />
     </div>
-  )
+  );
 }

@@ -1,4 +1,4 @@
-import { AdminStats } from '@/components/admin/admin-stats'
+import { AdminStats } from "@/components/admin/admin-stats";
 
 export default async function AdminPage() {
   return (
@@ -12,6 +12,5 @@ export default async function AdminPage() {
 
       <AdminStats />
     </div>
-  )
+  );
 }
-

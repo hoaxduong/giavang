@@ -37,7 +37,7 @@ export function useHistoricalPrices(filters: HistoricalFilters) {
 
       if (!response.ok) {
         throw new Error(
-          `Failed to fetch historical prices: ${response.statusText}`
+          `Failed to fetch historical prices: ${response.statusText}`,
         );
       }
 

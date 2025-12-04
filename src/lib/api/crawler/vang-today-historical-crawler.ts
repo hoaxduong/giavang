@@ -73,7 +73,7 @@ export class VangTodayHistoricalCrawler extends VangTodayCrawler {
    */
   async fetchHistoricalPrices(
     typeCode: string,
-    days: number
+    days: number,
   ): Promise<HistoricalCrawlerResult> {
     const startTime = Date.now();
 
@@ -107,7 +107,7 @@ export class VangTodayHistoricalCrawler extends VangTodayCrawler {
             Accept: "application/json",
             "User-Agent": "Mozilla/5.0",
           },
-        })
+        }),
       );
 
       const responseTime = Date.now() - startTime;
@@ -145,7 +145,7 @@ export class VangTodayHistoricalCrawler extends VangTodayCrawler {
               date: "",
               error: `Invalid content type: ${contentType}. Response: ${errorText.substring(
                 0,
-                200
+                200,
               )}`,
             },
           ],
@@ -176,7 +176,7 @@ export class VangTodayHistoricalCrawler extends VangTodayCrawler {
       // Parse historical data
       const { prices, errors } = await this.parseHistoricalResponse(
         data,
-        typeCode
+        typeCode,
       );
 
       return {
@@ -213,7 +213,7 @@ export class VangTodayHistoricalCrawler extends VangTodayCrawler {
    */
   private async parseHistoricalResponse(
     apiResponse: VangTodayHistoricalResponse,
-    typeCode: string
+    typeCode: string,
   ): Promise<{
     prices: DailyPriceData[];
     errors: Array<{ date: string; error: string }>;
@@ -290,7 +290,7 @@ export class VangTodayHistoricalCrawler extends VangTodayCrawler {
     mapping: TypeMapping,
     retailer: Retailer,
     province: Province,
-    productType: ProductType
+    productType: ProductType,
   ): PriceData {
     const typeCode = dailyPrice.type;
 

@@ -1,4 +1,4 @@
-import { ProductTypesTab } from '@/components/admin/config/product-types-tab'
+import { ProductTypesTab } from "@/components/admin/config/product-types-tab";
 
 export default function ProductTypesPage() {
   return (
@@ -12,5 +12,5 @@ export default function ProductTypesPage() {
 
       <ProductTypesTab />
     </div>
-  )
+  );
 }

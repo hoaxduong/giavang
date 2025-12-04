@@ -1,15 +1,15 @@
-'use client'
+"use client";
 
-import { useQuery } from '@tanstack/react-query'
-import { REFRESH_INTERVAL } from '../constants'
-import type { PriceSnapshot } from '../types'
+import { useQuery } from "@tanstack/react-query";
+import { REFRESH_INTERVAL } from "../constants";
+import type { PriceSnapshot } from "../types";
 
 /**
  * API Response type for world gold price
  */
 interface WorldGoldPriceResponse {
-  data: PriceSnapshot | null
-  timestamp: string
+  data: PriceSnapshot | null;
+  timestamp: string;
 }
 
 /**
@@ -22,23 +22,24 @@ interface WorldGoldPriceResponse {
  */
 export function useWorldGoldPrice() {
   const query = useQuery({
-    queryKey: ['prices', 'world-gold'],
+    queryKey: ["prices", "world-gold"],
     queryFn: async () => {
-      const response = await fetch('/api/prices/world-gold')
+      const response = await fetch("/api/prices/world-gold");
 
       if (!response.ok) {
-        throw new Error(`Failed to fetch world gold price: ${response.statusText}`)
+        throw new Error(
+          `Failed to fetch world gold price: ${response.statusText}`,
+        );
       }
 
-      return response.json() as Promise<WorldGoldPriceResponse>
+      return response.json() as Promise<WorldGoldPriceResponse>;
     },
     staleTime: REFRESH_INTERVAL, // 5 minutes
     gcTime: REFRESH_INTERVAL * 2, // 10 minutes
     refetchInterval: REFRESH_INTERVAL, // Auto-refetch every 5 minutes
     refetchOnWindowFocus: true,
     refetchOnReconnect: true,
-  })
+  });
 
-  return query
+  return query;
 }
-

@@ -1,4 +1,4 @@
-'use client'
+"use client";
 
 import {
   Select,
@@ -6,20 +6,22 @@ import {
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@/components/ui/select'
-import { RETAILERS } from '@/lib/constants'
-import type { Retailer } from '@/lib/constants'
+} from "@/components/ui/select";
+import { RETAILERS } from "@/lib/constants";
+import type { Retailer } from "@/lib/constants";
 
 interface RetailerFilterProps {
-  value?: Retailer
-  onValueChange: (value: Retailer | undefined) => void
+  value?: Retailer;
+  onValueChange: (value: Retailer | undefined) => void;
 }
 
 export function RetailerFilter({ value, onValueChange }: RetailerFilterProps) {
   return (
     <Select
-      value={value || 'all'}
-      onValueChange={(val) => onValueChange(val === 'all' ? undefined : (val as Retailer))}
+      value={value || "all"}
+      onValueChange={(val) =>
+        onValueChange(val === "all" ? undefined : (val as Retailer))
+      }
     >
       <SelectTrigger className="w-[200px]">
         <SelectValue placeholder="Chọn Nhà Bán" />
@@ -33,5 +35,5 @@ export function RetailerFilter({ value, onValueChange }: RetailerFilterProps) {
         ))}
       </SelectContent>
     </Select>
-  )
+  );
 }

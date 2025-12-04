@@ -1,5 +1,5 @@
-import { createServiceRoleClient } from '@/lib/supabase/service-role'
-import type { CrawlerLogEntry } from './types'
+import { createServiceRoleClient } from "@/lib/supabase/service-role";
+import type { CrawlerLogEntry } from "./types";
 
 /**
  * Crawler Logger
@@ -14,24 +14,24 @@ export class CrawlerLogger {
    */
   async createLog(
     sourceId: string,
-    triggerType: 'manual' | 'cron' | 'api',
-    triggerUserId?: string
+    triggerType: "manual" | "cron" | "api",
+    triggerUserId?: string,
   ): Promise<string> {
-    const supabase = createServiceRoleClient()
+    const supabase = createServiceRoleClient();
 
     const logEntry: Partial<CrawlerLogEntry> = {
       sourceId,
       startedAt: new Date().toISOString(),
-      status: 'running',
+      status: "running",
       recordsFetched: 0,
       recordsSaved: 0,
       recordsFailed: 0,
       triggerType,
       triggerUserId,
-    }
+    };
 
     const { data, error } = await supabase
-      .from('crawler_logs')
+      .from("crawler_logs")
       .insert({
         source_id: logEntry.sourceId,
         started_at: logEntry.startedAt,
@@ -42,15 +42,15 @@ export class CrawlerLogger {
         trigger_type: logEntry.triggerType,
         trigger_user_id: logEntry.triggerUserId,
       })
-      .select('id')
-      .single()
+      .select("id")
+      .single();
 
     if (error) {
-      console.error('Failed to create crawler log:', error)
-      throw new Error(`Failed to create crawler log: ${error.message}`)
+      console.error("Failed to create crawler log:", error);
+      throw new Error(`Failed to create crawler log: ${error.message}`);
     }
 
-    return data.id
+    return data.id;
   }
 
   /**
@@ -59,23 +59,23 @@ export class CrawlerLogger {
   async updateLog(
     logId: string,
     updates: {
-      status: 'success' | 'partial_success' | 'failed'
-      recordsFetched?: number
-      recordsSaved?: number
-      recordsFailed?: number
-      requestUrl?: string
-      requestMethod?: string
-      responseStatus?: number
-      responseTimeMs?: number
-      errorMessage?: string
-      errorStack?: string
-      failedItems?: Array<{ item: string; error: string }>
-    }
+      status: "success" | "partial_success" | "failed";
+      recordsFetched?: number;
+      recordsSaved?: number;
+      recordsFailed?: number;
+      requestUrl?: string;
+      requestMethod?: string;
+      responseStatus?: number;
+      responseTimeMs?: number;
+      errorMessage?: string;
+      errorStack?: string;
+      failedItems?: Array<{ item: string; error: string }>;
+    },
   ): Promise<void> {
-    const supabase = createServiceRoleClient()
+    const supabase = createServiceRoleClient();
 
     const { error } = await supabase
-      .from('crawler_logs')
+      .from("crawler_logs")
       .update({
         completed_at: new Date().toISOString(),
         status: updates.status,
@@ -90,10 +90,10 @@ export class CrawlerLogger {
         error_stack: updates.errorStack,
         failed_items: updates.failedItems,
       })
-      .eq('id', logId)
+      .eq("id", logId);
 
     if (error) {
-      console.error('Failed to update crawler log:', error)
+      console.error("Failed to update crawler log:", error);
       // Don't throw here - log update failure shouldn't break the sync
     }
   }
@@ -107,18 +107,18 @@ export class CrawlerLogger {
     recordsSaved: number,
     responseTimeMs: number,
     responseStatus: number,
-    triggerType: 'manual' | 'cron' | 'api',
-    triggerUserId?: string
+    triggerType: "manual" | "cron" | "api",
+    triggerUserId?: string,
   ): Promise<void> {
-    const logId = await this.createLog(sourceId, triggerType, triggerUserId)
+    const logId = await this.createLog(sourceId, triggerType, triggerUserId);
     await this.updateLog(logId, {
-      status: 'success',
+      status: "success",
       recordsFetched,
       recordsSaved,
       recordsFailed: 0,
       responseStatus,
       responseTimeMs,
-    })
+    });
   }
 
   /**
@@ -130,12 +130,12 @@ export class CrawlerLogger {
     errorStack: string,
     responseTimeMs: number,
     responseStatus?: number,
-    triggerType: 'manual' | 'cron' | 'api' = 'cron',
-    triggerUserId?: string
+    triggerType: "manual" | "cron" | "api" = "cron",
+    triggerUserId?: string,
   ): Promise<void> {
-    const logId = await this.createLog(sourceId, triggerType, triggerUserId)
+    const logId = await this.createLog(sourceId, triggerType, triggerUserId);
     await this.updateLog(logId, {
-      status: 'failed',
+      status: "failed",
       recordsFetched: 0,
       recordsSaved: 0,
       recordsFailed: 0,
@@ -143,7 +143,7 @@ export class CrawlerLogger {
       responseTimeMs,
       errorMessage,
       errorStack,
-    })
+    });
   }
 
   /**
@@ -151,20 +151,20 @@ export class CrawlerLogger {
    */
   async getRecentLogs(
     sourceId: string,
-    limit: number = 10
+    limit: number = 10,
   ): Promise<CrawlerLogEntry[]> {
-    const supabase = createServiceRoleClient()
+    const supabase = createServiceRoleClient();
 
     const { data, error } = await supabase
-      .from('crawler_logs')
-      .select('*')
-      .eq('source_id', sourceId)
-      .order('started_at', { ascending: false })
-      .limit(limit)
+      .from("crawler_logs")
+      .select("*")
+      .eq("source_id", sourceId)
+      .order("started_at", { ascending: false })
+      .limit(limit);
 
     if (error) {
-      console.error('Failed to fetch crawler logs:', error)
-      return []
+      console.error("Failed to fetch crawler logs:", error);
+      return [];
     }
 
     return data.map((log) => ({
@@ -184,33 +184,33 @@ export class CrawlerLogger {
       failedItems: log.failed_items,
       triggerType: log.trigger_type,
       triggerUserId: log.trigger_user_id,
-    }))
+    }));
   }
 
   /**
    * Get last successful sync time for a source
    */
   async getLastSuccessTime(sourceId: string): Promise<Date | null> {
-    const supabase = createServiceRoleClient()
+    const supabase = createServiceRoleClient();
 
     const { data, error } = await supabase
-      .from('crawler_logs')
-      .select('completed_at')
-      .eq('source_id', sourceId)
-      .eq('status', 'success')
-      .order('completed_at', { ascending: false })
+      .from("crawler_logs")
+      .select("completed_at")
+      .eq("source_id", sourceId)
+      .eq("status", "success")
+      .order("completed_at", { ascending: false })
       .limit(1)
-      .single()
+      .single();
 
     if (error || !data) {
-      return null
+      return null;
     }
 
-    return new Date(data.completed_at)
+    return new Date(data.completed_at);
   }
 }
 
 /**
  * Singleton instance
  */
-export const crawlerLogger = new CrawlerLogger()
+export const crawlerLogger = new CrawlerLogger();

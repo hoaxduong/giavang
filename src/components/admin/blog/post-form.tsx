@@ -1,176 +1,189 @@
-'use client'
+"use client";
 
-import { useState, useEffect } from 'react'
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
-import { Textarea } from '@/components/ui/textarea'
-import { Button } from '@/components/ui/button'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { Badge } from '@/components/ui/badge'
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog'
-import { X, Plus } from 'lucide-react'
-import Link from 'next/link'
-import { generateSlug } from '@/lib/blog/utils'
-import { PostStatus } from '@/lib/blog/types'
+import { useState, useEffect } from "react";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { Button } from "@/components/ui/button";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Badge } from "@/components/ui/badge";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { X, Plus } from "lucide-react";
+import Link from "next/link";
+import { generateSlug } from "@/lib/blog/utils";
+import { PostStatus } from "@/lib/blog/types";
 
 interface PostFormData {
-  title: string
-  slug: string
-  excerpt: string
-  featuredImageUrl: string
-  categoryId: string
-  tagIds: string[]
-  status: PostStatus
-  metaTitle: string
-  metaDescription: string
-  ogImageUrl: string
+  title: string;
+  slug: string;
+  excerpt: string;
+  featuredImageUrl: string;
+  categoryId: string;
+  tagIds: string[];
+  status: PostStatus;
+  metaTitle: string;
+  metaDescription: string;
+  ogImageUrl: string;
 }
 
 interface PostFormProps {
-  data: PostFormData
-  onChange: (data: PostFormData) => void
-  onSubmit?: () => void
-  submitLabel?: string
-  isSubmitting?: boolean
-  showCancel?: boolean
-  cancelHref?: string
+  data: PostFormData;
+  onChange: (data: PostFormData) => void;
+  onSubmit?: () => void;
+  submitLabel?: string;
+  isSubmitting?: boolean;
+  showCancel?: boolean;
+  cancelHref?: string;
 }
 
 export function PostForm({
   data,
   onChange,
   onSubmit,
-  submitLabel = 'Lưu',
+  submitLabel = "Lưu",
   isSubmitting = false,
   showCancel = true,
-  cancelHref = '/admin/blog/posts'
+  cancelHref = "/admin/blog/posts",
 }: PostFormProps) {
-  const queryClient = useQueryClient()
-  const [selectedTags, setSelectedTags] = useState<string[]>(data.tagIds || [])
+  const queryClient = useQueryClient();
+  const [selectedTags, setSelectedTags] = useState<string[]>(data.tagIds || []);
 
   // Category dialog state
-  const [categoryDialogOpen, setCategoryDialogOpen] = useState(false)
-  const [newCategoryName, setNewCategoryName] = useState('')
+  const [categoryDialogOpen, setCategoryDialogOpen] = useState(false);
+  const [newCategoryName, setNewCategoryName] = useState("");
 
   // Tag dialog state
-  const [tagDialogOpen, setTagDialogOpen] = useState(false)
-  const [newTagName, setNewTagName] = useState('')
+  const [tagDialogOpen, setTagDialogOpen] = useState(false);
+  const [newTagName, setNewTagName] = useState("");
 
   // Fetch categories
   const { data: categories } = useQuery({
-    queryKey: ['blog-categories'],
+    queryKey: ["blog-categories"],
     queryFn: async () => {
-      const res = await fetch('/api/admin/blog/categories')
-      if (!res.ok) throw new Error('Failed to fetch categories')
-      const json = await res.json()
-      return json.categories
+      const res = await fetch("/api/admin/blog/categories");
+      if (!res.ok) throw new Error("Failed to fetch categories");
+      const json = await res.json();
+      return json.categories;
     },
-  })
+  });
 
   // Fetch tags
   const { data: tags } = useQuery({
-    queryKey: ['blog-tags'],
+    queryKey: ["blog-tags"],
     queryFn: async () => {
-      const res = await fetch('/api/admin/blog/tags')
-      if (!res.ok) throw new Error('Failed to fetch tags')
-      const json = await res.json()
-      return json.tags
+      const res = await fetch("/api/admin/blog/tags");
+      if (!res.ok) throw new Error("Failed to fetch tags");
+      const json = await res.json();
+      return json.tags;
     },
-  })
+  });
 
   const handleTitleChange = (title: string) => {
     onChange({
       ...data,
       title,
       slug: generateSlug(title),
-    })
-  }
+    });
+  };
 
   const handleTagToggle = (tagId: string) => {
     const newTags = selectedTags.includes(tagId)
-      ? selectedTags.filter(id => id !== tagId)
-      : [...selectedTags, tagId]
+      ? selectedTags.filter((id) => id !== tagId)
+      : [...selectedTags, tagId];
 
-    setSelectedTags(newTags)
-    onChange({ ...data, tagIds: newTags })
-  }
+    setSelectedTags(newTags);
+    onChange({ ...data, tagIds: newTags });
+  };
 
   // Create category mutation
   const createCategoryMutation = useMutation({
     mutationFn: async (name: string) => {
-      const slug = generateSlug(name)
-      const res = await fetch('/api/admin/blog/categories', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+      const slug = generateSlug(name);
+      const res = await fetch("/api/admin/blog/categories", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ slug, name, isEnabled: true }),
-      })
-      if (!res.ok) throw new Error('Failed to create category')
-      return res.json()
+      });
+      if (!res.ok) throw new Error("Failed to create category");
+      return res.json();
     },
     onSuccess: (result) => {
-      queryClient.invalidateQueries({ queryKey: ['blog-categories'] })
-      onChange({ ...data, categoryId: result.category.id })
-      setCategoryDialogOpen(false)
-      setNewCategoryName('')
+      queryClient.invalidateQueries({ queryKey: ["blog-categories"] });
+      onChange({ ...data, categoryId: result.category.id });
+      setCategoryDialogOpen(false);
+      setNewCategoryName("");
     },
-  })
+  });
 
   // Create tag mutation
   const createTagMutation = useMutation({
     mutationFn: async (name: string) => {
-      const slug = generateSlug(name)
-      const res = await fetch('/api/admin/blog/tags', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+      const slug = generateSlug(name);
+      const res = await fetch("/api/admin/blog/tags", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ slug, name, isEnabled: true }),
-      })
-      if (!res.ok) throw new Error('Failed to create tag')
-      return res.json()
+      });
+      if (!res.ok) throw new Error("Failed to create tag");
+      return res.json();
     },
     onSuccess: (result) => {
-      queryClient.invalidateQueries({ queryKey: ['blog-tags'] })
-      const newTags = [...selectedTags, result.tag.id]
-      setSelectedTags(newTags)
-      onChange({ ...data, tagIds: newTags })
-      setTagDialogOpen(false)
-      setNewTagName('')
+      queryClient.invalidateQueries({ queryKey: ["blog-tags"] });
+      const newTags = [...selectedTags, result.tag.id];
+      setSelectedTags(newTags);
+      onChange({ ...data, tagIds: newTags });
+      setTagDialogOpen(false);
+      setNewTagName("");
     },
-  })
+  });
 
-  const handleImageUpload = async (type: 'featured' | 'og') => {
-    const input = document.createElement('input')
-    input.type = 'file'
-    input.accept = 'image/jpeg,image/jpg,image/png,image/webp,image/gif'
+  const handleImageUpload = async (type: "featured" | "og") => {
+    const input = document.createElement("input");
+    input.type = "file";
+    input.accept = "image/jpeg,image/jpg,image/png,image/webp,image/gif";
     input.onchange = async (e) => {
-      const file = (e.target as HTMLInputElement).files?.[0]
-      if (!file) return
+      const file = (e.target as HTMLInputElement).files?.[0];
+      if (!file) return;
 
       try {
-        const formData = new FormData()
-        formData.append('file', file)
-        formData.append('folder', type)
+        const formData = new FormData();
+        formData.append("file", file);
+        formData.append("folder", type);
 
-        const res = await fetch('/api/admin/blog/upload', {
-          method: 'POST',
+        const res = await fetch("/api/admin/blog/upload", {
+          method: "POST",
           body: formData,
-        })
+        });
 
-        if (!res.ok) throw new Error('Upload failed')
+        if (!res.ok) throw new Error("Upload failed");
 
-        const { url } = await res.json()
+        const { url } = await res.json();
 
-        if (type === 'featured') {
-          onChange({ ...data, featuredImageUrl: url })
+        if (type === "featured") {
+          onChange({ ...data, featuredImageUrl: url });
         } else {
-          onChange({ ...data, ogImageUrl: url })
+          onChange({ ...data, ogImageUrl: url });
         }
       } catch (error) {
-        alert('Failed to upload image')
+        alert("Failed to upload image");
       }
-    }
-    input.click()
-  }
+    };
+    input.click();
+  };
 
   return (
     <div className="space-y-6">
@@ -223,7 +236,7 @@ export function PostForm({
             {tags?.map((tag: any) => (
               <Badge
                 key={tag.id}
-                variant={selectedTags.includes(tag.id) ? 'default' : 'outline'}
+                variant={selectedTags.includes(tag.id) ? "default" : "outline"}
                 className="cursor-pointer"
                 onClick={() => handleTagToggle(tag.id)}
               >
@@ -253,9 +266,9 @@ export function PostForm({
           <Button
             type="button"
             variant="outline"
-            onClick={() => handleImageUpload('featured')}
+            onClick={() => handleImageUpload("featured")}
           >
-            {data.featuredImageUrl ? 'Thay đổi ảnh' : 'Tải ảnh lên'}
+            {data.featuredImageUrl ? "Thay đổi ảnh" : "Tải ảnh lên"}
           </Button>
         </div>
       </div>
@@ -265,7 +278,9 @@ export function PostForm({
         <Label htmlFor="status">Trạng thái</Label>
         <Select
           value={data.status}
-          onValueChange={(value: PostStatus) => onChange({ ...data, status: value })}
+          onValueChange={(value: PostStatus) =>
+            onChange({ ...data, status: value })
+          }
         >
           <SelectTrigger>
             <SelectValue />
@@ -287,11 +302,13 @@ export function PostForm({
             disabled={isSubmitting}
             className="flex-1"
           >
-            {isSubmitting ? 'Đang lưu...' : submitLabel}
+            {isSubmitting ? "Đang lưu..." : submitLabel}
           </Button>
           {showCancel && (
             <Link href={cancelHref}>
-              <Button type="button" variant="outline">Hủy</Button>
+              <Button type="button" variant="outline">
+                Hủy
+              </Button>
             </Link>
           )}
         </div>
@@ -317,7 +334,9 @@ export function PostForm({
             <Textarea
               id="metaDescription"
               value={data.metaDescription}
-              onChange={(e) => onChange({ ...data, metaDescription: e.target.value })}
+              onChange={(e) =>
+                onChange({ ...data, metaDescription: e.target.value })
+              }
               placeholder="Mô tả ngắn cho SEO (150-160 ký tự)"
               rows={3}
             />
@@ -338,12 +357,13 @@ export function PostForm({
               <Button
                 type="button"
                 variant="outline"
-                onClick={() => handleImageUpload('og')}
+                onClick={() => handleImageUpload("og")}
               >
-                {data.ogImageUrl ? 'Thay đổi ảnh OG' : 'Tải ảnh OG lên'}
+                {data.ogImageUrl ? "Thay đổi ảnh OG" : "Tải ảnh OG lên"}
               </Button>
               <p className="text-xs text-muted-foreground">
-                Ảnh hiển thị khi chia sẻ trên mạng xã hội (1200x630px khuyến nghị)
+                Ảnh hiển thị khi chia sẻ trên mạng xã hội (1200x630px khuyến
+                nghị)
               </p>
             </div>
           </div>
@@ -355,9 +375,7 @@ export function PostForm({
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Tạo danh mục mới</DialogTitle>
-            <DialogDescription>
-              Tạo danh mục mới cho bài viết
-            </DialogDescription>
+            <DialogDescription>Tạo danh mục mới cho bài viết</DialogDescription>
           </DialogHeader>
 
           <div className="space-y-4 py-4">
@@ -369,8 +387,8 @@ export function PostForm({
                 onChange={(e) => setNewCategoryName(e.target.value)}
                 placeholder="VD: Tin tức vàng"
                 onKeyDown={(e) => {
-                  if (e.key === 'Enter' && newCategoryName.trim()) {
-                    createCategoryMutation.mutate(newCategoryName.trim())
+                  if (e.key === "Enter" && newCategoryName.trim()) {
+                    createCategoryMutation.mutate(newCategoryName.trim());
                   }
                 }}
               />
@@ -384,8 +402,8 @@ export function PostForm({
             <Button
               variant="outline"
               onClick={() => {
-                setCategoryDialogOpen(false)
-                setNewCategoryName('')
+                setCategoryDialogOpen(false);
+                setNewCategoryName("");
               }}
             >
               Hủy
@@ -393,12 +411,14 @@ export function PostForm({
             <Button
               onClick={() => {
                 if (newCategoryName.trim()) {
-                  createCategoryMutation.mutate(newCategoryName.trim())
+                  createCategoryMutation.mutate(newCategoryName.trim());
                 }
               }}
-              disabled={!newCategoryName.trim() || createCategoryMutation.isPending}
+              disabled={
+                !newCategoryName.trim() || createCategoryMutation.isPending
+              }
             >
-              {createCategoryMutation.isPending ? 'Đang tạo...' : 'Tạo'}
+              {createCategoryMutation.isPending ? "Đang tạo..." : "Tạo"}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -409,9 +429,7 @@ export function PostForm({
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Tạo thẻ mới</DialogTitle>
-            <DialogDescription>
-              Tạo thẻ mới cho bài viết
-            </DialogDescription>
+            <DialogDescription>Tạo thẻ mới cho bài viết</DialogDescription>
           </DialogHeader>
 
           <div className="space-y-4 py-4">
@@ -423,8 +441,8 @@ export function PostForm({
                 onChange={(e) => setNewTagName(e.target.value)}
                 placeholder="VD: Đầu tư"
                 onKeyDown={(e) => {
-                  if (e.key === 'Enter' && newTagName.trim()) {
-                    createTagMutation.mutate(newTagName.trim())
+                  if (e.key === "Enter" && newTagName.trim()) {
+                    createTagMutation.mutate(newTagName.trim());
                   }
                 }}
               />
@@ -438,8 +456,8 @@ export function PostForm({
             <Button
               variant="outline"
               onClick={() => {
-                setTagDialogOpen(false)
-                setNewTagName('')
+                setTagDialogOpen(false);
+                setNewTagName("");
               }}
             >
               Hủy
@@ -447,16 +465,16 @@ export function PostForm({
             <Button
               onClick={() => {
                 if (newTagName.trim()) {
-                  createTagMutation.mutate(newTagName.trim())
+                  createTagMutation.mutate(newTagName.trim());
                 }
               }}
               disabled={!newTagName.trim() || createTagMutation.isPending}
             >
-              {createTagMutation.isPending ? 'Đang tạo...' : 'Tạo'}
+              {createTagMutation.isPending ? "Đang tạo..." : "Tạo"}
             </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
     </div>
-  )
+  );
 }

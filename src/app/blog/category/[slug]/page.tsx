@@ -35,7 +35,7 @@ export default async function CategoryPage({
       *,
       category:blog_categories(*),
       post_tags:blog_post_tags(tag:blog_tags(*))
-    `
+    `,
     )
     .eq("status", "published")
     .eq("category_id", category.id)
@@ -71,24 +71,24 @@ export default async function CategoryPage({
           items={[{ label: "Blog", href: "/blog" }, { label: category.name }]}
         />
 
-      <div className="mb-12">
-        <h1 className="text-4xl font-bold tracking-tight">{category.name}</h1>
-        {category.description && (
-          <p className="text-muted-foreground mt-4">{category.description}</p>
-        )}
-      </div>
-
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-        {posts.map((post) => (
-          <PostCard key={post.id} post={post} />
-        ))}
-      </div>
-
-      {posts.length === 0 && (
-        <div className="text-center py-12 text-muted-foreground">
-          Chưa có bài viết trong danh mục này
+        <div className="mb-12">
+          <h1 className="text-4xl font-bold tracking-tight">{category.name}</h1>
+          {category.description && (
+            <p className="text-muted-foreground mt-4">{category.description}</p>
+          )}
         </div>
-      )}
+
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+          {posts.map((post) => (
+            <PostCard key={post.id} post={post} />
+          ))}
+        </div>
+
+        {posts.length === 0 && (
+          <div className="text-center py-12 text-muted-foreground">
+            Chưa có bài viết trong danh mục này
+          </div>
+        )}
       </div>
     </>
   );

@@ -17,7 +17,8 @@ const geistMono = Geist_Mono({
 
 export const metadata: Metadata = {
   title: "Giá Vàng - Vietnamese Gold Price Tracker",
-  description: "Real-time Vietnamese gold price tracking with historical data and province comparison",
+  description:
+    "Real-time Vietnamese gold price tracking with historical data and province comparison",
   keywords: ["giá vàng", "gold price", "Vietnam", "SJC", "DOJI", "PNJ"],
 };
 

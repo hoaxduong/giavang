@@ -1,101 +1,101 @@
-import type { PriceData } from '@/lib/types'
+import type { PriceData } from "@/lib/types";
 
 /**
  * Field mapping configuration for parsing API responses
  */
 export interface FieldMappings {
   /** Path to the prices array in API response (e.g., "data.prices") */
-  dataPath: string
+  dataPath: string;
   /** Mapping of internal field names to API field names */
   fields: {
-    typeCode: string    // API field for external type code
-    buyPrice: string    // API field for buy price
-    sellPrice: string   // API field for sell price
-    timestamp: string   // API field for timestamp
-    currency?: string   // Optional: API field for currency
-  }
+    typeCode: string; // API field for external type code
+    buyPrice: string; // API field for buy price
+    sellPrice: string; // API field for sell price
+    timestamp: string; // API field for timestamp
+    currency?: string; // Optional: API field for currency
+  };
   /** Optional transformations to apply to the data */
   transforms?: {
-    timestamp?: 'iso8601' | 'unix'  // Timestamp format
-    priceMultiplier?: number         // Multiply prices by this value
-  }
+    timestamp?: "iso8601" | "unix"; // Timestamp format
+    priceMultiplier?: number; // Multiply prices by this value
+  };
 }
 
 /**
  * Crawler configuration from database
  */
 export interface CrawlerConfig {
-  id: string
-  name: string
-  apiUrl: string
-  apiType: string
-  headers?: Record<string, string>
-  timeout?: number
-  isEnabled: boolean
-  rateLimit?: number
-  priority?: number
-  fieldMappings?: FieldMappings
+  id: string;
+  name: string;
+  apiUrl: string;
+  apiType: string;
+  headers?: Record<string, string>;
+  timeout?: number;
+  isEnabled: boolean;
+  rateLimit?: number;
+  priority?: number;
+  fieldMappings?: FieldMappings;
 }
 
 /**
  * Type mapping from external API code to internal entities
  */
 export interface TypeMapping {
-  id: string
-  sourceId: string
-  externalCode: string
-  retailerCode: string
-  productTypeCode: string
-  provinceCode: string | null
-  label: string
-  isEnabled: boolean
+  id: string;
+  sourceId: string;
+  externalCode: string;
+  retailerCode: string;
+  productTypeCode: string;
+  provinceCode: string | null;
+  label: string;
+  isEnabled: boolean;
 }
 
 /**
  * Reference data entities
  */
 export interface Retailer {
-  id: string
-  code: string
-  name: string
-  isEnabled: boolean
-  sortOrder: number
+  id: string;
+  code: string;
+  name: string;
+  isEnabled: boolean;
+  sortOrder: number;
 }
 
 export interface Province {
-  id: string
-  code: string
-  name: string
-  isEnabled: boolean
-  sortOrder: number
+  id: string;
+  code: string;
+  name: string;
+  isEnabled: boolean;
+  sortOrder: number;
 }
 
 export interface ProductType {
-  id: string
-  code: string
-  label: string
-  shortLabel: string
-  isEnabled: boolean
-  sortOrder: number
+  id: string;
+  code: string;
+  label: string;
+  shortLabel: string;
+  isEnabled: boolean;
+  sortOrder: number;
 }
 
 /**
  * Result from a crawler fetch operation
  */
 export interface CrawlerResult {
-  success: boolean
-  data: PriceData[]
+  success: boolean;
+  data: PriceData[];
   metadata: {
-    recordsFetched: number
-    recordsSaved: number
-    recordsFailed: number
-    responseTime: number
-    responseStatus: number
-  }
+    recordsFetched: number;
+    recordsSaved: number;
+    recordsFailed: number;
+    responseTime: number;
+    responseStatus: number;
+  };
   errors?: Array<{
-    item: string
-    error: string
-  }>
+    item: string;
+    error: string;
+  }>;
 }
 
 /**
@@ -103,100 +103,100 @@ export interface CrawlerResult {
  */
 export interface SyncResult {
   results: Array<{
-    source: string
-    success: boolean
-    recordsSaved: number
-    error?: string
-  }>
-  totalRecords: number
-  totalErrors: number
-  duration: number
+    source: string;
+    success: boolean;
+    recordsSaved: number;
+    error?: string;
+  }>;
+  totalRecords: number;
+  totalErrors: number;
+  duration: number;
 }
 
 /**
  * Crawler log entry for database
  */
 export interface CrawlerLogEntry {
-  sourceId: string | null
-  startedAt: string
-  completedAt?: string
-  status: 'running' | 'success' | 'partial_success' | 'failed'
-  recordsFetched: number
-  recordsSaved: number
-  recordsFailed: number
-  requestUrl?: string
-  requestMethod?: string
-  responseStatus?: number
-  responseTimeMs?: number
-  errorMessage?: string
-  errorStack?: string
-  failedItems?: Array<{ item: string; error: string }>
-  triggerType: 'manual' | 'cron' | 'api'
-  triggerUserId?: string
+  sourceId: string | null;
+  startedAt: string;
+  completedAt?: string;
+  status: "running" | "success" | "partial_success" | "failed";
+  recordsFetched: number;
+  recordsSaved: number;
+  recordsFailed: number;
+  requestUrl?: string;
+  requestMethod?: string;
+  responseStatus?: number;
+  responseTimeMs?: number;
+  errorMessage?: string;
+  errorStack?: string;
+  failedItems?: Array<{ item: string; error: string }>;
+  triggerType: "manual" | "cron" | "api";
+  triggerUserId?: string;
 }
 
 /**
  * Database entities (snake_case from Supabase)
  */
 export interface DbCrawlerSource {
-  id: string
-  name: string
-  api_url: string
-  api_type: string
-  is_enabled: boolean
-  headers?: Record<string, string>
-  auth_type?: string
-  auth_config?: Record<string, unknown>
-  rate_limit_per_minute?: number
-  timeout_seconds?: number
-  priority?: number
-  field_mappings?: FieldMappings
-  created_at: string
-  updated_at: string
+  id: string;
+  name: string;
+  api_url: string;
+  api_type: string;
+  is_enabled: boolean;
+  headers?: Record<string, string>;
+  auth_type?: string;
+  auth_config?: Record<string, unknown>;
+  rate_limit_per_minute?: number;
+  timeout_seconds?: number;
+  priority?: number;
+  field_mappings?: FieldMappings;
+  created_at: string;
+  updated_at: string;
 }
 
 export interface DbTypeMapping {
-  id: string
-  source_id: string
-  external_code: string
-  retailer_code: string
-  product_type_code: string
-  province_code: string | null
-  label: string
-  is_enabled: boolean
-  created_at: string
-  updated_at: string
+  id: string;
+  source_id: string;
+  external_code: string;
+  retailer_code: string;
+  product_type_code: string;
+  province_code: string | null;
+  label: string;
+  is_enabled: boolean;
+  created_at: string;
+  updated_at: string;
 }
 
 export interface DbRetailer {
-  id: string
-  code: string
-  name: string
-  is_enabled: boolean
-  sort_order: number
-  created_at: string
-  updated_at: string
+  id: string;
+  code: string;
+  name: string;
+  is_enabled: boolean;
+  sort_order: number;
+  created_at: string;
+  updated_at: string;
 }
 
 export interface DbProvince {
-  id: string
-  code: string
-  name: string
-  is_enabled: boolean
-  sort_order: number
-  created_at: string
-  updated_at: string
+  id: string;
+  code: string;
+  name: string;
+  is_enabled: boolean;
+  sort_order: number;
+  created_at: string;
+  updated_at: string;
 }
 
 export interface DbProductType {
-  id: string
-  code: string
-  label: string
-  short_label: string
-  is_enabled: boolean
-  sort_order: number
-  created_at: string
-  updated_at: string
+  id: string;
+  code: string;
+  label: string;
+  short_label: string;
+  is_enabled: boolean;
+  sort_order: number;
+  created_at: string;
+  updated_at: string;
 }
 
 /**
@@ -214,7 +214,7 @@ export function dbSourceToConfig(db: DbCrawlerSource): CrawlerConfig {
     rateLimit: db.rate_limit_per_minute,
     priority: db.priority,
     fieldMappings: db.field_mappings,
-  }
+  };
 }
 
 export function dbTypeMappingToTypeMapping(db: DbTypeMapping): TypeMapping {
@@ -227,7 +227,7 @@ export function dbTypeMappingToTypeMapping(db: DbTypeMapping): TypeMapping {
     provinceCode: db.province_code,
     label: db.label,
     isEnabled: db.is_enabled,
-  }
+  };
 }
 
 export function dbRetailerToRetailer(db: DbRetailer): Retailer {
@@ -237,7 +237,7 @@ export function dbRetailerToRetailer(db: DbRetailer): Retailer {
     name: db.name,
     isEnabled: db.is_enabled,
     sortOrder: db.sort_order,
-  }
+  };
 }
 
 export function dbProvinceToProvince(db: DbProvince): Province {
@@ -247,7 +247,7 @@ export function dbProvinceToProvince(db: DbProvince): Province {
     name: db.name,
     isEnabled: db.is_enabled,
     sortOrder: db.sort_order,
-  }
+  };
 }
 
 export function dbProductTypeToProductType(db: DbProductType): ProductType {
@@ -258,5 +258,5 @@ export function dbProductTypeToProductType(db: DbProductType): ProductType {
     shortLabel: db.short_label,
     isEnabled: db.is_enabled,
     sortOrder: db.sort_order,
-  }
+  };
 }

@@ -1,17 +1,17 @@
-import type { UserRole } from './types'
+import type { UserRole } from "./types";
 
 /**
  * Check if a role has admin privileges
  */
 export function isAdmin(role: UserRole | null | undefined): boolean {
-  return role === 'admin'
+  return role === "admin";
 }
 
 /**
  * Check if a role has at least user privileges
  */
 export function isUser(role: UserRole | null | undefined): boolean {
-  return role === 'user' || role === 'admin'
+  return role === "user" || role === "admin";
 }
 
 /**
@@ -19,15 +19,14 @@ export function isUser(role: UserRole | null | undefined): boolean {
  */
 export function hasRole(
   userRole: UserRole | null | undefined,
-  requiredRole: UserRole
+  requiredRole: UserRole,
 ): boolean {
-  if (!userRole) return false
+  if (!userRole) return false;
 
-  if (requiredRole === 'admin') {
-    return userRole === 'admin'
+  if (requiredRole === "admin") {
+    return userRole === "admin";
   }
 
   // For 'user' role, both 'user' and 'admin' are allowed
-  return userRole === 'user' || userRole === 'admin'
+  return userRole === "user" || userRole === "admin";
 }
-

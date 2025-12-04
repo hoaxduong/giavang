@@ -1,7 +1,7 @@
-'use client'
+"use client";
 
-import { useState } from 'react'
-import { useMutation, useQueryClient } from '@tanstack/react-query'
+import { useState } from "react";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import {
   Table,
   TableBody,
@@ -9,39 +9,46 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from '@/components/ui/table'
-import { Button } from '@/components/ui/button'
-import { Switch } from '@/components/ui/switch'
-import { Badge } from '@/components/ui/badge'
-import { Edit, Trash2, Plus } from 'lucide-react'
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog'
-import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
-import { Alert, AlertDescription } from '@/components/ui/alert'
+} from "@/components/ui/table";
+import { Button } from "@/components/ui/button";
+import { Switch } from "@/components/ui/switch";
+import { Badge } from "@/components/ui/badge";
+import { Edit, Trash2, Plus } from "lucide-react";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 
 interface ConfigItem {
-  id: string
-  code: string
-  name?: string
-  label?: string
-  short_label?: string
-  is_enabled: boolean
-  sort_order: number
+  id: string;
+  code: string;
+  name?: string;
+  label?: string;
+  short_label?: string;
+  is_enabled: boolean;
+  sort_order: number;
 }
 
 interface ConfigTableProps<T extends ConfigItem> {
-  title: string
-  description: string
-  items: T[]
-  isLoading: boolean
-  apiEndpoint: string
-  queryKey: string
+  title: string;
+  description: string;
+  items: T[];
+  isLoading: boolean;
+  apiEndpoint: string;
+  queryKey: string;
   fields: {
-    code: { label: string; placeholder: string }
-    name?: { label: string; placeholder: string }
-    label?: { label: string; placeholder: string }
-    shortLabel?: { label: string; placeholder: string }
-  }
+    code: { label: string; placeholder: string };
+    name?: { label: string; placeholder: string };
+    label?: { label: string; placeholder: string };
+    shortLabel?: { label: string; placeholder: string };
+  };
 }
 
 export function ConfigTable<T extends ConfigItem>({
@@ -53,132 +60,144 @@ export function ConfigTable<T extends ConfigItem>({
   queryKey,
   fields,
 }: ConfigTableProps<T>) {
-  const queryClient = useQueryClient()
-  const [isDialogOpen, setIsDialogOpen] = useState(false)
-  const [editingItem, setEditingItem] = useState<T | null>(null)
+  const queryClient = useQueryClient();
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [editingItem, setEditingItem] = useState<T | null>(null);
   const [formData, setFormData] = useState({
-    code: '',
-    name: '',
-    label: '',
-    shortLabel: '',
+    code: "",
+    name: "",
+    label: "",
+    shortLabel: "",
     sortOrder: 0,
-  })
-  const [error, setError] = useState<string | null>(null)
+  });
+  const [error, setError] = useState<string | null>(null);
 
   // Create mutation
   const createMutation = useMutation({
     mutationFn: async (data: Partial<T>) => {
       const res = await fetch(apiEndpoint, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify(data),
-      })
-      if (!res.ok) throw new Error('Failed to create item')
-      return res.json()
+      });
+      if (!res.ok) throw new Error("Failed to create item");
+      return res.json();
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: [queryKey] })
-      setIsDialogOpen(false)
-      resetForm()
+      queryClient.invalidateQueries({ queryKey: [queryKey] });
+      setIsDialogOpen(false);
+      resetForm();
     },
     onError: (error: Error) => {
-      setError(error.message)
+      setError(error.message);
     },
-  })
+  });
 
   // Update mutation
   const updateMutation = useMutation({
     mutationFn: async (data: Partial<T> & { id: string }) => {
       const res = await fetch(apiEndpoint, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify(data),
-      })
-      if (!res.ok) throw new Error('Failed to update item')
-      return res.json()
+      });
+      if (!res.ok) throw new Error("Failed to update item");
+      return res.json();
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: [queryKey] })
-      setIsDialogOpen(false)
-      resetForm()
+      queryClient.invalidateQueries({ queryKey: [queryKey] });
+      setIsDialogOpen(false);
+      resetForm();
     },
     onError: (error: Error) => {
-      setError(error.message)
+      setError(error.message);
     },
-  })
+  });
 
   // Delete mutation
   const deleteMutation = useMutation({
     mutationFn: async (id: string) => {
       const res = await fetch(`${apiEndpoint}?id=${id}`, {
-        method: 'DELETE',
-      })
-      if (!res.ok) throw new Error('Failed to delete item')
-      return res.json()
+        method: "DELETE",
+      });
+      if (!res.ok) throw new Error("Failed to delete item");
+      return res.json();
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: [queryKey] })
+      queryClient.invalidateQueries({ queryKey: [queryKey] });
     },
-  })
+  });
 
   // Toggle enabled mutation
   const toggleEnabledMutation = useMutation({
-    mutationFn: async ({ id, isEnabled }: { id: string; isEnabled: boolean }) => {
+    mutationFn: async ({
+      id,
+      isEnabled,
+    }: {
+      id: string;
+      isEnabled: boolean;
+    }) => {
       const res = await fetch(apiEndpoint, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ id, isEnabled }),
-      })
-      if (!res.ok) throw new Error('Failed to toggle status')
-      return res.json()
+      });
+      if (!res.ok) throw new Error("Failed to toggle status");
+      return res.json();
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: [queryKey] })
+      queryClient.invalidateQueries({ queryKey: [queryKey] });
     },
-  })
+  });
 
   const resetForm = () => {
-    setFormData({ code: '', name: '', label: '', shortLabel: '', sortOrder: 0 })
-    setEditingItem(null)
-    setError(null)
-  }
+    setFormData({
+      code: "",
+      name: "",
+      label: "",
+      shortLabel: "",
+      sortOrder: 0,
+    });
+    setEditingItem(null);
+    setError(null);
+  };
 
   const handleOpenDialog = (item?: T) => {
     if (item) {
-      setEditingItem(item)
+      setEditingItem(item);
       setFormData({
         code: item.code,
-        name: item.name || '',
-        label: item.label || '',
-        shortLabel: item.short_label || '',
+        name: item.name || "",
+        label: item.label || "",
+        shortLabel: item.short_label || "",
         sortOrder: item.sort_order,
-      })
+      });
     } else {
-      resetForm()
+      resetForm();
     }
-    setIsDialogOpen(true)
-  }
+    setIsDialogOpen(true);
+  };
 
   const handleSubmit = () => {
     const data: any = {
       code: formData.code,
       sortOrder: formData.sortOrder,
-    }
+    };
 
-    if (fields.name) data.name = formData.name
-    if (fields.label) data.label = formData.label
-    if (fields.shortLabel) data.shortLabel = formData.shortLabel
+    if (fields.name) data.name = formData.name;
+    if (fields.label) data.label = formData.label;
+    if (fields.shortLabel) data.shortLabel = formData.shortLabel;
 
     if (editingItem) {
-      updateMutation.mutate({ ...data, id: editingItem.id })
+      updateMutation.mutate({ ...data, id: editingItem.id });
     } else {
-      createMutation.mutate(data)
+      createMutation.mutate(data);
     }
-  }
+  };
 
   const getDisplayName = (item: T) => {
-    return item.name || item.label || item.code
-  }
+    return item.name || item.label || item.code;
+  };
 
   return (
     <div className="space-y-4">
@@ -219,7 +238,10 @@ export function ConfigTable<T extends ConfigItem>({
               </TableRow>
             ) : items.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={5} className="text-center py-8 text-muted-foreground">
+                <TableCell
+                  colSpan={5}
+                  className="text-center py-8 text-muted-foreground"
+                >
                   Chưa có dữ liệu
                 </TableCell>
               </TableRow>
@@ -239,8 +261,10 @@ export function ConfigTable<T extends ConfigItem>({
                           })
                         }
                       />
-                      <Badge variant={item.is_enabled ? 'default' : 'secondary'}>
-                        {item.is_enabled ? 'Kích hoạt' : 'Tắt'}
+                      <Badge
+                        variant={item.is_enabled ? "default" : "secondary"}
+                      >
+                        {item.is_enabled ? "Kích hoạt" : "Tắt"}
                       </Badge>
                     </div>
                   </TableCell>
@@ -258,8 +282,8 @@ export function ConfigTable<T extends ConfigItem>({
                         size="sm"
                         variant="destructive"
                         onClick={() => {
-                          if (confirm('Bạn có chắc muốn xóa?')) {
-                            deleteMutation.mutate(item.id)
+                          if (confirm("Bạn có chắc muốn xóa?")) {
+                            deleteMutation.mutate(item.id);
                           }
                         }}
                       >
@@ -278,10 +302,10 @@ export function ConfigTable<T extends ConfigItem>({
         <DialogContent>
           <DialogHeader>
             <DialogTitle>
-              {editingItem ? 'Chỉnh sửa' : 'Thêm mới'} {title}
+              {editingItem ? "Chỉnh sửa" : "Thêm mới"} {title}
             </DialogTitle>
             <DialogDescription>
-              {editingItem ? 'Cập nhật thông tin' : 'Nhập thông tin mới'}
+              {editingItem ? "Cập nhật thông tin" : "Nhập thông tin mới"}
             </DialogDescription>
           </DialogHeader>
 
@@ -291,7 +315,9 @@ export function ConfigTable<T extends ConfigItem>({
               <Input
                 id="code"
                 value={formData.code}
-                onChange={(e) => setFormData({ ...formData, code: e.target.value })}
+                onChange={(e) =>
+                  setFormData({ ...formData, code: e.target.value })
+                }
                 placeholder={fields.code.placeholder}
                 disabled={!!editingItem}
               />
@@ -303,7 +329,9 @@ export function ConfigTable<T extends ConfigItem>({
                 <Input
                   id="name"
                   value={formData.name}
-                  onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                  onChange={(e) =>
+                    setFormData({ ...formData, name: e.target.value })
+                  }
                   placeholder={fields.name.placeholder}
                 />
               </div>
@@ -315,7 +343,9 @@ export function ConfigTable<T extends ConfigItem>({
                 <Input
                   id="label"
                   value={formData.label}
-                  onChange={(e) => setFormData({ ...formData, label: e.target.value })}
+                  onChange={(e) =>
+                    setFormData({ ...formData, label: e.target.value })
+                  }
                   placeholder={fields.label.placeholder}
                 />
               </div>
@@ -327,7 +357,9 @@ export function ConfigTable<T extends ConfigItem>({
                 <Input
                   id="shortLabel"
                   value={formData.shortLabel}
-                  onChange={(e) => setFormData({ ...formData, shortLabel: e.target.value })}
+                  onChange={(e) =>
+                    setFormData({ ...formData, shortLabel: e.target.value })
+                  }
                   placeholder={fields.shortLabel.placeholder}
                 />
               </div>
@@ -339,7 +371,12 @@ export function ConfigTable<T extends ConfigItem>({
                 id="sortOrder"
                 type="number"
                 value={formData.sortOrder}
-                onChange={(e) => setFormData({ ...formData, sortOrder: parseInt(e.target.value) || 0 })}
+                onChange={(e) =>
+                  setFormData({
+                    ...formData,
+                    sortOrder: parseInt(e.target.value) || 0,
+                  })
+                }
               />
             </div>
           </div>
@@ -349,11 +386,11 @@ export function ConfigTable<T extends ConfigItem>({
               Hủy
             </Button>
             <Button onClick={handleSubmit}>
-              {editingItem ? 'Cập nhật' : 'Thêm mới'}
+              {editingItem ? "Cập nhật" : "Thêm mới"}
             </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
     </div>
-  )
+  );
 }

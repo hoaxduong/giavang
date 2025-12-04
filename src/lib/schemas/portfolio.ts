@@ -8,7 +8,7 @@ export const portfolioFormSchema = z.object({
     .min(0.001, "Số lượng phải lớn hơn 0"),
   retailer: z.enum(RETAILERS as unknown as [string, ...string[]]),
   product_type: z.enum(
-    PRODUCT_TYPES.map((t) => t.value) as unknown as [string, ...string[]]
+    PRODUCT_TYPES.map((t) => t.value) as unknown as [string, ...string[]],
   ),
   province: z
     .union([

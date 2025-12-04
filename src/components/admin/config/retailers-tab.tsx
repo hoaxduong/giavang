@@ -1,26 +1,26 @@
-'use client'
+"use client";
 
-import { useQuery } from '@tanstack/react-query'
-import { ConfigTable } from './config-table'
+import { useQuery } from "@tanstack/react-query";
+import { ConfigTable } from "./config-table";
 
 interface Retailer {
-  id: string
-  code: string
-  name: string
-  is_enabled: boolean
-  sort_order: number
+  id: string;
+  code: string;
+  name: string;
+  is_enabled: boolean;
+  sort_order: number;
 }
 
 export function RetailersTab() {
   const { data, isLoading } = useQuery({
-    queryKey: ['retailers'],
+    queryKey: ["retailers"],
     queryFn: async () => {
-      const res = await fetch('/api/admin/retailers')
-      if (!res.ok) throw new Error('Failed to fetch retailers')
-      const json = await res.json()
-      return json.retailers as Retailer[]
+      const res = await fetch("/api/admin/retailers");
+      if (!res.ok) throw new Error("Failed to fetch retailers");
+      const json = await res.json();
+      return json.retailers as Retailer[];
     },
-  })
+  });
 
   return (
     <ConfigTable<Retailer>
@@ -32,14 +32,14 @@ export function RetailersTab() {
       queryKey="retailers"
       fields={{
         code: {
-          label: 'Mã thương hiệu',
-          placeholder: 'VD: SJC, DOJI, PNJ',
+          label: "Mã thương hiệu",
+          placeholder: "VD: SJC, DOJI, PNJ",
         },
         name: {
-          label: 'Tên thương hiệu',
-          placeholder: 'VD: SJC, DOJI, PNJ',
+          label: "Tên thương hiệu",
+          placeholder: "VD: SJC, DOJI, PNJ",
         },
       }}
     />
-  )
+  );
 }

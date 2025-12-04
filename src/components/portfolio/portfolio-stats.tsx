@@ -1,13 +1,19 @@
-'use client'
+"use client";
 
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { Badge } from '@/components/ui/badge'
-import { Skeleton } from '@/components/ui/skeleton'
-import { formatCurrency, calculatePercentChange } from '@/lib/utils'
-import { usePortfolioStats } from '@/lib/queries/use-portfolio-stats'
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Skeleton } from "@/components/ui/skeleton";
+import { formatCurrency, calculatePercentChange } from "@/lib/utils";
+import { usePortfolioStats } from "@/lib/queries/use-portfolio-stats";
 
 export function PortfolioStats() {
-  const { data: stats, isLoading } = usePortfolioStats()
+  const { data: stats, isLoading } = usePortfolioStats();
 
   if (isLoading) {
     return (
@@ -23,7 +29,7 @@ export function PortfolioStats() {
           </Card>
         ))}
       </div>
-    )
+    );
   }
 
   if (!stats) {
@@ -35,15 +41,15 @@ export function PortfolioStats() {
           </p>
         </CardContent>
       </Card>
-    )
+    );
   }
 
   const profitLossColor =
     stats.profitLossVnd > 0
-      ? 'text-green-600'
+      ? "text-green-600"
       : stats.profitLossVnd < 0
-      ? 'text-red-600'
-      : 'text-muted-foreground'
+        ? "text-red-600"
+        : "text-muted-foreground";
 
   return (
     <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
@@ -63,13 +69,17 @@ export function PortfolioStats() {
           <CardDescription>Tổng số lượng vàng đã mua</CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="text-2xl font-bold">{stats.totalGoldAmount.toFixed(3)} chỉ</div>
+          <div className="text-2xl font-bold">
+            {stats.totalGoldAmount.toFixed(3)} chỉ
+          </div>
         </CardContent>
       </Card>
 
       <Card>
         <CardHeader>
-          <CardTitle className="text-sm font-medium">Tổng VND Đã Đầu Tư</CardTitle>
+          <CardTitle className="text-sm font-medium">
+            Tổng VND Đã Đầu Tư
+          </CardTitle>
           <CardDescription>Tổng số tiền đã đầu tư</CardDescription>
         </CardHeader>
         <CardContent>
@@ -81,7 +91,9 @@ export function PortfolioStats() {
 
       <Card>
         <CardHeader>
-          <CardTitle className="text-sm font-medium">Giá Trị Hiện Tại</CardTitle>
+          <CardTitle className="text-sm font-medium">
+            Giá Trị Hiện Tại
+          </CardTitle>
           <CardDescription>Giá trị hiện tại của danh mục</CardDescription>
         </CardHeader>
         <CardContent>
@@ -98,7 +110,7 @@ export function PortfolioStats() {
         </CardHeader>
         <CardContent>
           <div className={`text-2xl font-bold font-mono ${profitLossColor}`}>
-            {stats.profitLossVnd > 0 ? '+' : ''}
+            {stats.profitLossVnd > 0 ? "+" : ""}
             {formatCurrency(stats.profitLossVnd)}
           </div>
         </CardContent>
@@ -112,19 +124,23 @@ export function PortfolioStats() {
         <CardContent>
           <div className="flex items-center gap-2">
             <div className={`text-2xl font-bold ${profitLossColor}`}>
-              {stats.profitLossPercent > 0 ? '+' : ''}
+              {stats.profitLossPercent > 0 ? "+" : ""}
               {stats.profitLossPercent.toFixed(2)}%
             </div>
             <Badge
               variant={
                 stats.profitLossPercent > 0
-                  ? 'success'
+                  ? "success"
                   : stats.profitLossPercent < 0
-                  ? 'destructive'
-                  : 'secondary'
+                    ? "destructive"
+                    : "secondary"
               }
             >
-              {stats.profitLossPercent > 0 ? 'Lãi' : stats.profitLossPercent < 0 ? 'Lỗ' : 'Hòa'}
+              {stats.profitLossPercent > 0
+                ? "Lãi"
+                : stats.profitLossPercent < 0
+                  ? "Lỗ"
+                  : "Hòa"}
             </Badge>
           </div>
         </CardContent>
@@ -132,7 +148,9 @@ export function PortfolioStats() {
 
       <Card>
         <CardHeader>
-          <CardTitle className="text-sm font-medium">Giao Dịch Đã Bán</CardTitle>
+          <CardTitle className="text-sm font-medium">
+            Giao Dịch Đã Bán
+          </CardTitle>
           <CardDescription>Số giao dịch đã bán</CardDescription>
         </CardHeader>
         <CardContent>
@@ -142,7 +160,9 @@ export function PortfolioStats() {
 
       <Card>
         <CardHeader>
-          <CardTitle className="text-sm font-medium">Giao Dịch Đang Nắm Giữ</CardTitle>
+          <CardTitle className="text-sm font-medium">
+            Giao Dịch Đang Nắm Giữ
+          </CardTitle>
           <CardDescription>Số giao dịch chưa bán</CardDescription>
         </CardHeader>
         <CardContent>
@@ -150,6 +170,5 @@ export function PortfolioStats() {
         </CardContent>
       </Card>
     </div>
-  )
+  );
 }
-

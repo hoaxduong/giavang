@@ -105,7 +105,7 @@ export function CrawlerSources() {
   // Type mapping state
   const [isMappingDialogOpen, setIsMappingDialogOpen] = useState(false);
   const [editingMapping, setEditingMapping] = useState<TypeMapping | null>(
-    null
+    null,
   );
   const [mappingFormData, setMappingFormData] = useState({
     externalCode: "",
@@ -131,7 +131,7 @@ export function CrawlerSources() {
     queryFn: async () => {
       if (!editingItem?.id) return [];
       const res = await fetch(
-        `/api/admin/crawler/mappings?sourceId=${editingItem.id}`
+        `/api/admin/crawler/mappings?sourceId=${editingItem.id}`,
       );
       if (!res.ok) throw new Error("Failed to fetch mappings");
       const json = await res.json();
@@ -700,7 +700,8 @@ export function CrawlerSources() {
                     </span>
                   </h4>
                   <p className="text-xs text-muted-foreground mb-3">
-                    Lưu ý: SJC và một số nguồn khác dùng logic parse riêng, không cần chỉnh field mappings
+                    Lưu ý: SJC và một số nguồn khác dùng logic parse riêng,
+                    không cần chỉnh field mappings
                   </p>
                   <div className="space-y-3">
                     <div>
@@ -821,7 +822,9 @@ export function CrawlerSources() {
                         >
                           <option value="unix">Unix (seconds)</option>
                           <option value="iso8601">ISO 8601</option>
-                          <option value="custom">Custom (source-specific)</option>
+                          <option value="custom">
+                            Custom (source-specific)
+                          </option>
                         </select>
                       </div>
                       <div>

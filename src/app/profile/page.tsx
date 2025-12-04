@@ -1,13 +1,13 @@
-import { requireAuth } from '@/lib/auth/server'
-import { Header } from '@/components/layout/header'
-import { ProfileForm } from '@/components/user/profile-form'
-import { redirect } from 'next/navigation'
+import { requireAuth } from "@/lib/auth/server";
+import { Header } from "@/components/layout/header";
+import { ProfileForm } from "@/components/user/profile-form";
+import { redirect } from "next/navigation";
 
 export default async function ProfilePage() {
-  const { user, profile } = await requireAuth()
+  const { user, profile } = await requireAuth();
 
   if (!user || !profile) {
-    redirect('/auth/signin')
+    redirect("/auth/signin");
   }
 
   return (
@@ -26,6 +26,5 @@ export default async function ProfilePage() {
         </div>
       </main>
     </div>
-  )
+  );
 }
-

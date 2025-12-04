@@ -1,4 +1,4 @@
-import { ProvincesTab } from '@/components/admin/config/provinces-tab'
+import { ProvincesTab } from "@/components/admin/config/provinces-tab";
 
 export default function ProvincesPage() {
   return (
@@ -12,5 +12,5 @@ export default function ProvincesPage() {
 
       <ProvincesTab />
     </div>
-  )
+  );
 }

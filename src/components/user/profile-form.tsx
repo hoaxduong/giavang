@@ -1,43 +1,49 @@
-'use client'
+"use client";
 
-import { useState, useEffect } from 'react'
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { useUserProfile } from '@/hooks/use-user-profile'
-import type { UserProfile } from '@/lib/auth/types'
+import { useState, useEffect } from "react";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { useUserProfile } from "@/hooks/use-user-profile";
+import type { UserProfile } from "@/lib/auth/types";
 
 export function ProfileForm() {
-  const { profile, isLoading, updateProfile, isUpdating } = useUserProfile()
-  const [fullName, setFullName] = useState('')
-  const [avatarUrl, setAvatarUrl] = useState('')
-  const [error, setError] = useState<string | null>(null)
-  const [success, setSuccess] = useState(false)
+  const { profile, isLoading, updateProfile, isUpdating } = useUserProfile();
+  const [fullName, setFullName] = useState("");
+  const [avatarUrl, setAvatarUrl] = useState("");
+  const [error, setError] = useState<string | null>(null);
+  const [success, setSuccess] = useState(false);
 
   useEffect(() => {
     if (profile) {
-      setFullName(profile.full_name || '')
-      setAvatarUrl(profile.avatar_url || '')
+      setFullName(profile.full_name || "");
+      setAvatarUrl(profile.avatar_url || "");
     }
-  }, [profile])
+  }, [profile]);
 
   const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-    setError(null)
-    setSuccess(false)
+    e.preventDefault();
+    setError(null);
+    setSuccess(false);
 
     try {
       await updateProfile({
         full_name: fullName || null,
         avatar_url: avatarUrl || null,
-      })
-      setSuccess(true)
-      setTimeout(() => setSuccess(false), 3000)
+      });
+      setSuccess(true);
+      setTimeout(() => setSuccess(false), 3000);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Có lỗi xảy ra')
+      setError(err instanceof Error ? err.message : "Có lỗi xảy ra");
     }
-  }
+  };
 
   if (isLoading) {
     return (
@@ -46,16 +52,14 @@ export function ProfileForm() {
           <CardTitle>Đang tải...</CardTitle>
         </CardHeader>
       </Card>
-    )
+    );
   }
 
   return (
     <Card>
       <CardHeader>
         <CardTitle>Hồ Sơ Của Tôi</CardTitle>
-        <CardDescription>
-          Cập nhật thông tin cá nhân của bạn
-        </CardDescription>
+        <CardDescription>Cập nhật thông tin cá nhân của bạn</CardDescription>
       </CardHeader>
       <CardContent>
         <form onSubmit={handleSubmit} className="space-y-4">
@@ -99,11 +103,10 @@ export function ProfileForm() {
           </div>
 
           <Button type="submit" disabled={isUpdating}>
-            {isUpdating ? 'Đang cập nhật...' : 'Cập nhật'}
+            {isUpdating ? "Đang cập nhật..." : "Cập nhật"}
           </Button>
         </form>
       </CardContent>
     </Card>
-  )
+  );
 }
-

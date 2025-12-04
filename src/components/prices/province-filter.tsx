@@ -1,4 +1,4 @@
-'use client'
+"use client";
 
 import {
   Select,
@@ -6,20 +6,22 @@ import {
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@/components/ui/select'
-import { PROVINCES } from '@/lib/constants'
-import type { Province } from '@/lib/constants'
+} from "@/components/ui/select";
+import { PROVINCES } from "@/lib/constants";
+import type { Province } from "@/lib/constants";
 
 interface ProvinceFilterProps {
-  value?: Province
-  onValueChange: (value: Province | undefined) => void
+  value?: Province;
+  onValueChange: (value: Province | undefined) => void;
 }
 
 export function ProvinceFilter({ value, onValueChange }: ProvinceFilterProps) {
   return (
     <Select
-      value={value || 'all'}
-      onValueChange={(val) => onValueChange(val === 'all' ? undefined : (val as Province))}
+      value={value || "all"}
+      onValueChange={(val) =>
+        onValueChange(val === "all" ? undefined : (val as Province))
+      }
     >
       <SelectTrigger className="w-[200px]">
         <SelectValue placeholder="Chọn Tỉnh/TP" />
@@ -33,5 +35,5 @@ export function ProvinceFilter({ value, onValueChange }: ProvinceFilterProps) {
         ))}
       </SelectContent>
     </Select>
-  )
+  );
 }

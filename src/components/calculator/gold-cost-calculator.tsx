@@ -1,58 +1,65 @@
-'use client'
+"use client";
 
-import { useState, useMemo } from 'react'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { Badge } from '@/components/ui/badge'
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { Skeleton } from '@/components/ui/skeleton'
+import { useState, useMemo } from "react";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Skeleton } from "@/components/ui/skeleton";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@/components/ui/select'
-import { formatCurrency, calculatePercentChange, cn } from '@/lib/utils'
-import { RETAILERS, PRODUCT_TYPES, PROVINCES, type Retailer, type ProductType, type Province } from '@/lib/constants'
-import { useCurrentPrices } from '@/lib/queries/use-current-prices'
+} from "@/components/ui/select";
+import { formatCurrency, calculatePercentChange, cn } from "@/lib/utils";
+import {
+  RETAILERS,
+  PRODUCT_TYPES,
+  PROVINCES,
+  type Retailer,
+  type ProductType,
+  type Province,
+} from "@/lib/constants";
+import { useCurrentPrices } from "@/lib/queries/use-current-prices";
 
 /**
  * Transaction row interface
  */
 interface TransactionRow {
-  id: string
-  goldAmount: number
-  buyPrice: number
-  retailer: Retailer | ''
-  productType: ProductType | ''
-  province: Province | ''
+  id: string;
+  goldAmount: number;
+  buyPrice: number;
+  retailer: Retailer | "";
+  productType: ProductType | "";
+  province: Province | "";
 }
 
 /**
  * Get product type label
  */
 function getProductTypeLabel(productType: string): string {
-  const product = PRODUCT_TYPES.find((p) => p.value === productType)
-  return product?.label || productType
+  const product = PRODUCT_TYPES.find((p) => p.value === productType);
+  return product?.label || productType;
 }
 
 export function GoldCostCalculator() {
-  const [transactions, setTransactions] = useState<TransactionRow[]>([])
-  const { data: currentPrices, isLoading: pricesLoading } = useCurrentPrices()
+  const [transactions, setTransactions] = useState<TransactionRow[]>([]);
+  const { data: currentPrices, isLoading: pricesLoading } = useCurrentPrices();
 
   // Create a map of current prices for quick lookup
   // Use buy_price (retailer's buy price) - this is what user would receive when selling
   const currentPriceMap = useMemo(() => {
-    const map = new Map<string, number>()
+    const map = new Map<string, number>();
     if (currentPrices?.data) {
       currentPrices.data.forEach((price) => {
-        const key = `${price.retailer}-${price.province || ''}-${price.product_type}`
-        map.set(key, Number(price.buy_price))
-      })
+        const key = `${price.retailer}-${price.province || ""}-${price.product_type}`;
+        map.set(key, Number(price.buy_price));
+      });
     }
-    return map
-  }, [currentPrices])
+    return map;
+  }, [currentPrices]);
 
   /**
    * Add new transaction row
@@ -62,73 +69,89 @@ export function GoldCostCalculator() {
       id: crypto.randomUUID(),
       goldAmount: 0,
       buyPrice: 0,
-      retailer: '',
-      productType: '',
-      province: '',
-    }
-    setTransactions([...transactions, newTransaction])
-  }
+      retailer: "",
+      productType: "",
+      province: "",
+    };
+    setTransactions([...transactions, newTransaction]);
+  };
 
   /**
    * Remove transaction row by ID
    */
   const removeTransaction = (id: string) => {
-    setTransactions(transactions.filter((tx) => tx.id !== id))
-  }
+    setTransactions(transactions.filter((tx) => tx.id !== id));
+  };
 
   /**
    * Update transaction field
    */
-  const updateTransaction = (id: string, field: keyof TransactionRow, value: any) => {
+  const updateTransaction = (
+    id: string,
+    field: keyof TransactionRow,
+    value: any,
+  ) => {
     setTransactions(
-      transactions.map((tx) =>
-        tx.id === id ? { ...tx, [field]: value } : tx
-      )
-    )
-  }
+      transactions.map((tx) => (tx.id === id ? { ...tx, [field]: value } : tx)),
+    );
+  };
 
   /**
    * Get current sell price for a transaction
    */
-  const getCurrentPrice = (retailer: Retailer | '', province: Province | '', productType: ProductType | ''): number => {
-    if (!retailer || !productType) return 0
-    const key = `${retailer}-${province || ''}-${productType}`
-    return currentPriceMap.get(key) || 0
-  }
+  const getCurrentPrice = (
+    retailer: Retailer | "",
+    province: Province | "",
+    productType: ProductType | "",
+  ): number => {
+    if (!retailer || !productType) return 0;
+    const key = `${retailer}-${province || ""}-${productType}`;
+    return currentPriceMap.get(key) || 0;
+  };
 
   /**
    * Calculate current value of a transaction
    */
   const calculateCurrentValue = (tx: TransactionRow): number => {
-    const currentPrice = getCurrentPrice(tx.retailer, tx.province, tx.productType)
-    return (tx.goldAmount || 0) * currentPrice
-  }
+    const currentPrice = getCurrentPrice(
+      tx.retailer,
+      tx.province,
+      tx.productType,
+    );
+    return (tx.goldAmount || 0) * currentPrice;
+  };
 
   /**
    * Calculate profit/loss for a transaction
    */
   const calculateTransactionProfitLoss = (tx: TransactionRow): number => {
-    const invested = (tx.goldAmount || 0) * (tx.buyPrice || 0)
-    const currentValue = calculateCurrentValue(tx)
-    return currentValue - invested
-  }
+    const invested = (tx.goldAmount || 0) * (tx.buyPrice || 0);
+    const currentValue = calculateCurrentValue(tx);
+    return currentValue - invested;
+  };
 
   /**
    * Calculate all metrics using useMemo for performance
    */
   const calculationResults = useMemo(() => {
-    const totalGold = transactions.reduce((sum, tx) => sum + (tx.goldAmount || 0), 0)
+    const totalGold = transactions.reduce(
+      (sum, tx) => sum + (tx.goldAmount || 0),
+      0,
+    );
     const totalInvested = transactions.reduce(
-      (sum, tx) => sum + ((tx.goldAmount || 0) * (tx.buyPrice || 0)),
-      0
-    )
-    const averageCost = totalGold > 0 ? totalInvested / totalGold : 0
+      (sum, tx) => sum + (tx.goldAmount || 0) * (tx.buyPrice || 0),
+      0,
+    );
+    const averageCost = totalGold > 0 ? totalInvested / totalGold : 0;
     const estimatedRevenue = transactions.reduce(
       (sum, tx) => sum + calculateCurrentValue(tx),
-      0
-    )
-    const profitLoss = estimatedRevenue - totalInvested
-    const profitLossPercent = calculatePercentChange(totalInvested, estimatedRevenue)
+      0,
+    );
+    const profitLoss = estimatedRevenue - totalInvested;
+    const profitLossPercent = calculatePercentChange(
+      totalInvested,
+      estimatedRevenue,
+    );
 
     return {
       totalGold,
@@ -137,15 +160,15 @@ export function GoldCostCalculator() {
       estimatedRevenue,
       profitLoss,
       profitLossPercent,
-    }
-  }, [transactions, currentPriceMap])
+    };
+  }, [transactions, currentPriceMap]);
 
   /**
    * Calculate individual transaction total
    */
   const calculateTransactionTotal = (goldAmount: number, buyPrice: number) => {
-    return (goldAmount || 0) * (buyPrice || 0)
-  }
+    return (goldAmount || 0) * (buyPrice || 0);
+  };
 
   return (
     <div className="space-y-6">
@@ -167,25 +190,55 @@ export function GoldCostCalculator() {
               <table className="w-full text-sm">
                 <thead>
                   <tr className="border-b">
-                    <th className="pb-2 px-2 text-left font-semibold text-xs">Số Lượng</th>
-                    <th className="pb-2 px-2 text-left font-semibold text-xs">Giá Mua</th>
-                    <th className="pb-2 px-2 text-left font-semibold text-xs">Nhà Bán</th>
-                    <th className="pb-2 px-2 text-left font-semibold text-xs">Tỉnh/TP</th>
-                    <th className="pb-2 px-2 text-left font-semibold text-xs">Loại Vàng</th>
-                    <th className="pb-2 px-2 text-right font-semibold text-xs">Vốn</th>
-                    <th className="pb-2 px-2 text-right font-semibold text-xs">Giá HT</th>
-                    <th className="pb-2 px-2 text-right font-semibold text-xs">GT HT</th>
-                    <th className="pb-2 px-2 text-right font-semibold text-xs">Lãi/Lỗ</th>
-                    <th className="pb-2 px-2 text-center font-semibold text-xs">Xóa</th>
+                    <th className="pb-2 px-2 text-left font-semibold text-xs">
+                      Số Lượng
+                    </th>
+                    <th className="pb-2 px-2 text-left font-semibold text-xs">
+                      Giá Mua
+                    </th>
+                    <th className="pb-2 px-2 text-left font-semibold text-xs">
+                      Nhà Bán
+                    </th>
+                    <th className="pb-2 px-2 text-left font-semibold text-xs">
+                      Tỉnh/TP
+                    </th>
+                    <th className="pb-2 px-2 text-left font-semibold text-xs">
+                      Loại Vàng
+                    </th>
+                    <th className="pb-2 px-2 text-right font-semibold text-xs">
+                      Vốn
+                    </th>
+                    <th className="pb-2 px-2 text-right font-semibold text-xs">
+                      Giá HT
+                    </th>
+                    <th className="pb-2 px-2 text-right font-semibold text-xs">
+                      GT HT
+                    </th>
+                    <th className="pb-2 px-2 text-right font-semibold text-xs">
+                      Lãi/Lỗ
+                    </th>
+                    <th className="pb-2 px-2 text-center font-semibold text-xs">
+                      Xóa
+                    </th>
                   </tr>
                 </thead>
                 <tbody>
                   {transactions.map((tx) => {
-                    const currentPrice = getCurrentPrice(tx.retailer, tx.province, tx.productType)
-                    const invested = calculateTransactionTotal(tx.goldAmount, tx.buyPrice)
-                    const currentValue = calculateCurrentValue(tx)
-                    const profitLoss = calculateTransactionProfitLoss(tx)
-                    const profitLossPercent = invested > 0 ? calculatePercentChange(invested, currentValue) : 0
+                    const currentPrice = getCurrentPrice(
+                      tx.retailer,
+                      tx.province,
+                      tx.productType,
+                    );
+                    const invested = calculateTransactionTotal(
+                      tx.goldAmount,
+                      tx.buyPrice,
+                    );
+                    const currentValue = calculateCurrentValue(tx);
+                    const profitLoss = calculateTransactionProfitLoss(tx);
+                    const profitLossPercent =
+                      invested > 0
+                        ? calculatePercentChange(invested, currentValue)
+                        : 0;
 
                     return (
                       <tr
@@ -197,9 +250,13 @@ export function GoldCostCalculator() {
                             type="number"
                             step="0.001"
                             min="0"
-                            value={tx.goldAmount || ''}
+                            value={tx.goldAmount || ""}
                             onChange={(e) =>
-                              updateTransaction(tx.id, 'goldAmount', parseFloat(e.target.value) || 0)
+                              updateTransaction(
+                                tx.id,
+                                "goldAmount",
+                                parseFloat(e.target.value) || 0,
+                              )
                             }
                             className="w-24 text-sm"
                             placeholder="0.0"
@@ -210,9 +267,13 @@ export function GoldCostCalculator() {
                             type="number"
                             step="1"
                             min="0"
-                            value={tx.buyPrice || ''}
+                            value={tx.buyPrice || ""}
                             onChange={(e) =>
-                              updateTransaction(tx.id, 'buyPrice', parseInt(e.target.value) || 0)
+                              updateTransaction(
+                                tx.id,
+                                "buyPrice",
+                                parseInt(e.target.value) || 0,
+                              )
                             }
                             className="w-32 text-sm"
                             placeholder="0"
@@ -222,7 +283,11 @@ export function GoldCostCalculator() {
                           <Select
                             value={tx.retailer}
                             onValueChange={(value) =>
-                              updateTransaction(tx.id, 'retailer', value as Retailer)
+                              updateTransaction(
+                                tx.id,
+                                "retailer",
+                                value as Retailer,
+                              )
                             }
                           >
                             <SelectTrigger className="w-36 text-sm">
@@ -241,7 +306,11 @@ export function GoldCostCalculator() {
                           <Select
                             value={tx.province}
                             onValueChange={(value) =>
-                              updateTransaction(tx.id, 'province', value as Province)
+                              updateTransaction(
+                                tx.id,
+                                "province",
+                                value as Province,
+                              )
                             }
                           >
                             <SelectTrigger className="w-32 text-sm">
@@ -260,7 +329,11 @@ export function GoldCostCalculator() {
                           <Select
                             value={tx.productType}
                             onValueChange={(value) =>
-                              updateTransaction(tx.id, 'productType', value as ProductType)
+                              updateTransaction(
+                                tx.id,
+                                "productType",
+                                value as ProductType,
+                              )
                             }
                           >
                             <SelectTrigger className="w-32 text-sm">
@@ -268,7 +341,10 @@ export function GoldCostCalculator() {
                             </SelectTrigger>
                             <SelectContent>
                               {PRODUCT_TYPES.map((product) => (
-                                <SelectItem key={product.value} value={product.value}>
+                                <SelectItem
+                                  key={product.value}
+                                  value={product.value}
+                                >
                                   {product.label}
                                 </SelectItem>
                               ))}
@@ -300,10 +376,10 @@ export function GoldCostCalculator() {
                               <Badge
                                 variant={
                                   profitLoss > 0
-                                    ? 'success'
+                                    ? "success"
                                     : profitLoss < 0
-                                    ? 'destructive'
-                                    : 'secondary'
+                                      ? "destructive"
+                                      : "secondary"
                                 }
                                 className="text-xs px-1.5 py-0.5"
                               >
@@ -311,15 +387,15 @@ export function GoldCostCalculator() {
                               </Badge>
                               <span
                                 className={cn(
-                                  'text-xs',
+                                  "text-xs",
                                   profitLoss > 0
-                                    ? 'text-green-600'
+                                    ? "text-green-600"
                                     : profitLoss < 0
-                                    ? 'text-red-600'
-                                    : 'text-muted-foreground'
+                                      ? "text-red-600"
+                                      : "text-muted-foreground",
                                 )}
                               >
-                                {profitLossPercent > 0 ? '+' : ''}
+                                {profitLossPercent > 0 ? "+" : ""}
                                 {profitLossPercent.toFixed(1)}%
                               </span>
                             </div>
@@ -336,7 +412,7 @@ export function GoldCostCalculator() {
                           </Button>
                         </td>
                       </tr>
-                    )
+                    );
                   })}
                 </tbody>
               </table>
@@ -405,10 +481,10 @@ export function GoldCostCalculator() {
                 <Badge
                   variant={
                     calculationResults.profitLoss > 0
-                      ? 'success'
+                      ? "success"
                       : calculationResults.profitLoss < 0
-                      ? 'destructive'
-                      : 'secondary'
+                        ? "destructive"
+                        : "secondary"
                   }
                   className="text-lg font-bold px-3 py-1"
                 >
@@ -416,15 +492,15 @@ export function GoldCostCalculator() {
                 </Badge>
                 <p
                   className={cn(
-                    'text-sm mt-2',
+                    "text-sm mt-2",
                     calculationResults.profitLoss > 0
-                      ? 'text-green-600'
+                      ? "text-green-600"
                       : calculationResults.profitLoss < 0
-                      ? 'text-red-600'
-                      : 'text-muted-foreground'
+                        ? "text-red-600"
+                        : "text-muted-foreground",
                   )}
                 >
-                  {calculationResults.profitLossPercent > 0 ? '+' : ''}
+                  {calculationResults.profitLossPercent > 0 ? "+" : ""}
                   {calculationResults.profitLossPercent.toFixed(2)}%
                 </p>
               </>
@@ -442,7 +518,9 @@ export function GoldCostCalculator() {
           <CardContent>
             <div className="space-y-2 text-sm">
               <div className="flex justify-between py-2 border-b">
-                <span className="text-muted-foreground">Tổng số lượng vàng:</span>
+                <span className="text-muted-foreground">
+                  Tổng số lượng vàng:
+                </span>
                 <span className="font-semibold">
                   {calculationResults.totalGold.toFixed(3)} chỉ
                 </span>
@@ -454,13 +532,17 @@ export function GoldCostCalculator() {
                 </span>
               </div>
               <div className="flex justify-between py-2 border-b">
-                <span className="text-muted-foreground">Giá vốn trung bình:</span>
+                <span className="text-muted-foreground">
+                  Giá vốn trung bình:
+                </span>
                 <span className="font-semibold">
                   {formatCurrency(calculationResults.averageCost)} / chỉ
                 </span>
               </div>
               <div className="flex justify-between py-2 border-b">
-                <span className="text-muted-foreground">Giá trị hiện tại (theo giá thị trường):</span>
+                <span className="text-muted-foreground">
+                  Giá trị hiện tại (theo giá thị trường):
+                </span>
                 <span className="font-semibold">
                   {pricesLoading ? (
                     <Skeleton className="h-4 w-32 inline-block" />
@@ -476,16 +558,16 @@ export function GoldCostCalculator() {
                 ) : (
                   <span
                     className={cn(
-                      'font-bold',
+                      "font-bold",
                       calculationResults.profitLoss > 0
-                        ? 'text-green-600'
+                        ? "text-green-600"
                         : calculationResults.profitLoss < 0
-                        ? 'text-red-600'
-                        : 'text-muted-foreground'
+                          ? "text-red-600"
+                          : "text-muted-foreground",
                     )}
                   >
                     {formatCurrency(calculationResults.profitLoss)} (
-                    {calculationResults.profitLossPercent > 0 ? '+' : ''}
+                    {calculationResults.profitLossPercent > 0 ? "+" : ""}
                     {calculationResults.profitLossPercent.toFixed(2)}%)
                   </span>
                 )}
@@ -495,5 +577,5 @@ export function GoldCostCalculator() {
         </Card>
       )}
     </div>
-  )
+  );
 }

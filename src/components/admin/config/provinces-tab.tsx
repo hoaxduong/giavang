@@ -1,26 +1,26 @@
-'use client'
+"use client";
 
-import { useQuery } from '@tanstack/react-query'
-import { ConfigTable } from './config-table'
+import { useQuery } from "@tanstack/react-query";
+import { ConfigTable } from "./config-table";
 
 interface Province {
-  id: string
-  code: string
-  name: string
-  is_enabled: boolean
-  sort_order: number
+  id: string;
+  code: string;
+  name: string;
+  is_enabled: boolean;
+  sort_order: number;
 }
 
 export function ProvincesTab() {
   const { data, isLoading } = useQuery({
-    queryKey: ['provinces'],
+    queryKey: ["provinces"],
     queryFn: async () => {
-      const res = await fetch('/api/admin/provinces')
-      if (!res.ok) throw new Error('Failed to fetch provinces')
-      const json = await res.json()
-      return json.provinces as Province[]
+      const res = await fetch("/api/admin/provinces");
+      if (!res.ok) throw new Error("Failed to fetch provinces");
+      const json = await res.json();
+      return json.provinces as Province[];
     },
-  })
+  });
 
   return (
     <ConfigTable<Province>
@@ -32,14 +32,14 @@ export function ProvincesTab() {
       queryKey="provinces"
       fields={{
         code: {
-          label: 'Mã tỉnh thành',
-          placeholder: 'VD: TP. Hồ Chí Minh, Hà Nội',
+          label: "Mã tỉnh thành",
+          placeholder: "VD: TP. Hồ Chí Minh, Hà Nội",
         },
         name: {
-          label: 'Tên tỉnh thành',
-          placeholder: 'VD: TP. Hồ Chí Minh, Hà Nội',
+          label: "Tên tỉnh thành",
+          placeholder: "VD: TP. Hồ Chí Minh, Hà Nội",
         },
       }}
     />
-  )
+  );
 }

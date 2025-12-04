@@ -11,7 +11,7 @@ export const profitLossFormSchema = z
       .min(0.001, "Số lượng vàng phải ít nhất 0.001 chỉ"),
     retailer: z.enum(RETAILERS as unknown as [string, ...string[]]),
     product_type: z.enum(
-      PRODUCT_TYPES.map((t) => t.value) as unknown as [string, ...string[]]
+      PRODUCT_TYPES.map((t) => t.value) as unknown as [string, ...string[]],
     ),
     province: z
       .union([
@@ -34,7 +34,7 @@ export const profitLossFormSchema = z
     {
       message: "Thời gian bán phải sau hoặc bằng thời gian mua",
       path: ["sell_date"],
-    }
+    },
   );
 
 export type ProfitLossFormData = z.infer<typeof profitLossFormSchema>;

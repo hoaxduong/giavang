@@ -1,9 +1,9 @@
-import { createServiceRoleClient } from '@/lib/supabase/service-role'
-import { priceDataToSnapshot } from '../price-normalizer'
-import { VangTodayCrawler } from './vang-today-crawler'
-import { SjcCrawler } from './sjc-crawler'
-import type { BaseCrawler } from './base-crawler'
-import type { CrawlerConfig, SyncResult, DbCrawlerSource } from './types'
+import { createServiceRoleClient } from "@/lib/supabase/service-role";
+import { priceDataToSnapshot } from "../price-normalizer";
+import { VangTodayCrawler } from "./vang-today-crawler";
+import { SjcCrawler } from "./sjc-crawler";
+import type { BaseCrawler } from "./base-crawler";
+import type { CrawlerConfig, SyncResult, DbCrawlerSource } from "./types";
 
 /**
  * Crawler Manager
@@ -19,18 +19,18 @@ export class CrawlerManager {
    * Sync all enabled crawler sources
    */
   async syncAll(): Promise<SyncResult> {
-    const startTime = Date.now()
-    const supabase = createServiceRoleClient()
+    const startTime = Date.now();
+    const supabase = createServiceRoleClient();
 
     // Fetch all enabled sources ordered by priority
     const { data: sources, error } = await supabase
-      .from('crawler_sources')
-      .select('*')
-      .eq('is_enabled', true)
-      .order('priority', { ascending: true })
+      .from("crawler_sources")
+      .select("*")
+      .eq("is_enabled", true)
+      .order("priority", { ascending: true });
 
     if (error) {
-      throw new Error(`Failed to fetch crawler sources: ${error.message}`)
+      throw new Error(`Failed to fetch crawler sources: ${error.message}`);
     }
 
     if (!sources || sources.length === 0) {
@@ -39,34 +39,34 @@ export class CrawlerManager {
         totalRecords: 0,
         totalErrors: 0,
         duration: Date.now() - startTime,
-      }
+      };
     }
 
     // Sync each source
-    const results: SyncResult['results'] = []
-    let totalRecords = 0
-    let totalErrors = 0
+    const results: SyncResult["results"] = [];
+    let totalRecords = 0;
+    let totalErrors = 0;
 
     for (const source of sources) {
       try {
-        const result = await this.syncSource(source.id)
+        const result = await this.syncSource(source.id);
         results.push({
           source: source.name,
           success: result.success,
           recordsSaved: result.recordsSaved,
-        })
-        totalRecords += result.recordsSaved
+        });
+        totalRecords += result.recordsSaved;
         if (!result.success) {
-          totalErrors++
+          totalErrors++;
         }
       } catch (error) {
         results.push({
           source: source.name,
           success: false,
           recordsSaved: 0,
-          error: error instanceof Error ? error.message : 'Unknown error',
-        })
-        totalErrors++
+          error: error instanceof Error ? error.message : "Unknown error",
+        });
+        totalErrors++;
       }
     }
 
@@ -75,7 +75,7 @@ export class CrawlerManager {
       totalRecords,
       totalErrors,
       duration: Date.now() - startTime,
-    }
+    };
   }
 
   /**
@@ -83,52 +83,54 @@ export class CrawlerManager {
    */
   async syncSource(
     sourceId: string,
-    triggerType: 'manual' | 'cron' | 'api' = 'manual',
-    triggerUserId?: string
+    triggerType: "manual" | "cron" | "api" = "manual",
+    triggerUserId?: string,
   ): Promise<{
-    success: boolean
-    recordsSaved: number
-    error?: string
+    success: boolean;
+    recordsSaved: number;
+    error?: string;
   }> {
-    const supabase = createServiceRoleClient()
+    const supabase = createServiceRoleClient();
 
     // Fetch source configuration
     const { data: source, error: sourceError } = await supabase
-      .from('crawler_sources')
-      .select('*')
-      .eq('id', sourceId)
-      .single()
+      .from("crawler_sources")
+      .select("*")
+      .eq("id", sourceId)
+      .single();
 
     if (sourceError || !source) {
-      throw new Error(`Failed to fetch crawler source: ${sourceError?.message || 'Not found'}`)
+      throw new Error(
+        `Failed to fetch crawler source: ${sourceError?.message || "Not found"}`,
+      );
     }
 
     // Check if source is enabled
     if (!source.is_enabled) {
-      throw new Error(`Crawler source ${source.name} is disabled`)
+      throw new Error(`Crawler source ${source.name} is disabled`);
     }
 
     // Create crawler instance
-    const crawler = this.createCrawler(source, triggerType, triggerUserId)
+    const crawler = this.createCrawler(source, triggerType, triggerUserId);
 
     // Fetch prices
-    const result = await crawler.fetchPrices()
+    const result = await crawler.fetchPrices();
 
     if (!result.success) {
       return {
         success: false,
         recordsSaved: 0,
-        error: 'Failed to fetch prices from source',
-      }
+        error: "Failed to fetch prices from source",
+      };
     }
 
     // Save prices to database
-    const recordsSaved = await this.savePrices(result.data, sourceId)
+    const recordsSaved = await this.savePrices(result.data, sourceId);
 
     return {
       success: true,
       recordsSaved,
-    }
+    };
   }
 
   /**
@@ -136,8 +138,8 @@ export class CrawlerManager {
    */
   private createCrawler(
     source: DbCrawlerSource,
-    triggerType: 'manual' | 'cron' | 'api' = 'cron',
-    triggerUserId?: string
+    triggerType: "manual" | "cron" | "api" = "cron",
+    triggerUserId?: string,
   ): BaseCrawler {
     const config: CrawlerConfig = {
       id: source.id,
@@ -149,24 +151,24 @@ export class CrawlerManager {
       isEnabled: source.is_enabled,
       rateLimit: source.rate_limit_per_minute,
       priority: source.priority,
-    }
+    };
 
     switch (source.api_type) {
-      case 'vang_today': {
-        const crawler = new VangTodayCrawler(config)
-        crawler.setTriggerInfo(triggerType, triggerUserId)
-        return crawler
+      case "vang_today": {
+        const crawler = new VangTodayCrawler(config);
+        crawler.setTriggerInfo(triggerType, triggerUserId);
+        return crawler;
       }
-      case 'sjc': {
-        const crawler = new SjcCrawler(config)
-        crawler.setTriggerInfo(triggerType, triggerUserId)
-        return crawler
+      case "sjc": {
+        const crawler = new SjcCrawler(config);
+        crawler.setTriggerInfo(triggerType, triggerUserId);
+        return crawler;
       }
       // Future crawler types can be added here
       // case 'goldapi':
       //   return new GoldApiCrawler(config)
       default:
-        throw new Error(`Unsupported crawler type: ${source.api_type}`)
+        throw new Error(`Unsupported crawler type: ${source.api_type}`);
     }
   }
 
@@ -174,27 +176,30 @@ export class CrawlerManager {
    * Save prices to database
    * Converts PriceData to snapshots and inserts
    */
-  private async savePrices(prices: import('@/lib/types').PriceData[], sourceId: string): Promise<number> {
+  private async savePrices(
+    prices: import("@/lib/types").PriceData[],
+    sourceId: string,
+  ): Promise<number> {
     if (prices.length === 0) {
-      return 0
+      return 0;
     }
 
-    const supabase = createServiceRoleClient()
+    const supabase = createServiceRoleClient();
 
     // Convert to database snapshots
-    const snapshots = prices.map((price) => priceDataToSnapshot(price))
+    const snapshots = prices.map((price) => priceDataToSnapshot(price));
 
     // Insert snapshots
     const { error, count } = await supabase
-      .from('price_snapshots')
-      .insert(snapshots)
+      .from("price_snapshots")
+      .insert(snapshots);
 
     if (error) {
-      console.error('Failed to save price snapshots:', error)
-      throw new Error(`Failed to save prices: ${error.message}`)
+      console.error("Failed to save price snapshots:", error);
+      throw new Error(`Failed to save prices: ${error.message}`);
     }
 
-    return count || snapshots.length
+    return count || snapshots.length;
   }
 
   /**
@@ -203,67 +208,71 @@ export class CrawlerManager {
    */
   async getSourcesStatus(): Promise<
     Array<{
-      id: string
-      name: string
-      isEnabled: boolean
-      lastSync: Date | null
-      successRate: number
+      id: string;
+      name: string;
+      isEnabled: boolean;
+      lastSync: Date | null;
+      successRate: number;
     }>
   > {
-    const supabase = createServiceRoleClient()
+    const supabase = createServiceRoleClient();
 
     const { data: sources } = await supabase
-      .from('crawler_sources')
-      .select('*')
-      .order('priority')
+      .from("crawler_sources")
+      .select("*")
+      .order("priority");
 
     if (!sources) {
-      return []
+      return [];
     }
 
     const statuses = await Promise.all(
       sources.map(async (source) => {
         // Get last sync time
         const { data: lastLog } = await supabase
-          .from('crawler_logs')
-          .select('completed_at')
-          .eq('source_id', source.id)
-          .eq('status', 'success')
-          .order('completed_at', { ascending: false })
+          .from("crawler_logs")
+          .select("completed_at")
+          .eq("source_id", source.id)
+          .eq("status", "success")
+          .order("completed_at", { ascending: false })
           .limit(1)
-          .single()
+          .single();
 
         // Calculate success rate (last 7 days)
-        const sevenDaysAgo = new Date()
-        sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7)
+        const sevenDaysAgo = new Date();
+        sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
 
         const { data: recentLogs } = await supabase
-          .from('crawler_logs')
-          .select('status')
-          .eq('source_id', source.id)
-          .gte('started_at', sevenDaysAgo.toISOString())
+          .from("crawler_logs")
+          .select("status")
+          .eq("source_id", source.id)
+          .gte("started_at", sevenDaysAgo.toISOString());
 
-        let successRate = 100
+        let successRate = 100;
         if (recentLogs && recentLogs.length > 0) {
-          const successCount = recentLogs.filter((log) => log.status === 'success').length
-          successRate = Math.round((successCount / recentLogs.length) * 100)
+          const successCount = recentLogs.filter(
+            (log) => log.status === "success",
+          ).length;
+          successRate = Math.round((successCount / recentLogs.length) * 100);
         }
 
         return {
           id: source.id,
           name: source.name,
           isEnabled: source.is_enabled,
-          lastSync: lastLog?.completed_at ? new Date(lastLog.completed_at) : null,
+          lastSync: lastLog?.completed_at
+            ? new Date(lastLog.completed_at)
+            : null,
           successRate,
-        }
-      })
-    )
+        };
+      }),
+    );
 
-    return statuses
+    return statuses;
   }
 }
 
 /**
  * Singleton instance
  */
-export const crawlerManager = new CrawlerManager()
+export const crawlerManager = new CrawlerManager();

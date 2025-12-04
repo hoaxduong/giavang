@@ -1,4 +1,4 @@
-import { CrawlerLogs } from '@/components/admin/crawler/crawler-logs'
+import { CrawlerLogs } from "@/components/admin/crawler/crawler-logs";
 
 export default function CrawlerLogsPage() {
   return (
@@ -12,5 +12,5 @@ export default function CrawlerLogsPage() {
 
       <CrawlerLogs />
     </div>
-  )
+  );
 }

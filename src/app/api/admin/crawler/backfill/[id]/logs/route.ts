@@ -10,7 +10,7 @@ import type { DbBackfillJobLog } from "@/lib/api/backfill/types";
  */
 export async function GET(
   request: NextRequest,
-  props: { params: Promise<{ id: string }> }
+  props: { params: Promise<{ id: string }> },
 ) {
   const params = await props.params;
   try {
@@ -53,14 +53,14 @@ export async function GET(
   } catch (error) {
     console.error(
       `GET /api/admin/crawler/backfill/${params.id}/logs error:`,
-      error
+      error,
     );
 
     return NextResponse.json(
       {
         error: error instanceof Error ? error.message : "Failed to fetch logs",
       },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

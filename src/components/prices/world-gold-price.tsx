@@ -1,13 +1,13 @@
-'use client'
+"use client";
 
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { Badge } from '@/components/ui/badge'
-import { Skeleton } from '@/components/ui/skeleton'
-import { formatCurrencyUSD, formatRelativeTime } from '@/lib/utils'
-import { useWorldGoldPrice } from '@/lib/queries/use-world-gold-price'
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Skeleton } from "@/components/ui/skeleton";
+import { formatCurrencyUSD, formatRelativeTime } from "@/lib/utils";
+import { useWorldGoldPrice } from "@/lib/queries/use-world-gold-price";
 
 export function WorldGoldPrice() {
-  const { data, isLoading } = useWorldGoldPrice()
+  const { data, isLoading } = useWorldGoldPrice();
 
   if (isLoading) {
     return (
@@ -19,10 +19,10 @@ export function WorldGoldPrice() {
           <Skeleton className="h-16 w-full" />
         </CardContent>
       </Card>
-    )
+    );
   }
 
-  const worldGold = data?.data
+  const worldGold = data?.data;
 
   if (!worldGold) {
     return (
@@ -36,10 +36,10 @@ export function WorldGoldPrice() {
           </p>
         </CardContent>
       </Card>
-    )
+    );
   }
 
-  const buyPrice = Number(worldGold.buy_price)
+  const buyPrice = Number(worldGold.buy_price);
 
   return (
     <Card>
@@ -68,6 +68,5 @@ export function WorldGoldPrice() {
         </div>
       </CardContent>
     </Card>
-  )
+  );
 }
-

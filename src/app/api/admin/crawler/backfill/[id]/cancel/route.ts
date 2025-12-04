@@ -8,7 +8,7 @@ import { BackfillManager } from "@/lib/api/backfill/backfill-manager";
  */
 export async function POST(
   request: NextRequest,
-  props: { params: Promise<{ id: string }> }
+  props: { params: Promise<{ id: string }> },
 ) {
   const params = await props.params;
   try {
@@ -19,19 +19,19 @@ export async function POST(
 
     return NextResponse.json(
       { message: "Job cancelled successfully" },
-      { status: 200 }
+      { status: 200 },
     );
   } catch (error) {
     console.error(
       `POST /api/admin/crawler/backfill/${params.id}/cancel error:`,
-      error
+      error,
     );
 
     return NextResponse.json(
       {
         error: error instanceof Error ? error.message : "Failed to cancel job",
       },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

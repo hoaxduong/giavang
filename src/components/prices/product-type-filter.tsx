@@ -1,4 +1,4 @@
-'use client'
+"use client";
 
 import {
   Select,
@@ -6,20 +6,25 @@ import {
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@/components/ui/select'
-import { PRODUCT_TYPES } from '@/lib/constants'
-import type { ProductType } from '@/lib/constants'
+} from "@/components/ui/select";
+import { PRODUCT_TYPES } from "@/lib/constants";
+import type { ProductType } from "@/lib/constants";
 
 interface ProductTypeFilterProps {
-  value?: ProductType
-  onValueChange: (value: ProductType | undefined) => void
+  value?: ProductType;
+  onValueChange: (value: ProductType | undefined) => void;
 }
 
-export function ProductTypeFilter({ value, onValueChange }: ProductTypeFilterProps) {
+export function ProductTypeFilter({
+  value,
+  onValueChange,
+}: ProductTypeFilterProps) {
   return (
     <Select
-      value={value || 'all'}
-      onValueChange={(val) => onValueChange(val === 'all' ? undefined : (val as ProductType))}
+      value={value || "all"}
+      onValueChange={(val) =>
+        onValueChange(val === "all" ? undefined : (val as ProductType))
+      }
     >
       <SelectTrigger className="w-[200px]">
         <SelectValue placeholder="Chọn Loại Vàng" />
@@ -33,5 +38,5 @@ export function ProductTypeFilter({ value, onValueChange }: ProductTypeFilterPro
         ))}
       </SelectContent>
     </Select>
-  )
+  );
 }

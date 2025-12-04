@@ -1,11 +1,11 @@
-'use client'
+"use client";
 
-import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import type { TimeRange } from '@/lib/constants'
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import type { TimeRange } from "@/lib/constants";
 
 interface ChartTimeFilterProps {
-  value: TimeRange
-  onChange: (value: TimeRange) => void
+  value: TimeRange;
+  onChange: (value: TimeRange) => void;
 }
 
 export function ChartTimeFilter({ value, onChange }: ChartTimeFilterProps) {
@@ -19,5 +19,5 @@ export function ChartTimeFilter({ value, onChange }: ChartTimeFilterProps) {
         <TabsTrigger value="year">Năm</TabsTrigger>
       </TabsList>
     </Tabs>
-  )
+  );
 }

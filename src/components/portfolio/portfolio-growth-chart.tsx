@@ -1,6 +1,6 @@
-'use client'
+"use client";
 
-import { useState } from 'react'
+import { useState } from "react";
 import {
   LineChart,
   Line,
@@ -10,23 +10,25 @@ import {
   Tooltip,
   Legend,
   ResponsiveContainer,
-} from 'recharts'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+} from "recharts";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@/components/ui/select'
-import { format } from 'date-fns'
-import { vi } from 'date-fns/locale'
-import { formatCurrencyCompact, formatCurrency } from '@/lib/utils'
-import { usePortfolioGrowth } from '@/lib/queries/use-portfolio-growth'
+} from "@/components/ui/select";
+import { format } from "date-fns";
+import { vi } from "date-fns/locale";
+import { formatCurrencyCompact, formatCurrency } from "@/lib/utils";
+import { usePortfolioGrowth } from "@/lib/queries/use-portfolio-growth";
 
 export function PortfolioGrowthChart() {
-  const [groupBy, setGroupBy] = useState<'total' | 'monthly' | 'yearly'>('total')
-  const { data, isLoading } = usePortfolioGrowth(groupBy)
+  const [groupBy, setGroupBy] = useState<"total" | "monthly" | "yearly">(
+    "total",
+  );
+  const { data, isLoading } = usePortfolioGrowth(groupBy);
 
   if (isLoading) {
     return (
@@ -40,7 +42,7 @@ export function PortfolioGrowthChart() {
           </div>
         </CardContent>
       </Card>
-    )
+    );
   }
 
   if (!data || !data.data || data.data.length === 0) {
@@ -55,41 +57,46 @@ export function PortfolioGrowthChart() {
           </p>
         </CardContent>
       </Card>
-    )
+    );
   }
 
   const formatDate = (dateString: string) => {
     try {
-      const date = new Date(dateString)
-      if (groupBy === 'yearly') {
-        return format(date, 'yyyy', { locale: vi })
-      } else if (groupBy === 'monthly') {
-        return format(date, 'MM/yyyy', { locale: vi })
+      const date = new Date(dateString);
+      if (groupBy === "yearly") {
+        return format(date, "yyyy", { locale: vi });
+      } else if (groupBy === "monthly") {
+        return format(date, "MM/yyyy", { locale: vi });
       } else {
-        return format(date, 'dd/MM/yyyy', { locale: vi })
+        return format(date, "dd/MM/yyyy", { locale: vi });
       }
     } catch {
-      return dateString
+      return dateString;
     }
-  }
+  };
 
   const formatPrice = (price: number) => {
-    return formatCurrencyCompact(price)
-  }
+    return formatCurrencyCompact(price);
+  };
 
   const chartData = data.data.map((point) => ({
     date: point.date,
-    'Giá Trị': point.value,
-    'Đã Đầu Tư': point.invested,
-    'Lãi/Lỗ': point.profitLoss,
-  }))
+    "Giá Trị": point.value,
+    "Đã Đầu Tư": point.invested,
+    "Lãi/Lỗ": point.profitLoss,
+  }));
 
   return (
     <Card>
       <CardHeader>
         <div className="flex items-center justify-between">
           <CardTitle>Biểu Đồ Tăng Trưởng</CardTitle>
-          <Select value={groupBy} onValueChange={(value: 'total' | 'monthly' | 'yearly') => setGroupBy(value)}>
+          <Select
+            value={groupBy}
+            onValueChange={(value: "total" | "monthly" | "yearly") =>
+              setGroupBy(value)
+            }
+          >
             <SelectTrigger className="w-[150px]">
               <SelectValue />
             </SelectTrigger>
@@ -120,15 +127,15 @@ export function PortfolioGrowthChart() {
               formatter={(value: number) => formatCurrency(value)}
               labelFormatter={(label) => {
                 try {
-                  return format(new Date(label), 'PPP', { locale: vi })
+                  return format(new Date(label), "PPP", { locale: vi });
                 } catch {
-                  return label
+                  return label;
                 }
               }}
               contentStyle={{
-                backgroundColor: 'hsl(var(--popover))',
-                border: '1px solid hsl(var(--border))',
-                borderRadius: '8px',
+                backgroundColor: "hsl(var(--popover))",
+                border: "1px solid hsl(var(--border))",
+                borderRadius: "8px",
               }}
             />
             <Legend />
@@ -160,6 +167,5 @@ export function PortfolioGrowthChart() {
         </ResponsiveContainer>
       </CardContent>
     </Card>
-  )
+  );
 }
-
