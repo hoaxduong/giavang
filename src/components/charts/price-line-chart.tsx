@@ -62,18 +62,25 @@ export function PriceLineChart({ data, title = 'Biểu Đồ Giá Vàng' }: Pric
       </CardHeader>
       <CardContent>
         <ResponsiveContainer width="100%" height={400}>
-          <LineChart data={chartData}>
-            <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
+          <LineChart data={chartData} margin={{ top: 5, right: 30, left: 20, bottom: 5 }}>
+            <CartesianGrid
+              strokeDasharray="3 3"
+              stroke="#e5e7eb"
+              strokeWidth={1}
+              horizontal={true}
+              vertical={false}
+            />
             <XAxis
               dataKey="date"
               tickFormatter={formatDate}
-              className="text-xs"
-              stroke="currentColor"
+              tick={{ fill: 'hsl(var(--foreground))', fontSize: 12 }}
+              stroke="hsl(var(--border))"
             />
             <YAxis
               tickFormatter={formatPrice}
-              className="text-xs"
-              stroke="currentColor"
+              tick={{ fill: 'hsl(var(--foreground))', fontSize: 12 }}
+              stroke="hsl(var(--border))"
+              domain={['auto', 'auto']}
             />
             <Tooltip
               formatter={(value: number) => formatPrice(value)}
@@ -88,24 +95,31 @@ export function PriceLineChart({ data, title = 'Biểu Đồ Giá Vàng' }: Pric
                 backgroundColor: 'hsl(var(--popover))',
                 border: '1px solid hsl(var(--border))',
                 borderRadius: '8px',
+                color: 'hsl(var(--popover-foreground))',
               }}
             />
-            <Legend />
+            <Legend
+              wrapperStyle={{
+                color: 'hsl(var(--foreground))',
+              }}
+            />
             <Line
               type="monotone"
               dataKey="Giá Mua"
-              stroke="hsl(var(--chart-1))"
-              strokeWidth={2}
+              stroke="#22c55e"
+              strokeWidth={3}
               dot={false}
-              activeDot={{ r: 4 }}
+              activeDot={{ r: 6, fill: '#22c55e' }}
+              isAnimationActive={true}
             />
             <Line
               type="monotone"
               dataKey="Giá Bán"
-              stroke="hsl(var(--chart-2))"
-              strokeWidth={2}
+              stroke="#ef4444"
+              strokeWidth={3}
               dot={false}
-              activeDot={{ r: 4 }}
+              activeDot={{ r: 6, fill: '#ef4444' }}
+              isAnimationActive={true}
             />
           </LineChart>
         </ResponsiveContainer>
