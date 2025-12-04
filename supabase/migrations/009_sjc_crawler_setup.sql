@@ -143,6 +143,7 @@ BEGIN
     updated_at
   ) VALUES
     -- Main SJC gold bars (1 lượng, 10 lượng, 1kg)
+    -- Note: This is the only product type returned by the SJC API
     (
       sjc_source_id,
       'Vàng SJC 1L, 10L, 1KG',
@@ -153,31 +154,9 @@ BEGIN
       true,
       NOW(),
       NOW()
-    ),
-    -- SJC 5 chỉ bars
-    (
-      sjc_source_id,
-      'Vàng SJC 5 chỉ',
-      'SJC',
-      gold_bar_product_type_code,
-      NULL,
-      'SJC Gold Bars (5 chi)',
-      true,
-      NOW(),
-      NOW()
-    ),
-    -- SJC small bars (0.5, 1, 2 chỉ)
-    (
-      sjc_source_id,
-      'Vàng SJC 0.5 chỉ, 1 chỉ, 2 chỉ',
-      'SJC',
-      gold_bar_product_type_code,
-      NULL,
-      'SJC Gold Bars (0.5, 1, 2 chi)',
-      true,
-      NOW(),
-      NOW()
     )
+    -- Note: Removed "Vàng SJC 5 chỉ" and "Vàng SJC 0.5 chỉ, 1 chỉ, 2 chỉ"
+    -- as they don't exist in the API response
   ON CONFLICT (source_id, external_code) DO UPDATE
   SET
     retailer_code = EXCLUDED.retailer_code,
@@ -189,7 +168,7 @@ BEGIN
   RAISE NOTICE 'SJC crawler setup completed successfully';
   RAISE NOTICE 'Source ID: %', sjc_source_id;
   RAISE NOTICE 'Product type: %', gold_bar_product_type_code;
-  RAISE NOTICE 'Created % type mappings', 3;
+  RAISE NOTICE 'Created 1 type mapping for main SJC gold bars';
 END $$;
 
 -- ============================================================================

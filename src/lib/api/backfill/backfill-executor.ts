@@ -481,11 +481,29 @@ export class BackfillExecutor {
       }
     })
 
-    // Insert into database
-    const { error } = await supabase.from('price_snapshots').insert(dbSnapshots)
+    // Insert with ON CONFLICT DO NOTHING to skip duplicates
+    // The unique constraint uses an expression, so we need raw SQL
+    const insertPromises = snapshots.map(async (priceData, index) => {
+      const dbSnapshot = dbSnapshots[index]
+      const { error } = await supabase.rpc('insert_price_snapshot_ignore_duplicate', {
+        p_retailer: dbSnapshot.retailer,
+        p_province: dbSnapshot.province,
+        p_product_type: dbSnapshot.product_type,
+        p_buy_price: dbSnapshot.buy_price,
+        p_sell_price: dbSnapshot.sell_price,
+        p_unit: dbSnapshot.unit,
+        p_created_at: priceData.createdAt,
+        p_source_job_id: this.jobId,
+        p_is_backfilled: true,
+      })
+      return error
+    })
 
-    if (error) {
-      throw new Error(`Failed to save price snapshots: ${error.message}`)
+    const results = await Promise.all(insertPromises)
+    const errors = results.filter(e => e !== null)
+
+    if (errors.length > 0) {
+      throw new Error(`Failed to save some price snapshots: ${errors[0]?.message}`)
     }
 
     return dbSnapshots.length

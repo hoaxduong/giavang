@@ -1,4 +1,5 @@
 import { SjcCrawler } from "./sjc-crawler";
+import { request } from "undici";
 import type { PriceData } from "@/lib/types";
 import type { TypeMapping, Retailer, ProductType, Province } from "./types";
 import {
@@ -96,119 +97,104 @@ export class SjcHistoricalCrawler extends SjcCrawler {
         };
       }
 
-      // Calculate date range (from today back N days)
-      const end = new Date();
-      const start = new Date();
-      start.setDate(start.getDate() - days + 1); // Go back days-1 to include today
+      // Fetch prices for each day individually (SJC API returns current prices for date range)
+      const allPrices: SjcDailyPriceData[] = [];
+      const allErrors: Array<{ date: string; error: string }> = [];
 
-      // Format dates for SJC API (DD/MM/YYYY)
-      const fromDate = this.formatDate(start);
-      const toDate = this.formatDate(end);
+      // Generate array of dates to fetch
+      const dates: Date[] = [];
+      for (let i = 0; i < days; i++) {
+        const date = new Date();
+        date.setDate(date.getDate() - i);
+        dates.push(date);
+      }
 
-      const startDateStr = start.toISOString().split('T')[0];
-      const endDateStr = end.toISOString().split('T')[0];
+      // Fetch prices for each date
+      for (const date of dates) {
+        const dateStr = date.toISOString().split('T')[0]; // YYYY-MM-DD
+        const formattedDate = this.formatDate(date); // DD/MM/YYYY for API
 
-      // Build form-urlencoded body
-      const formBody = new URLSearchParams({
-        method: "GetGoldPriceHistory",
-        goldPriceId: "1", // SJC gold bars
-        fromDate,
-        toDate,
-      }).toString();
+        try {
+          // Build form-urlencoded body for single day
+          const formBody = new URLSearchParams({
+            method: "GetGoldPriceHistory",
+            goldPriceId: "1",
+            fromDate: formattedDate,
+            toDate: formattedDate,
+          }).toString();
 
-      // Fetch from API
-      const response = await fetch(
-        this.config.apiUrl,
-        this.createFetchOptions({
-          method: "POST",
-          headers: {
-            Accept: "application/json",
-            "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8",
-            "User-Agent": "Mozilla/5.0",
-          },
-          body: formBody,
-        })
-      );
+          const bodyBuffer = Buffer.from(formBody, 'utf-8');
 
-      const responseTime = Date.now() - startTime;
-
-      if (!response.ok) {
-        const errorText = await response.text();
-        return {
-          success: false,
-          data: [],
-          errors: [
-            {
-              date: "",
-              error: `HTTP ${response.status}: ${
-                response.statusText
-              } - ${errorText.substring(0, 200)}`,
+          // Fetch from API
+          const timeout = this.config.timeout || 30000;
+          const { statusCode, headers, body } = await request(this.config.apiUrl, {
+            method: "POST",
+            headers: {
+              Accept: "application/json, text/plain, */*",
+              "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8",
+              "Content-Length": String(bodyBuffer.length),
+              "User-Agent":
+                "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/142.0.0.0 Safari/537.36",
+              "Accept-Language": "en-US,en;q=0.9,vi;q=0.8",
             },
-          ],
-          metadata: {
-            daysRequested: days,
-            daysReturned: 0,
+            body: bodyBuffer,
+            bodyTimeout: timeout,
+            headersTimeout: timeout,
+          });
+
+          if (statusCode < 200 || statusCode >= 300) {
+            allErrors.push({
+              date: dateStr,
+              error: `HTTP ${statusCode}`,
+            });
+            continue;
+          }
+
+          // Check content type
+          const contentType = headers["content-type"] as string | undefined;
+          if (!contentType || (!contentType.includes("application/json") && !contentType.includes("text/json"))) {
+            allErrors.push({
+              date: dateStr,
+              error: `Invalid content type: ${contentType}`,
+            });
+            continue;
+          }
+
+          // Parse JSON
+          const data = (await body.json()) as SjcHistoricalResponse;
+
+          if (!data.success || !data.data || data.data.length === 0) {
+            allErrors.push({
+              date: dateStr,
+              error: "No data in API response",
+            });
+            continue;
+          }
+
+          // Parse and add prices for this date
+          const { prices, errors } = await this.parseHistoricalResponse(
+            data,
             typeCode,
-          },
-        };
+            dateStr
+          );
+
+          allPrices.push(...prices);
+          allErrors.push(...errors);
+        } catch (error) {
+          allErrors.push({
+            date: dateStr,
+            error: error instanceof Error ? error.message : "Unknown error",
+          });
+        }
       }
-
-      // Check content type
-      const contentType = response.headers.get("content-type");
-      if (!contentType || !contentType.includes("application/json")) {
-        const errorText = await response.text();
-        return {
-          success: false,
-          data: [],
-          errors: [
-            {
-              date: "",
-              error: `Invalid content type: ${contentType}. Response: ${errorText.substring(
-                0,
-                200
-              )}`,
-            },
-          ],
-          metadata: {
-            daysRequested: days,
-            daysReturned: 0,
-            typeCode,
-          },
-        };
-      }
-
-      // Parse JSON
-      const data: SjcHistoricalResponse = await response.json();
-
-      if (!data.success || !data.data || data.data.length === 0) {
-        return {
-          success: false,
-          data: [],
-          errors: [
-            { date: "", error: "No historical data in API response" },
-          ],
-          metadata: {
-            daysRequested: days,
-            daysReturned: 0,
-            typeCode,
-          },
-        };
-      }
-
-      // Parse historical data and filter for requested type
-      const { prices, errors } = await this.parseHistoricalResponse(
-        data,
-        typeCode,
-        endDateStr
-      );
 
       return {
-        success: prices.length > 0,
-        data: prices,
-        errors,
+        success: allPrices.length > 0,
+        data: allPrices,
+        errors: allErrors,
         metadata: {
           daysRequested: days,
-          daysReturned: prices.length,
+          daysReturned: allPrices.length,
           typeCode,
         },
       };
@@ -260,9 +246,21 @@ export class SjcHistoricalCrawler extends SjcCrawler {
       return { prices, errors };
     }
 
+    // Deduplicate by province (multiple branches may map to same province)
+    const seenProvinces = new Set<string>();
+
     // Process each matching item (one per branch/province)
     for (const item of matchingItems) {
       try {
+        // Map branch name to province code
+        const provinceCode = this.mapBranchToProvince(item.BranchName);
+
+        // Skip if we've already processed this province for this date
+        if (seenProvinces.has(provinceCode)) {
+          continue;
+        }
+        seenProvinces.add(provinceCode);
+
         // Extract prices
         const buyPrice = item.BuyValue;
         const sellPrice = item.SellValue;
