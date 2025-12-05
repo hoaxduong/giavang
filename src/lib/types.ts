@@ -1,5 +1,34 @@
 import type { ProductType, Retailer, Province, PriceTrend } from "./constants";
 
+// Retailer Product (retailer-specific product catalog)
+export interface RetailerProduct {
+  id: string;
+  retailerCode: string;
+  productCode: string; // Unique within retailer
+  productName: string; // Display name
+  category?: string | null; // vang_mieng, vang_nhan, nu_trang, etc.
+  description?: string | null;
+  isEnabled: boolean;
+  sortOrder: number;
+  metadata?: Record<string, unknown> | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface DbRetailerProduct {
+  id: string;
+  retailer_code: string;
+  product_code: string;
+  product_name: string;
+  category?: string | null;
+  description?: string | null;
+  is_enabled: boolean;
+  sort_order: number;
+  metadata?: Record<string, unknown> | null;
+  created_at: string;
+  updated_at: string;
+}
+
 // Database types (matching Supabase schema)
 export interface PriceSnapshot {
   id: string;
@@ -7,6 +36,8 @@ export interface PriceSnapshot {
   retailer: string;
   province: string;
   product_type: string;
+  product_name?: string | null; // Specific product name from retailer
+  retailer_product_id?: string | null; // Link to retailer_products table
   buy_price: number;
   sell_price: number;
   unit: string;
@@ -20,6 +51,8 @@ export interface PriceData {
   retailer: Retailer;
   province: Province;
   productType: ProductType;
+  productName?: string; // Specific product name (e.g., "Vàng miếng SJC theo lượng")
+  retailerProductId?: string; // Link to retailer_products table
   buyPrice: number;
   sellPrice: number;
   unit: string;

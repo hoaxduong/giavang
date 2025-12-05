@@ -28,6 +28,8 @@ export function snapshotToPriceData(snapshot: PriceSnapshot): PriceData {
     retailer: snapshot.retailer as Retailer,
     province: snapshot.province as Province,
     productType: snapshot.product_type as ProductType,
+    productName: snapshot.product_name || undefined,
+    retailerProductId: snapshot.retailer_product_id || undefined,
     buyPrice: Number(snapshot.buy_price),
     sellPrice: Number(snapshot.sell_price),
     unit: snapshot.unit,
@@ -45,9 +47,32 @@ export function priceDataToSnapshot(
     retailer: data.retailer,
     province: data.province,
     product_type: data.productType,
+    product_name: data.productName || null,
+    retailer_product_id: data.retailerProductId || null,
     buy_price: data.buyPrice,
     sell_price: data.sellPrice,
     unit: data.unit,
     source_url: data.sourceUrl || null,
+  };
+}
+
+/**
+ * Convert database retailer product to application format
+ */
+export function dbRetailerProductToRetailerProduct(
+  db: import("../types").DbRetailerProduct
+): import("../types").RetailerProduct {
+  return {
+    id: db.id,
+    retailerCode: db.retailer_code,
+    productCode: db.product_code,
+    productName: db.product_name,
+    category: db.category,
+    description: db.description,
+    isEnabled: db.is_enabled,
+    sortOrder: db.sort_order,
+    metadata: db.metadata,
+    createdAt: db.created_at,
+    updatedAt: db.updated_at,
   };
 }

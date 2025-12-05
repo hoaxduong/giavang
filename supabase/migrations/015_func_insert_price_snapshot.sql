@@ -1,10 +1,4 @@
--- ============================================================================
--- Migration 010: Insert Price Snapshot with Duplicate Ignore
--- ============================================================================
--- Creates a function to insert price snapshots with ON CONFLICT DO NOTHING
--- to handle the expression-based unique constraint
--- ============================================================================
-
+-- Function to insert price snapshot with duplicate check (minute-level)
 CREATE OR REPLACE FUNCTION insert_price_snapshot_ignore_duplicate(
   p_retailer VARCHAR,
   p_province VARCHAR,
@@ -21,13 +15,13 @@ LANGUAGE plpgsql
 AS $$
 BEGIN
   -- Check if record already exists to avoid duplicate
-  -- The unique index uses expression ((created_at AT TIME ZONE 'UTC')::date)
+  -- The unique index uses expression (date_trunc('minute', created_at AT TIME ZONE 'UTC'))
   IF EXISTS (
     SELECT 1 FROM price_snapshots
     WHERE retailer = p_retailer
       AND province = p_province
       AND product_type = p_product_type
-      AND (created_at AT TIME ZONE 'UTC')::date = (p_created_at AT TIME ZONE 'UTC')::date
+      AND date_trunc('minute', created_at AT TIME ZONE 'UTC') = date_trunc('minute', p_created_at AT TIME ZONE 'UTC')
       AND is_backfilled = true
   ) THEN
     RETURN; -- Skip insert if already exists
@@ -58,6 +52,5 @@ BEGIN
 END;
 $$;
 
--- Grant execute permission to authenticated users
 GRANT EXECUTE ON FUNCTION insert_price_snapshot_ignore_duplicate TO authenticated;
 GRANT EXECUTE ON FUNCTION insert_price_snapshot_ignore_duplicate TO service_role;

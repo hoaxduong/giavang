@@ -31,6 +31,14 @@ export type Province = (typeof PROVINCES)[number];
 
 // Gold product types
 export const PRODUCT_TYPES = [
+  // New Onus-style categories (primary)
+  { value: "VANG_MIENG", label: "Vàng miếng", shortLabel: "Miếng" },
+  { value: "VANG_NHAN", label: "Vàng nhẫn", shortLabel: "Nhẫn" },
+  { value: "NU_TRANG", label: "Nữ trang", shortLabel: "Trang sức" },
+  { value: "VANG_KHAC", label: "Vàng khác", shortLabel: "Khác" },
+  { value: "BAC", label: "Bạc", shortLabel: "Silver" },
+
+  // Legacy types (for SJC crawler backward compatibility)
   { value: "SJC_BARS", label: "Vàng miếng SJC", shortLabel: "Miếng SJC" },
   { value: "SJC_RINGS", label: "Vàng nhẫn SJC", shortLabel: "Nhẫn SJC" },
   { value: "GOLD_9999", label: "Vàng 9999", shortLabel: "9999" },

@@ -1,6 +1,7 @@
 import { createServiceRoleClient } from "@/lib/supabase/service-role";
 import { priceDataToSnapshot } from "../price-normalizer";
 import { SjcCrawler } from "./sjc-crawler";
+import { OnusCrawler } from "./onus-crawler";
 import type { BaseCrawler } from "./base-crawler";
 import type { CrawlerConfig, SyncResult, DbCrawlerSource } from "./types";
 
@@ -150,11 +151,17 @@ export class CrawlerManager {
       isEnabled: source.is_enabled,
       rateLimit: source.rate_limit_per_minute,
       priority: source.priority,
+      retailerFilter: (source as any).retailer_filter || null,
     };
 
     switch (source.api_type) {
       case "sjc": {
         const crawler = new SjcCrawler(config);
+        crawler.setTriggerInfo(triggerType, triggerUserId);
+        return crawler;
+      }
+      case "onus": {
+        const crawler = new OnusCrawler(config);
         crawler.setTriggerInfo(triggerType, triggerUserId);
         return crawler;
       }

@@ -35,6 +35,7 @@ export interface CrawlerConfig {
   rateLimit?: number;
   priority?: number;
   fieldMappings?: FieldMappings;
+  retailerFilter?: string[] | null; // ["SJC", "PNJ"] or null for all
 }
 
 /**
@@ -49,6 +50,7 @@ export interface TypeMapping {
   provinceCode: string | null;
   label: string;
   isEnabled: boolean;
+  retailerProductId?: string | null; // Link to retailer_products table
 }
 
 /**
@@ -259,4 +261,86 @@ export function dbProductTypeToProductType(db: DbProductType): ProductType {
     isEnabled: db.is_enabled,
     sortOrder: db.sort_order,
   };
+}
+
+/**
+ * Zone mapping for Onus crawler
+ */
+export interface ZoneMapping {
+  id: string;
+  sourceId: string;
+  zoneText: string;
+  provinceCode: string;
+  isEnabled: boolean;
+}
+
+export interface DbZoneMapping {
+  id: string;
+  source_id: string;
+  zone_text: string;
+  province_code: string;
+  is_enabled: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
+export function dbZoneMappingToZoneMapping(db: DbZoneMapping): ZoneMapping {
+  return {
+    id: db.id,
+    sourceId: db.source_id,
+    zoneText: db.zone_text,
+    provinceCode: db.province_code,
+    isEnabled: db.is_enabled,
+  };
+}
+
+/**
+ * Onus API Response Interfaces
+ */
+
+// Response from /golds endpoint
+export interface OnusGoldsResponse {
+  data: Array<{
+    type: string; // Product name
+    buy: number; // Buy price in VND
+    sell: number; // Sell price in VND
+    slug: string; // URL-friendly identifier
+    source: string; // 'sjc', 'pnj', 'doji', etc.
+    timestamp: number; // Unix milliseconds
+    disable: boolean; // Availability flag
+    changeBuy: number; // Price change for buy
+    changeSell: number; // Price change for sell
+    zone?: {
+      value: string; // Zone code
+      text: string; // Zone name (e.g., "Hồ Chí Minh")
+    };
+  }>;
+}
+
+// Response from /line endpoint
+export interface OnusLineResponse {
+  data: Array<{
+    buy: number; // Bid price
+    sell: number; // Ask price
+    ts: number; // Unix milliseconds
+  }>;
+}
+
+// Response from /golds/sources endpoint
+export interface OnusSourcesResponse {
+  data: Array<{
+    slug: string; // URL-friendly identifier
+    name: string; // Abbreviated name
+    fullName: string; // Complete official name
+  }>;
+}
+
+// Daily price data for historical crawler
+export interface OnusDailyPriceData {
+  date: string; // YYYY-MM-DD
+  timestamp: string; // ISO 8601
+  slug: string;
+  buyPrice: number;
+  sellPrice: number;
+  change?: number;
 }

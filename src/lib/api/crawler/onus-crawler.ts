@@ -8,6 +8,8 @@ import type {
   Retailer,
   ProductType,
   Province,
+  ZoneMapping,
+  OnusGoldsResponse,
 } from "./types";
 import type {
   Retailer as RetailerLiteral,
@@ -17,63 +19,31 @@ import type {
 import type { PriceData } from "@/lib/types";
 
 /**
- * API Response from SJC
+ * Retailer source normalization map
+ * Maps API source field to internal retailer codes
  */
-interface SjcResponse {
-  success: boolean;
-  latestDate: string; // "HH:mm DD/MM/YYYY"
-  data: Array<{
-    Id: number;
-    TypeName: string;
-    BranchName: string;
-    Buy: string; // Formatted string with comma separator
-    BuyValue: number; // Numeric value in VND per lượng
-    Sell: string; // Formatted string with comma separator
-    SellValue: number; // Numeric value in VND per lượng
-    BuyDiffer: string | null;
-    BuyDifferValue: number;
-    SellDiffer: string | null;
-    SellDifferValue: number;
-    GroupDate: string; // .NET date serialization (unused)
-  }>;
-}
-
-/**
- * Branch name to province code mapping
- * Handles both specific cities and regional names
- */
-const BRANCH_TO_PROVINCE: Record<string, string> = {
-  // Direct city mappings
-  "Hồ Chí Minh": "TP. Hồ Chí Minh",
-  "Hà Nội": "Hà Nội",
-  "Hải Phòng": "Hải Phòng",
-  "Hạ Long": "Quảng Ninh",
-  Huế: "Thừa Thiên Huế",
-  "Quảng Ngãi": "Quảng Ngãi",
-  "Nha Trang": "Khánh Hòa",
-  "Biên Hòa": "Đồng Nai",
-  "Bạc Liêu": "Bạc Liêu",
-  "Cà Mau": "Cà Mau",
-  "Đà Nẵng": "Đà Nẵng",
-  "Cần Thơ": "Cần Thơ",
-
-  // Regional mappings (map to representative city)
-  "Miền Bắc": "Hà Nội",
-  "Miền Trung": "Đà Nẵng",
-  "Miền Tây": "Cần Thơ",
+const SOURCE_TO_RETAILER: Record<string, string> = {
+  sjc: "SJC",
+  pnj: "PNJ",
+  doji: "DOJI",
+  btmc: "Bảo Tín Minh Châu",
+  phuquy: "Phú Quý",
+  btmh: "BTMH",
+  mihong: "Mi Hồng",
+  ngoctham: "Ngọc Thẩm",
 };
 
 /**
- * SJC Crawler
+ * Onus Crawler
  *
- * Fetches gold prices from SJC API and converts them to internal format.
- * - Uses database-driven type mappings (TypeName as external code)
- * - Maps BranchName to province codes
+ * Fetches gold prices from Onus Exchange API and converts them to internal format.
+ * - Supports multiple retailers with optional filtering
+ * - Maps zone text to province codes using database mappings
+ * - Uses slug as external code for type mappings
  * - Respects enable/disable flags at multiple levels
  * - Comprehensive logging of all operations
- * - POST request with form-urlencoded body
  */
-export class SjcCrawler extends BaseCrawler {
+export class OnusCrawler extends BaseCrawler {
   private triggerType: "manual" | "cron" | "api" = "cron";
   private triggerUserId?: string;
 
@@ -86,25 +56,7 @@ export class SjcCrawler extends BaseCrawler {
   }
 
   /**
-   * Parse .NET date serialization format
-   * Converts "/Date(1764811673890)/" to ISO 8601 string
-   *
-   * @param groupDate - .NET date string from API
-   * @returns ISO 8601 timestamp string
-   */
-  protected parseDotNetDate(groupDate: string): string {
-    // Extract timestamp from /Date(timestamp)/
-    const match = groupDate.match(/\/Date\((\d+)\)\//);
-    if (!match) {
-      throw new Error(`Invalid .NET date format: ${groupDate}`);
-    }
-
-    const timestamp = parseInt(match[1], 10);
-    return new Date(timestamp).toISOString();
-  }
-
-  /**
-   * Fetch prices from SJC API
+   * Fetch prices from Onus API
    */
   async fetchPrices(): Promise<CrawlerResult> {
     const startTime = Date.now();
@@ -118,34 +70,17 @@ export class SjcCrawler extends BaseCrawler {
         this.triggerUserId
       );
 
-      // Format today's date for SJC API (DD/MM/YYYY)
-      const today = this.formatDate(new Date());
-
-      // Build form-urlencoded body
-      const formBody = new URLSearchParams({
-        method: "GetGoldPriceHistory",
-        goldPriceId: "1", // SJC gold bars
-        fromDate: today,
-        toDate: today,
-      }).toString();
-
-      // Convert to Buffer for proper content-length handling
-      const bodyBuffer = Buffer.from(formBody, "utf-8");
-
-      // Fetch from API using undici for better control
+      // Fetch from API using undici
       const timeout = this.config.timeout || 30000;
 
       const { statusCode, headers, body } = await request(this.config.apiUrl, {
-        method: "POST",
+        method: "GET",
         headers: {
-          Accept: "application/json, text/plain, */*",
-          "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8",
-          "Content-Length": String(bodyBuffer.length),
+          Accept: "application/json",
           "User-Agent":
-            "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/142.0.0.0 Safari/537.36",
-          "Accept-Language": "en-US,en;q=0.9,vi;q=0.8",
+            "Mozilla/5.0 (compatible; GoldPriceApp/1.0)",
+          ...this.config.headers,
         },
-        body: bodyBuffer,
         bodyTimeout: timeout,
         headersTimeout: timeout,
       });
@@ -161,7 +96,7 @@ export class SjcCrawler extends BaseCrawler {
           recordsSaved: 0,
           recordsFailed: 0,
           requestUrl: this.config.apiUrl,
-          requestMethod: "POST",
+          requestMethod: "GET",
           responseStatus: statusCode,
           responseTimeMs: responseTime,
           errorMessage: `HTTP ${statusCode}`,
@@ -181,13 +116,9 @@ export class SjcCrawler extends BaseCrawler {
         };
       }
 
-      // Check content type (SJC returns "text/json" instead of "application/json")
+      // Check content type
       const contentType = headers["content-type"] as string | undefined;
-      if (
-        !contentType ||
-        (!contentType.includes("application/json") &&
-          !contentType.includes("text/json"))
-      ) {
+      if (!contentType || !contentType.includes("application/json")) {
         const errorText = await body.text();
         await crawlerLogger.updateLog(logId, {
           status: "failed",
@@ -195,7 +126,7 @@ export class SjcCrawler extends BaseCrawler {
           recordsSaved: 0,
           recordsFailed: 0,
           requestUrl: this.config.apiUrl,
-          requestMethod: "POST",
+          requestMethod: "GET",
           responseStatus: statusCode,
           responseTimeMs: responseTime,
           errorMessage: `Invalid content type: ${contentType}`,
@@ -216,16 +147,16 @@ export class SjcCrawler extends BaseCrawler {
       }
 
       // Parse JSON
-      const data = (await body.json()) as SjcResponse;
+      const data = (await body.json()) as OnusGoldsResponse;
 
-      if (!data.success || !data.data || data.data.length === 0) {
+      if (!data.data || data.data.length === 0) {
         await crawlerLogger.updateLog(logId, {
           status: "failed",
           recordsFetched: 0,
           recordsSaved: 0,
           recordsFailed: 0,
           requestUrl: this.config.apiUrl,
-          requestMethod: "POST",
+          requestMethod: "GET",
           responseStatus: statusCode,
           responseTimeMs: responseTime,
           errorMessage: "No data in API response",
@@ -268,7 +199,7 @@ export class SjcCrawler extends BaseCrawler {
         recordsSaved,
         recordsFailed,
         requestUrl: this.config.apiUrl,
-        requestMethod: "POST",
+        requestMethod: "GET",
         responseStatus: statusCode,
         responseTimeMs: responseTime,
         failedItems: errors.length > 0 ? errors : undefined,
@@ -302,7 +233,7 @@ export class SjcCrawler extends BaseCrawler {
           recordsSaved: 0,
           recordsFailed: 0,
           requestUrl: this.config.apiUrl,
-          requestMethod: "POST",
+          requestMethod: "GET",
           responseTimeMs: responseTime,
           errorMessage: errorObj.message,
           errorStack:
@@ -316,18 +247,18 @@ export class SjcCrawler extends BaseCrawler {
   }
 
   /**
-   * Parse SJC API response to PriceData format
+   * Parse Onus API response to PriceData format
    * Uses database-driven type mappings and respects enable/disable flags
    */
-  private async parsePrices(apiResponse: SjcResponse): Promise<{
+  private async parsePrices(apiResponse: OnusGoldsResponse): Promise<{
     prices: PriceData[];
     errors: Array<{ item: string; error: string }>;
   }> {
     const prices: PriceData[] = [];
     const errors: Array<{ item: string; error: string }> = [];
 
-    // Fetch all enabled mappings, retailers, provinces, product types
-    const { mappings, retailers, provinces, productTypes } =
+    // Fetch all enabled mappings, retailers, provinces, product types, zone mappings
+    const { mappings, retailers, provinces, productTypes, zoneMappings } =
       await this.fetchReferenceData();
 
     // Create lookup maps for fast access
@@ -343,28 +274,44 @@ export class SjcCrawler extends BaseCrawler {
     const productTypeMap = new Map<string, ProductType>();
     productTypes.forEach((pt) => productTypeMap.set(pt.code, pt));
 
+    const zoneMappingMap = new Map<string, ZoneMapping>();
+    zoneMappings.forEach((zm) => zoneMappingMap.set(zm.zoneText, zm));
+
     // Parse each price entry
     for (const item of apiResponse.data) {
       try {
-        // Use TypeName as external code
-        const externalCode = item.TypeName;
+        // Skip if disabled
+        if (item.disable) {
+          continue;
+        }
+
+        // Check retailer filter
+        if (!this.shouldIncludeRetailer(item.source)) {
+          continue;
+        }
+
+        // Use slug as external code
+        const externalCode = item.slug;
         const mapping = mappingMap.get(externalCode);
 
         // Skip if no mapping or mapping disabled
         if (!mapping || !mapping.isEnabled) {
           errors.push({
-            item: `${externalCode} (${item.BranchName})`,
+            item: `${item.slug} (${item.source})`,
             error: "No enabled mapping found",
           });
           continue;
         }
 
+        // Map source to retailer code
+        const retailerCode = this.mapSourceToRetailer(item.source);
+        const retailer = retailerMap.get(retailerCode);
+
         // Check if retailer is enabled
-        const retailer = retailerMap.get(mapping.retailerCode);
         if (!retailer || !retailer.isEnabled) {
           errors.push({
-            item: `${externalCode} (${item.BranchName})`,
-            error: `Retailer ${mapping.retailerCode} is disabled`,
+            item: `${item.slug} (${item.source})`,
+            error: `Retailer ${retailerCode} is disabled or not found`,
           });
           continue;
         }
@@ -373,31 +320,42 @@ export class SjcCrawler extends BaseCrawler {
         const productType = productTypeMap.get(mapping.productTypeCode);
         if (!productType || !productType.isEnabled) {
           errors.push({
-            item: `${externalCode} (${item.BranchName})`,
+            item: `${item.slug} (${item.source})`,
             error: `Product type ${mapping.productTypeCode} is disabled`,
           });
           continue;
         }
 
-        // Map BranchName to province code
-        const provinceCode = this.mapBranchToProvince(item.BranchName);
-        const province = provinceMap.get(provinceCode);
+        // Determine province code
+        let provinceCode: string;
+        if (mapping.provinceCode) {
+          // Use province from mapping (overrides zone)
+          provinceCode = mapping.provinceCode;
+        } else {
+          // Map zone to province
+          provinceCode = this.mapZoneToProvince(
+            item.zone?.text || null,
+            zoneMappingMap
+          );
+        }
 
+        const province = provinceMap.get(provinceCode);
         if (!province || !province.isEnabled) {
           // Use default province if specified one is disabled
           const defaultProvince = provinceMap.get("TP. Hồ Chí Minh");
           if (!defaultProvince || !defaultProvince.isEnabled) {
             errors.push({
-              item: `${externalCode} (${item.BranchName})`,
+              item: `${item.slug} (${item.source})`,
               error: `Province ${provinceCode} is disabled and default province unavailable`,
             });
             continue;
           }
+          provinceCode = "TP. Hồ Chí Minh";
         }
 
-        // Extract price values (use BuyValue/SellValue, not the formatted strings)
-        const buyPrice = item.BuyValue;
-        const sellPrice = item.SellValue;
+        // Extract price values
+        const buyPrice = item.buy;
+        const sellPrice = item.sell;
 
         if (
           typeof buyPrice !== "number" ||
@@ -406,51 +364,34 @@ export class SjcCrawler extends BaseCrawler {
           sellPrice <= 0
         ) {
           errors.push({
-            item: `${externalCode} (${item.BranchName})`,
+            item: `${item.slug} (${item.source})`,
             error: "Invalid buy/sell prices",
           });
           continue;
         }
 
-        // Convert from VND/lượng to VND/chi (1 lượng = 10 chỉ)
-        const buyPriceInChi = this.convertLuongToChi(buyPrice);
-        const sellPriceInChi = this.convertLuongToChi(sellPrice);
+        // Convert Unix milliseconds to ISO timestamp
+        const timestamp = new Date(item.timestamp).toISOString();
 
-        // Calculate change if differ values are available
-        const change =
-          item.BuyDifferValue !== 0
-            ? this.convertLuongToChi(item.BuyDifferValue)
-            : undefined;
-
-        // Parse timestamp from GroupDate for precise per-item timestamps
-        let timestamp: string;
-        try {
-          timestamp = this.parseDotNetDate(item.GroupDate);
-        } catch (error) {
-          // Fallback to current time if GroupDate parsing fails
-          console.warn(
-            `[SJC Crawler] Failed to parse GroupDate for ${externalCode}:`,
-            error instanceof Error ? error.message : error
-          );
-          timestamp = new Date().toISOString();
-        }
+        // Calculate change if available
+        const change = item.changeBuy !== 0 ? item.changeBuy : undefined;
 
         prices.push({
           id: "",
           createdAt: timestamp,
-          retailer: mapping.retailerCode as unknown as RetailerLiteral,
+          retailer: retailerCode as unknown as RetailerLiteral,
           province: provinceCode as unknown as ProvinceLiteral,
           productType: mapping.productTypeCode as unknown as ProductTypeLiteral,
           productName: mapping.label, // Store specific product name from mapping
           retailerProductId: mapping.retailerProductId || undefined, // Link to retailer_products
-          buyPrice: buyPriceInChi,
-          sellPrice: sellPriceInChi,
+          buyPrice,
+          sellPrice,
           unit: "VND/chi",
           change,
         });
       } catch (error) {
         errors.push({
-          item: `${item.TypeName} (${item.BranchName})`,
+          item: `${item.slug} (${item.source})`,
           error: error instanceof Error ? error.message : "Unknown error",
         });
       }
@@ -468,6 +409,7 @@ export class SjcCrawler extends BaseCrawler {
     retailers: Retailer[];
     provinces: Province[];
     productTypes: ProductType[];
+    zoneMappings: ZoneMapping[];
   }> {
     const supabase = createServiceRoleClient();
 
@@ -477,6 +419,7 @@ export class SjcCrawler extends BaseCrawler {
       retailersResult,
       provincesResult,
       productTypesResult,
+      zoneMappingsResult,
     ] = await Promise.all([
       supabase
         .from("crawler_type_mappings")
@@ -486,6 +429,11 @@ export class SjcCrawler extends BaseCrawler {
       supabase.from("retailers").select("*").eq("is_enabled", true),
       supabase.from("provinces").select("*").eq("is_enabled", true),
       supabase.from("product_types").select("*").eq("is_enabled", true),
+      supabase
+        .from("zone_mappings")
+        .select("*")
+        .eq("source_id", this.config.id)
+        .eq("is_enabled", true),
     ]);
 
     const mappings: TypeMapping[] =
@@ -529,73 +477,57 @@ export class SjcCrawler extends BaseCrawler {
         sortOrder: pt.sort_order,
       })) || [];
 
-    return { mappings, retailers, provinces, productTypes };
+    const zoneMappings: ZoneMapping[] =
+      zoneMappingsResult.data?.map((zm) => ({
+        id: zm.id,
+        sourceId: zm.source_id,
+        zoneText: zm.zone_text,
+        provinceCode: zm.province_code,
+        isEnabled: zm.is_enabled,
+      })) || [];
+
+    return { mappings, retailers, provinces, productTypes, zoneMappings };
   }
 
   /**
-   * Convert price from VND/lượng to VND/chi
-   * 1 lượng = 10 chỉ
+   * Map API source field to internal retailer code
    */
-  protected convertLuongToChi(priceInLuong: number): number {
-    return Math.round(priceInLuong / 10);
+  protected mapSourceToRetailer(source: string): string {
+    return SOURCE_TO_RETAILER[source.toLowerCase()] || source.toUpperCase();
   }
 
   /**
-   * Map SJC branch name to province code
-   * Uses predefined mapping with fallback to default province
+   * Map zone text to province code
+   * Uses zone mappings from database with fallback to default province
    */
-  protected mapBranchToProvince(branchName: string): string {
-    return BRANCH_TO_PROVINCE[branchName] || "TP. Hồ Chí Minh";
-  }
-
-  /**
-   * Format date for SJC API (DD/MM/YYYY)
-   */
-  protected formatDate(date: Date): string {
-    const day = String(date.getDate()).padStart(2, "0");
-    const month = String(date.getMonth() + 1).padStart(2, "0");
-    const year = date.getFullYear();
-    return `${day}/${month}/${year}`;
-  }
-
-  /**
-   * Parse SJC timestamp format "HH:mm DD/MM/YYYY" to ISO string
-   */
-  private parseTimestamp(sjcTimestamp: string | undefined): string {
-    try {
-      // Handle undefined or empty timestamp
-      if (!sjcTimestamp) {
-        console.warn(
-          "[SJC Crawler] Timestamp is undefined, using current time"
-        );
-        return new Date().toISOString();
-      }
-
-      // Example: "13:07 04/12/2025"
-      const match = sjcTimestamp.match(
-        /(\d{2}):(\d{2})\s+(\d{2})\/(\d{2})\/(\d{4})/
-      );
-      if (!match) {
-        console.warn(
-          "[SJC Crawler] Failed to parse timestamp format:",
-          sjcTimestamp
-        );
-        return new Date().toISOString();
-      }
-
-      const [, hours, minutes, day, month, year] = match;
-      const date = new Date(
-        parseInt(year),
-        parseInt(month) - 1,
-        parseInt(day),
-        parseInt(hours),
-        parseInt(minutes)
-      );
-
-      return date.toISOString();
-    } catch (error) {
-      console.error("Failed to parse SJC timestamp:", sjcTimestamp, error);
-      return new Date().toISOString();
+  protected mapZoneToProvince(
+    zoneText: string | null,
+    zoneMappings: Map<string, ZoneMapping>
+  ): string {
+    if (!zoneText) {
+      return "TP. Hồ Chí Minh"; // Default province
     }
+
+    const mapping = zoneMappings.get(zoneText);
+    if (mapping && mapping.isEnabled) {
+      return mapping.provinceCode;
+    }
+
+    // Fallback to default province
+    return "TP. Hồ Chí Minh";
+  }
+
+  /**
+   * Check if retailer should be included based on filter configuration
+   */
+  protected shouldIncludeRetailer(source: string): boolean {
+    // If no filter configured, include all retailers
+    if (!this.config.retailerFilter || this.config.retailerFilter.length === 0) {
+      return true;
+    }
+
+    // Map source to retailer code and check if it's in the filter
+    const retailerCode = this.mapSourceToRetailer(source);
+    return this.config.retailerFilter.includes(retailerCode);
   }
 }
