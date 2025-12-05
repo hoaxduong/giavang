@@ -47,28 +47,35 @@ export async function GET(request: NextRequest) {
     // Build query
     let query = supabase
       .from("price_snapshots")
-      .select("*")
+      .select("*, retailer_products!inner(is_enabled, retailer_code)")
+      .eq("retailer_products.is_enabled", true)
       .gte("created_at", startDate)
       .lte("created_at", endDate)
       .order("created_at", { ascending: true });
 
     if (retailer) {
-      query = query.eq("retailer", retailer);
+      query = query.eq("retailer_products.retailer_code", retailer);
     }
     if (province) {
       query = query.eq("province", province);
     }
 
-    const { data, error } = await query;
+    const { data: rawData, error } = await query;
 
     if (error) {
       console.error("Database query error:", error);
       throw error;
     }
 
+    // Map data to include retailer from relation
+    const data = (rawData || []).map((item: any) => ({
+      ...item,
+      retailer: item.retailer_products?.retailer_code || "unknown",
+    }));
+
     // Aggregate data based on interval
     const aggregatedData = aggregateByInterval(
-      data || [],
+      data,
       interval as "hourly" | "daily" | "weekly"
     );
 

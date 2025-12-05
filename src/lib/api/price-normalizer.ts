@@ -1,4 +1,9 @@
-import type { RawPriceData, PriceData, PriceSnapshot } from "../types";
+import type {
+  RawPriceData,
+  PriceData,
+  PriceSnapshot,
+  EnrichedPriceSnapshot,
+} from "../types";
 import type { Retailer, Province } from "../constants";
 
 /**
@@ -20,7 +25,9 @@ export function normalizePriceData(raw: RawPriceData): PriceData {
 /**
  * Convert database snapshot to application format
  */
-export function snapshotToPriceData(snapshot: PriceSnapshot): PriceData {
+export function snapshotToPriceData(
+  snapshot: EnrichedPriceSnapshot
+): PriceData {
   return {
     id: snapshot.id,
     createdAt: snapshot.created_at,
@@ -42,9 +49,9 @@ export function priceDataToSnapshot(
   data: PriceData
 ): Omit<PriceSnapshot, "id" | "created_at"> {
   return {
-    retailer: data.retailer,
+    // retailer is removed from db
     province: data.province,
-    product_name: data.productName || null,
+    // product_name is removed from db
     retailer_product_id: data.retailerProductId || null,
     buy_price: data.buyPrice,
     sell_price: data.sellPrice,

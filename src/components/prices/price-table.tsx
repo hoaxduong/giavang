@@ -5,10 +5,10 @@ import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { formatCurrency, formatRelativeTime } from "@/lib/utils";
 
-import type { PriceSnapshot } from "@/lib/types";
+import type { EnrichedPriceSnapshot } from "@/lib/types";
 
 interface PriceTableProps {
-  data: PriceSnapshot[];
+  data: EnrichedPriceSnapshot[];
   isLoading: boolean;
 }
 
@@ -56,6 +56,7 @@ export function PriceTable({ data, isLoading }: PriceTableProps) {
             <thead>
               <tr className="border-b">
                 <th className="pb-3 px-4 text-left font-semibold">Nhà Bán</th>
+                <th className="pb-3 px-4 text-left font-semibold">Sản Phẩm</th>
                 <th className="pb-3 px-4 text-left font-semibold">Tỉnh/TP</th>
 
                 <th className="pb-3 px-4 text-right font-semibold">Giá Mua</th>
@@ -76,6 +77,9 @@ export function PriceTable({ data, isLoading }: PriceTableProps) {
                     className="border-b last:border-b-0 hover:bg-muted/50 transition-colors"
                   >
                     <td className="py-4 px-4 font-medium">{price.retailer}</td>
+                    <td className="py-4 px-4 text-sm font-medium">
+                      {price.product_name || "Vàng SJC"}
+                    </td>
                     <td className="py-4 px-4 text-sm text-muted-foreground">
                       {price.province}
                     </td>

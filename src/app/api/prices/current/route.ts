@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
-import type { PriceSnapshot } from "@/lib/types";
+import type { PriceSnapshot, EnrichedPriceSnapshot } from "@/lib/types";
 
 /**
  * Current Prices API Route
@@ -11,7 +11,6 @@ import type { PriceSnapshot } from "@/lib/types";
  * Query parameters:
  * - retailer: Filter by retailer name (e.g., "SJC", "DOJI")
  * - province: Filter by province (e.g., "TP. Hồ Chí Minh")
-
  *
  * Example:
  * GET /api/prices/current?retailer=SJC&province=TP.%20Hồ%20Chí%20Minh
@@ -30,28 +29,47 @@ export async function GET(request: NextRequest) {
     // Using a reasonable limit to balance performance and completeness
     let query = supabase
       .from("price_snapshots")
-      .select("*")
+      .select(
+        "*, retailer_products!inner(product_name, is_enabled, retailer_code)"
+      )
+      .eq("retailer_products.is_enabled", true)
       .order("created_at", { ascending: false })
       .limit(5000); // Limit to prevent fetching too many records while ensuring we get all combinations
 
     // Apply filters if provided
     if (retailer) {
-      query = query.eq("retailer", retailer);
+      query = query.eq("retailer_products.retailer_code", retailer);
     }
     if (province) {
       query = query.eq("province", province);
     }
 
-    const { data, error } = await query;
+    const { data: rawData, error } = await query;
 
     if (error) {
       console.error("Database query error:", error);
       throw error;
     }
 
+    // Map the joined data to flat structure
+    const data = (rawData || []).map((item) => {
+      const joinedItem = item as PriceSnapshot & {
+        retailer_products: {
+          product_name: string;
+          retailer_code: string;
+        } | null;
+      };
+
+      return {
+        ...joinedItem,
+        product_name: joinedItem.retailer_products?.product_name || null,
+        retailer: joinedItem.retailer_products?.retailer_code || "unknown",
+      } as EnrichedPriceSnapshot;
+    });
+
     // Get the latest price for each retailer/province/product combination
     // This ensures we get the most recent price regardless of when it was last updated
-    const latestPrices = getLatestPrices(data || []);
+    const latestPrices = getLatestPrices(data);
 
     return NextResponse.json({
       data: latestPrices,
@@ -75,8 +93,10 @@ export async function GET(request: NextRequest) {
  * Helper function to get the latest price for each unique combination
  * of retailer, province, and product
  */
-function getLatestPrices(prices: PriceSnapshot[]): PriceSnapshot[] {
-  const latestMap = new Map<string, PriceSnapshot>();
+function getLatestPrices(
+  prices: EnrichedPriceSnapshot[]
+): EnrichedPriceSnapshot[] {
+  const latestMap = new Map<string, EnrichedPriceSnapshot>();
 
   for (const price of prices) {
     // Use retailer_product_id for uniqueness if available, otherwise fallback to product_name

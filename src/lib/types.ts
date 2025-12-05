@@ -31,14 +31,20 @@ export interface DbRetailerProduct {
 export interface PriceSnapshot {
   id: string;
   created_at: string;
-  retailer: string;
+  // retailer has been removed from db, available via join
   province: string;
-  product_name?: string | null; // Specific product name from retailer
+  // product_name has been removed from db, available via join
   retailer_product_id?: string | null; // Link to retailer_products table
   buy_price: number;
   sell_price: number;
   unit: string;
   source_url?: string | null;
+}
+
+// Extended type with joined fields
+export interface EnrichedPriceSnapshot extends PriceSnapshot {
+  product_name?: string | null;
+  retailer: string;
 }
 
 // Application types (normalized)
@@ -60,12 +66,12 @@ export interface PriceData {
 
 // API response types
 export interface CurrentPricesResponse {
-  data: PriceSnapshot[];
+  data: EnrichedPriceSnapshot[];
   timestamp: string;
 }
 
 export interface HistoricalPricesResponse {
-  data: PriceSnapshot[];
+  data: EnrichedPriceSnapshot[];
   timestamp: string;
   interval: "hourly" | "daily" | "weekly";
 }
