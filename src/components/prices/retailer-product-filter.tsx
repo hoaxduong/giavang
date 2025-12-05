@@ -28,7 +28,7 @@ export function RetailerProductFilter({
 
   return (
     <Select
-      value={value || "all"}
+      value={value}
       onValueChange={(val) => onValueChange(val)}
       disabled={isDisabled}
     >
@@ -36,7 +36,6 @@ export function RetailerProductFilter({
         <SelectValue placeholder="Chọn Sản Phẩm" />
       </SelectTrigger>
       <SelectContent>
-        <SelectItem value="all">Tất cả sản phẩm</SelectItem>
         {data?.data.map((product) => (
           <SelectItem key={product.id} value={product.id}>
             {product.productName}

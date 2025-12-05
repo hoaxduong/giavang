@@ -87,7 +87,7 @@ export default function Home() {
     error: chartError,
   } = useHistoricalPrices({
     retailer: chartRetailer,
-    retailerProductId: selectedProduct === "all" ? undefined : selectedProduct,
+    retailerProductId: selectedProduct,
     province: chartProvince,
     startDate,
     endDate,

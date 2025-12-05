@@ -1,7 +1,14 @@
 import { SjcCrawler } from "./sjc-crawler";
 import { request } from "undici";
 import type { PriceData } from "@/lib/types";
-import type { TypeMapping, Retailer, Province } from "./types";
+import type {
+  TypeMapping,
+  Retailer,
+  Province,
+  HistoricalCrawler,
+  GenericHistoricalCrawlerResult,
+  BaseDailyPriceData,
+} from "./types";
 import {
   Retailer as RetailerLiteral,
   Province as ProvinceLiteral,
@@ -65,7 +72,10 @@ export interface HistoricalCrawlerResult {
  * Unlike vang.today which requires per-type requests, SJC returns all
  * product types in one response, making historical fetching simpler.
  */
-export class SjcHistoricalCrawler extends SjcCrawler {
+export class SjcHistoricalCrawler
+  extends SjcCrawler
+  implements HistoricalCrawler
+{
   /**
    * Fetch historical prices for a specific type
    *
@@ -79,7 +89,7 @@ export class SjcHistoricalCrawler extends SjcCrawler {
   async fetchHistoricalPrices(
     typeCode: string,
     days: number
-  ): Promise<HistoricalCrawlerResult> {
+  ): Promise<GenericHistoricalCrawlerResult<SjcDailyPriceData>> {
     try {
       // Validate days parameter
       if (days < 1 || days > 365) {
@@ -312,25 +322,26 @@ export class SjcHistoricalCrawler extends SjcCrawler {
    * @returns PriceData formatted for database insertion
    */
   convertDailyToSnapshot(
-    dailyPrice: SjcDailyPriceData,
+    dailyPrice: BaseDailyPriceData,
     mapping: TypeMapping,
     _retailer: Retailer,
     _province: Province
   ): PriceData {
+    const sjcPrice = dailyPrice as SjcDailyPriceData;
     // Map branch name to province code (using the same logic as SjcCrawler)
-    const provinceCode = this.mapBranchToProvince(dailyPrice.branchName);
+    const provinceCode = this.mapBranchToProvince(sjcPrice.branchName);
 
     // Convert from VND/lượng to VND/chi (1 lượng = 10 chỉ)
-    const buyPriceInChi = this.convertLuongToChi(dailyPrice.buyPrice);
-    const sellPriceInChi = this.convertLuongToChi(dailyPrice.sellPrice);
-    const changeInChi = dailyPrice.change
-      ? this.convertLuongToChi(dailyPrice.change)
+    const buyPriceInChi = this.convertLuongToChi(sjcPrice.buyPrice);
+    const sellPriceInChi = this.convertLuongToChi(sjcPrice.sellPrice);
+    const changeInChi = sjcPrice.change
+      ? this.convertLuongToChi(sjcPrice.change)
       : undefined;
 
     // Use the timestamp from API response (parsed from GroupDate)
     return {
       id: "",
-      createdAt: dailyPrice.timestamp,
+      createdAt: sjcPrice.timestamp,
       retailer: mapping.retailerCode as unknown as RetailerLiteral,
       province: provinceCode as unknown as ProvinceLiteral,
       productName: mapping.label,

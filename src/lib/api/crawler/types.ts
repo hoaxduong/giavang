@@ -312,3 +312,52 @@ export interface OnusDailyPriceData {
   sellPrice: number;
   change?: number;
 }
+
+/**
+ * Base generic interface for daily price data
+ * Used by BackfillExecutor to handle different crawler implementations
+ */
+export interface BaseDailyPriceData {
+  date: string;
+  timestamp: string;
+  [key: string]: any; // Allow other properties
+}
+
+/**
+ * Generic result from historical crawler fetch
+ */
+export interface GenericHistoricalCrawlerResult<
+  T extends BaseDailyPriceData = BaseDailyPriceData,
+> {
+  success: boolean;
+  data: T[];
+  errors: Array<{ date: string; error: string }>;
+  metadata: {
+    daysRequested: number;
+    daysReturned: number;
+    [key: string]: any;
+  };
+}
+
+/**
+ * Common interface for all historical crawlers
+ */
+export interface HistoricalCrawler {
+  /**
+   * Fetch historical prices for a specific type/slug
+   */
+  fetchHistoricalPrices(
+    identifier: string,
+    days: number
+  ): Promise<GenericHistoricalCrawlerResult>;
+
+  /**
+   * Convert specific daily price data to standardized PriceData
+   */
+  convertDailyToSnapshot(
+    dailyPrice: BaseDailyPriceData,
+    mapping: TypeMapping,
+    retailer: Retailer,
+    province: Province
+  ): PriceData;
+}

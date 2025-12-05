@@ -1,6 +1,7 @@
 import { createServiceRoleClient } from "@/lib/supabase/service-role";
 import { priceDataToSnapshot } from "../price-normalizer";
 import { SjcHistoricalCrawler } from "../crawler/sjc-historical-crawler";
+import { OnusHistoricalCrawler } from "../crawler/onus-historical-crawler";
 import { RateLimiter } from "./rate-limiter";
 import type {
   BackfillJob,
@@ -15,6 +16,8 @@ import type {
   TypeMapping,
   Retailer,
   Province,
+  HistoricalCrawler,
+  BaseDailyPriceData,
 } from "../crawler/types";
 import type { PriceData } from "@/lib/types";
 
@@ -31,7 +34,7 @@ export class BackfillExecutor {
   private isPaused: boolean = false;
   private isCancelled: boolean = false;
   private rateLimiter: RateLimiter | null = null;
-  private crawler: SjcHistoricalCrawler | null = null;
+  private crawler: HistoricalCrawler | null = null;
 
   // Progress tracking
   private itemsProcessed: number = 0;
@@ -385,6 +388,9 @@ export class BackfillExecutor {
       case "sjc":
         this.crawler = new SjcHistoricalCrawler(crawlerConfig);
         break;
+      case "onus":
+        this.crawler = new OnusHistoricalCrawler(crawlerConfig);
+        break;
       default:
         throw new Error(
           `Unsupported crawler type for backfill: ${source.api_type}`
@@ -439,14 +445,7 @@ export class BackfillExecutor {
    * Convert daily price data to price snapshots
    */
   private async convertToSnapshots(
-    dailyPrices: Array<{
-      date: string;
-      type: string;
-      buyPrice: number;
-      sellPrice: number;
-      currency?: string;
-      change?: number;
-    }>,
+    dailyPrices: BaseDailyPriceData[],
     mapping: TypeMapping
   ): Promise<PriceData[]> {
     const supabase = createServiceRoleClient();
@@ -522,19 +521,21 @@ export class BackfillExecutor {
     // The unique constraint uses an expression, so we need raw SQL
     const insertPromises = snapshots.map(async (priceData, index) => {
       const dbSnapshot = dbSnapshots[index];
+      const rpcParams = {
+        p_province: dbSnapshot.province,
+        p_retailer_product_id: dbSnapshot.retailer_product_id ?? null,
+
+        p_buy_price: dbSnapshot.buy_price,
+        p_sell_price: dbSnapshot.sell_price,
+        p_unit: dbSnapshot.unit,
+        p_created_at: priceData.createdAt,
+        p_source_job_id: this.jobId,
+        p_is_backfilled: true,
+      };
+
       const { error } = await supabase.rpc(
         "insert_price_snapshot_ignore_duplicate",
-        {
-          p_retailer: dbSnapshot.retailer,
-          p_province: dbSnapshot.province,
-
-          p_buy_price: dbSnapshot.buy_price,
-          p_sell_price: dbSnapshot.sell_price,
-          p_unit: dbSnapshot.unit,
-          p_created_at: priceData.createdAt,
-          p_source_job_id: this.jobId,
-          p_is_backfilled: true,
-        }
+        rpcParams
       );
       return error;
     });

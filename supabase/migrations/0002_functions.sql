@@ -28,7 +28,6 @@ CREATE TRIGGER update_blog_comments_updated_at BEFORE UPDATE ON blog_comments FO
 
 -- 2. Insert Price Snapshot (Refactored)
 CREATE OR REPLACE FUNCTION insert_price_snapshot_ignore_duplicate(
-  p_retailer VARCHAR,
   p_province VARCHAR,
   p_retailer_product_id UUID,
   p_buy_price NUMERIC,
@@ -56,7 +55,6 @@ BEGIN
 
   -- Insert new record
   INSERT INTO price_snapshots (
-    retailer,
     province,
     retailer_product_id,
     buy_price,
@@ -66,7 +64,6 @@ BEGIN
     source_job_id,
     is_backfilled
   ) VALUES (
-    p_retailer,
     p_province,
     p_retailer_product_id,
     p_buy_price,

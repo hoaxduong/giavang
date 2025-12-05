@@ -7,6 +7,9 @@ import type {
   Province,
   OnusLineResponse,
   OnusDailyPriceData,
+  HistoricalCrawler,
+  GenericHistoricalCrawlerResult,
+  BaseDailyPriceData,
 } from "./types";
 import {
   Retailer as RetailerLiteral,
@@ -14,26 +17,15 @@ import {
 } from "@/lib/constants";
 
 /**
- * Result from historical crawler fetch
- */
-export interface HistoricalCrawlerResult {
-  success: boolean;
-  data: OnusDailyPriceData[];
-  errors: Array<{ date: string; error: string }>;
-  metadata: {
-    daysRequested: number;
-    daysReturned: number;
-    slug: string;
-  };
-}
-
-/**
  * OnusHistoricalCrawler
  *
  * Extends OnusCrawler to fetch historical price data from Onus /line endpoint.
  * Fetches time-series data for a specific product slug.
  */
-export class OnusHistoricalCrawler extends OnusCrawler {
+export class OnusHistoricalCrawler
+  extends OnusCrawler
+  implements HistoricalCrawler
+{
   /**
    * Fetch historical prices for a specific slug
    *
@@ -47,7 +39,7 @@ export class OnusHistoricalCrawler extends OnusCrawler {
   async fetchHistoricalPrices(
     slug: string,
     days: number = 365
-  ): Promise<HistoricalCrawlerResult> {
+  ): Promise<GenericHistoricalCrawlerResult<OnusDailyPriceData>> {
     try {
       // Validate slug parameter
       if (!slug || slug.trim().length === 0) {
@@ -225,26 +217,27 @@ export class OnusHistoricalCrawler extends OnusCrawler {
    * @returns PriceData formatted for database insertion
    */
   convertDailyToSnapshot(
-    dailyPrice: OnusDailyPriceData,
+    dailyPrice: BaseDailyPriceData,
     mapping: TypeMapping,
     retailer: Retailer,
     province: Province
   ): PriceData {
+    const onusPrice = dailyPrice as OnusDailyPriceData;
     // Use mapping's retailer, province, and product name
     const retailerCode = mapping.retailerCode;
     const provinceCode = mapping.provinceCode || province.code;
     // Use the timestamp from API response
     return {
       id: "",
-      createdAt: dailyPrice.timestamp,
+      createdAt: onusPrice.timestamp,
       retailer: retailerCode as unknown as RetailerLiteral,
       province: provinceCode as unknown as ProvinceLiteral,
       productName: mapping.label, // Store specific product name from mapping
       retailerProductId: mapping.retailerProductId, // Link to retailer_products (mandatory)
-      buyPrice: dailyPrice.buyPrice,
-      sellPrice: dailyPrice.sellPrice,
+      buyPrice: onusPrice.buyPrice,
+      sellPrice: onusPrice.sellPrice,
       unit: "VND/chi",
-      change: dailyPrice.change,
+      change: onusPrice.change,
     };
   }
 }
