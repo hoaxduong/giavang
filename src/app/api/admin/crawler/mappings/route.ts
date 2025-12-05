@@ -7,7 +7,7 @@ const mappingSchema = z.object({
   sourceId: z.string().uuid(),
   externalCode: z.string().min(1).max(100),
   retailerCode: z.string().min(1).max(50),
-  productTypeCode: z.string().min(1).max(50),
+
   provinceCode: z.string().min(1).max(50).nullable().optional(),
   label: z.string().min(1).max(200),
   isEnabled: z.boolean().optional().default(true),
@@ -17,7 +17,7 @@ const updateMappingSchema = z.object({
   id: z.string().uuid(),
   externalCode: z.string().min(1).max(100).optional(),
   retailerCode: z.string().min(1).max(50).optional(),
-  productTypeCode: z.string().min(1).max(50).optional(),
+
   provinceCode: z.string().min(1).max(50).nullable().optional(),
   label: z.string().min(1).max(200).optional(),
   isEnabled: z.boolean().optional(),
@@ -74,7 +74,7 @@ export async function POST(request: NextRequest) {
         source_id: validated.sourceId,
         external_code: validated.externalCode,
         retailer_code: validated.retailerCode,
-        product_type_code: validated.productTypeCode,
+
         province_code: validated.provinceCode,
         label: validated.label,
         is_enabled: validated.isEnabled,
@@ -93,7 +93,7 @@ export async function POST(request: NextRequest) {
     }
     return NextResponse.json(
       { error: "Unauthorized or invalid request" },
-      { status: 401 },
+      { status: 401 }
     );
   }
 }
@@ -115,8 +115,7 @@ export async function PUT(request: NextRequest) {
       updateData.external_code = validated.externalCode;
     if (validated.retailerCode !== undefined)
       updateData.retailer_code = validated.retailerCode;
-    if (validated.productTypeCode !== undefined)
-      updateData.product_type_code = validated.productTypeCode;
+
     if (validated.provinceCode !== undefined)
       updateData.province_code = validated.provinceCode;
     if (validated.label !== undefined) updateData.label = validated.label;
@@ -141,7 +140,7 @@ export async function PUT(request: NextRequest) {
     }
     return NextResponse.json(
       { error: "Unauthorized or invalid request" },
-      { status: 401 },
+      { status: 401 }
     );
   }
 }

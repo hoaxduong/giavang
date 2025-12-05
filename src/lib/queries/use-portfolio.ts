@@ -32,7 +32,7 @@ export function useCreatePortfolioEntry() {
     mutationFn: async (entry: {
       amount: number;
       retailer: string;
-      product_type: string;
+      productName: string;
       province?: string | null;
       bought_at: string;
     }) => {
@@ -47,7 +47,7 @@ export function useCreatePortfolioEntry() {
       if (!response.ok) {
         const error = await response.json();
         throw new Error(
-          error.details || error.error || "Failed to create portfolio entry",
+          error.details || error.error || "Failed to create portfolio entry"
         );
       }
 
@@ -74,7 +74,7 @@ export function useUpdatePortfolioEntry() {
       sold_at?: string;
       amount?: number;
       retailer?: string;
-      product_type?: string;
+      productName?: string;
       province?: string | null;
       bought_at?: string;
     }) => {
@@ -89,7 +89,7 @@ export function useUpdatePortfolioEntry() {
       if (!response.ok) {
         const error = await response.json();
         throw new Error(
-          error.details || error.error || "Failed to update portfolio entry",
+          error.details || error.error || "Failed to update portfolio entry"
         );
       }
 
@@ -119,7 +119,7 @@ export function useDeletePortfolioEntry() {
       if (!response.ok) {
         const error = await response.json();
         throw new Error(
-          error.details || error.error || "Failed to delete portfolio entry",
+          error.details || error.error || "Failed to delete portfolio entry"
         );
       }
 

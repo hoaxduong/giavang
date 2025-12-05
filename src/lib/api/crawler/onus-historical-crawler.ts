@@ -4,14 +4,12 @@ import type { PriceData } from "@/lib/types";
 import type {
   TypeMapping,
   Retailer,
-  ProductType,
   Province,
   OnusLineResponse,
   OnusDailyPriceData,
 } from "./types";
 import {
   Retailer as RetailerLiteral,
-  ProductType as ProductTypeLiteral,
   Province as ProvinceLiteral,
 } from "@/lib/constants";
 
@@ -75,8 +73,7 @@ export class OnusHistoricalCrawler extends OnusCrawler {
         method: "GET",
         headers: {
           Accept: "application/json",
-          "User-Agent":
-            "Mozilla/5.0 (compatible; GoldPriceApp/1.0)",
+          "User-Agent": "Mozilla/5.0 (compatible; GoldPriceApp/1.0)",
           ...this.config.headers,
         },
         bodyTimeout: timeout,
@@ -225,30 +222,25 @@ export class OnusHistoricalCrawler extends OnusCrawler {
    * @param mapping - Type mapping
    * @param retailer - Retailer entity
    * @param province - Province entity
-   * @param productType - Product type entity
    * @returns PriceData formatted for database insertion
    */
   convertDailyToSnapshot(
     dailyPrice: OnusDailyPriceData,
     mapping: TypeMapping,
     retailer: Retailer,
-    province: Province,
-    productType: ProductType
+    province: Province
   ): PriceData {
-    // Use mapping's retailer, province, and product type
+    // Use mapping's retailer, province, and product name
     const retailerCode = mapping.retailerCode;
     const provinceCode = mapping.provinceCode || province.code;
-    const productTypeCode = mapping.productTypeCode;
-
     // Use the timestamp from API response
     return {
       id: "",
       createdAt: dailyPrice.timestamp,
       retailer: retailerCode as unknown as RetailerLiteral,
       province: provinceCode as unknown as ProvinceLiteral,
-      productType: productTypeCode as unknown as ProductTypeLiteral,
       productName: mapping.label, // Store specific product name from mapping
-      retailerProductId: mapping.retailerProductId || undefined, // Link to retailer_products
+      retailerProductId: mapping.retailerProductId, // Link to retailer_products (mandatory)
       buyPrice: dailyPrice.buyPrice,
       sellPrice: dailyPrice.sellPrice,
       unit: "VND/chi",

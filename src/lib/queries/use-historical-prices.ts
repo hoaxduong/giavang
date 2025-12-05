@@ -11,7 +11,7 @@ import type { HistoricalFilters, HistoricalPricesResponse } from "../types";
  * - Queries time-series data by date range
  * - Supports interval grouping (hourly/daily/weekly)
  * - Caches data for 10 minutes (historical data changes less frequently)
- * - Filters by retailer, province, product type
+ * - Filters by retailer, province
  */
 export function useHistoricalPrices(filters: HistoricalFilters) {
   return useQuery({
@@ -23,9 +23,6 @@ export function useHistoricalPrices(filters: HistoricalFilters) {
         interval: filters.interval || "daily",
       });
 
-      if (filters.productType) {
-        params.append("productType", filters.productType);
-      }
       if (filters.retailer) {
         params.append("retailer", filters.retailer);
       }
@@ -37,7 +34,7 @@ export function useHistoricalPrices(filters: HistoricalFilters) {
 
       if (!response.ok) {
         throw new Error(
-          `Failed to fetch historical prices: ${response.statusText}`,
+          `Failed to fetch historical prices: ${response.statusText}`
         );
       }
 
@@ -45,6 +42,6 @@ export function useHistoricalPrices(filters: HistoricalFilters) {
     },
     staleTime: 10 * 60 * 1000, // 10 minutes
     gcTime: 30 * 60 * 1000, // 30 minutes
-    enabled: !!filters.productType && !!filters.startDate && !!filters.endDate,
+    enabled: !!filters.startDate && !!filters.endDate,
   });
 }

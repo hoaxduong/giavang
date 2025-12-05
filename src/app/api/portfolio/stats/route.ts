@@ -21,7 +21,7 @@ export async function GET(request: NextRequest) {
     // Fetch all portfolio entries
     const { data: entries, error } = await supabase
       .from("user_portfolio")
-      .select("*")
+      .select("*, productName:product_type")
       .eq("user_id", user.id);
 
     if (error) {
@@ -35,24 +35,24 @@ export async function GET(request: NextRequest) {
     const totalPurchasePeriod = portfolioEntries.length;
     const totalGoldAmount = portfolioEntries.reduce(
       (sum, entry) => sum + Number(entry.amount),
-      0,
+      0
     );
     const totalVndInvested = portfolioEntries.reduce(
       (sum, entry) => sum + Number(entry.amount) * Number(entry.buy_price),
-      0,
+      0
     );
 
     // Get current prices for all unique gold types
     const uniqueGoldTypes = new Map<
       string,
-      { retailer: string; productType: string; province: string | null }
+      { retailer: string; productName: string; province: string | null }
     >();
     portfolioEntries.forEach((entry) => {
-      const key = `${entry.retailer}-${entry.product_type}-${entry.province || ""}`;
+      const key = `${entry.retailer}-${entry.productName}-${entry.province || ""}`;
       if (!uniqueGoldTypes.has(key)) {
         uniqueGoldTypes.set(key, {
           retailer: entry.retailer,
-          productType: entry.product_type,
+          productName: entry.productName,
           province: entry.province || null,
         });
       }
@@ -63,14 +63,14 @@ export async function GET(request: NextRequest) {
     const currentPricesMap = new Map<string, number>();
     for (const {
       retailer,
-      productType,
+      productName,
       province,
     } of uniqueGoldTypes.values()) {
       let query = supabase
         .from("price_snapshots")
         .select("buy_price")
         .eq("retailer", retailer)
-        .eq("product_type", productType)
+        .eq("product_name", productName)
         .order("created_at", { ascending: false })
         .limit(1);
 
@@ -81,7 +81,7 @@ export async function GET(request: NextRequest) {
       const { data: priceData } = await query;
 
       if (priceData && priceData.length > 0) {
-        const key = `${retailer}-${productType}-${province || ""}`;
+        const key = `${retailer}-${productName}-${province || ""}`;
         currentPricesMap.set(key, Number(priceData[0].buy_price));
       } else if (province) {
         // Fallback: try without province
@@ -89,13 +89,13 @@ export async function GET(request: NextRequest) {
           .from("price_snapshots")
           .select("buy_price")
           .eq("retailer", retailer)
-          .eq("product_type", productType)
+          .eq("product_name", productName)
           .order("created_at", { ascending: false })
           .limit(1);
 
         const { data: fallbackData } = await fallbackQuery;
         if (fallbackData && fallbackData.length > 0) {
-          const key = `${retailer}-${productType}-${province || ""}`;
+          const key = `${retailer}-${productName}-${province || ""}`;
           currentPricesMap.set(key, Number(fallbackData[0].buy_price));
         }
       }
@@ -111,7 +111,7 @@ export async function GET(request: NextRequest) {
         soldVndValue += Number(entry.amount) * Number(entry.sell_price);
       } else {
         // For unsold entries, use current price
-        const key = `${entry.retailer}-${entry.product_type}-${entry.province || ""}`;
+        const key = `${entry.retailer}-${entry.productName}-${entry.province || ""}`;
         const currentPrice = currentPricesMap.get(key);
         if (currentPrice) {
           currentVndValue += Number(entry.amount) * currentPrice;
@@ -125,10 +125,10 @@ export async function GET(request: NextRequest) {
       totalVndInvested > 0 ? (profitLossVnd / totalVndInvested) * 100 : 0;
 
     const soldEntries = portfolioEntries.filter(
-      (entry) => entry.sold_at,
+      (entry) => entry.sold_at
     ).length;
     const activeEntries = portfolioEntries.filter(
-      (entry) => !entry.sold_at,
+      (entry) => !entry.sold_at
     ).length;
 
     const stats: PortfolioStats = {
@@ -158,7 +158,7 @@ export async function GET(request: NextRequest) {
         error: "Failed to fetch portfolio stats",
         details: error instanceof Error ? error.message : "Unknown error",
       },
-      { status: 500 },
+      { status: 500 }
     );
   }
 }

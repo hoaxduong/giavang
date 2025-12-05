@@ -15,7 +15,6 @@ import type {
   TypeMapping,
   Retailer,
   Province,
-  ProductType,
 } from "../crawler/types";
 import type { PriceData } from "@/lib/types";
 
@@ -53,8 +52,6 @@ export class BackfillExecutor {
    * Main execution entry point
    */
   async execute(): Promise<void> {
-    const supabase = createServiceRoleClient();
-
     try {
       // Load job from database
       await this.loadJob();
@@ -74,12 +71,12 @@ export class BackfillExecutor {
       if (this.job.jobType === "full_historical") {
         await this.executeFullHistorical(
           this.job.config as FullHistoricalConfig,
-          checkpoint,
+          checkpoint
         );
       } else if (this.job.jobType === "date_range") {
         await this.executeDateRange(
           this.job.config as DateRangeConfig,
-          checkpoint,
+          checkpoint
         );
       }
 
@@ -115,7 +112,7 @@ export class BackfillExecutor {
    */
   private async executeFullHistorical(
     config: FullHistoricalConfig,
-    checkpoint: CheckpointData | null,
+    checkpoint: CheckpointData | null
   ): Promise<void> {
     await this.log("info", "Starting full historical backfill", {
       days: config.days,
@@ -146,14 +143,14 @@ export class BackfillExecutor {
 
       await this.log(
         "info",
-        `Processing type ${i + 1}/${typeMappings.length}: ${mapping.externalCode}`,
+        `Processing type ${i + 1}/${typeMappings.length}: ${mapping.externalCode}`
       );
 
       try {
         // Fetch historical data for this type
         const result = await this.crawler!.fetchHistoricalPrices(
           mapping.externalCode,
-          config.days,
+          config.days
         );
 
         // Wait for rate limit
@@ -169,7 +166,7 @@ export class BackfillExecutor {
           await this.log(
             "warning",
             `Failed to fetch data for ${mapping.externalCode}`,
-            result.errors,
+            result.errors
           );
           continue;
         }
@@ -190,7 +187,7 @@ export class BackfillExecutor {
 
         // Update progress
         const progressPercent = Math.round(
-          ((i + 1) / typeMappings.length) * 100,
+          ((i + 1) / typeMappings.length) * 100
         );
         await this.updateProgress(progressPercent);
 
@@ -221,7 +218,7 @@ export class BackfillExecutor {
    */
   private async executeDateRange(
     config: DateRangeConfig,
-    checkpoint: CheckpointData | null,
+    checkpoint: CheckpointData | null
   ): Promise<void> {
     await this.log("info", "Starting date range backfill", {
       startDate: config.startDate,
@@ -244,12 +241,12 @@ export class BackfillExecutor {
     const endDate = new Date(config.endDate);
     const totalDays =
       Math.ceil(
-        (endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24),
+        (endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24)
       ) + 1;
 
     await this.log(
       "info",
-      `Found ${typeMappings.length} types to process over ${totalDays} days`,
+      `Found ${typeMappings.length} types to process over ${totalDays} days`
     );
 
     // Determine starting point from checkpoint
@@ -264,7 +261,7 @@ export class BackfillExecutor {
 
       await this.log(
         "info",
-        `Processing type ${i + 1}/${typeMappings.length}: ${mapping.externalCode}`,
+        `Processing type ${i + 1}/${typeMappings.length}: ${mapping.externalCode}`
       );
 
       try {
@@ -272,14 +269,14 @@ export class BackfillExecutor {
         const chunks = this.splitDateRangeIntoChunks(
           config.startDate,
           config.endDate,
-          30,
+          30
         );
 
         for (const chunk of chunks) {
           // Fetch historical data for this type and chunk
           const result = await this.crawler!.fetchHistoricalPrices(
             mapping.externalCode,
-            chunk.days,
+            chunk.days
           );
 
           // Wait for rate limit
@@ -295,7 +292,7 @@ export class BackfillExecutor {
             await this.log(
               "warning",
               `Failed to fetch data for ${mapping.externalCode}`,
-              result.errors,
+              result.errors
             );
             continue;
           }
@@ -309,7 +306,7 @@ export class BackfillExecutor {
           // Convert daily prices to snapshots
           const snapshots = await this.convertToSnapshots(
             filteredData,
-            mapping,
+            mapping
           );
 
           // Save to database (let DB handle duplicates with unique constraint)
@@ -324,7 +321,7 @@ export class BackfillExecutor {
 
         // Update progress
         const progressPercent = Math.round(
-          ((i + 1) / typeMappings.length) * 100,
+          ((i + 1) / typeMappings.length) * 100
         );
         await this.updateProgress(progressPercent);
 
@@ -390,14 +387,14 @@ export class BackfillExecutor {
         break;
       default:
         throw new Error(
-          `Unsupported crawler type for backfill: ${source.api_type}`,
+          `Unsupported crawler type for backfill: ${source.api_type}`
         );
     }
 
     // Create rate limiter
     this.rateLimiter = new RateLimiter(
       source.id,
-      source.rate_limit_per_minute || 60,
+      source.rate_limit_per_minute || 60
     );
   }
 
@@ -405,7 +402,7 @@ export class BackfillExecutor {
    * Get type mappings to process
    */
   private async getTypeMappings(
-    types: "all" | string[],
+    types: "all" | string[]
   ): Promise<TypeMapping[]> {
     const supabase = createServiceRoleClient();
 
@@ -430,9 +427,10 @@ export class BackfillExecutor {
       sourceId: m.source_id,
       externalCode: m.external_code,
       retailerCode: m.retailer_code,
-      productTypeCode: m.product_type_code,
+
       provinceCode: m.province_code,
       label: m.label,
+      retailerProductId: m.retailer_product_id,
       isEnabled: m.is_enabled,
     }));
   }
@@ -449,43 +447,31 @@ export class BackfillExecutor {
       currency?: string;
       change?: number;
     }>,
-    mapping: TypeMapping,
+    mapping: TypeMapping
   ): Promise<PriceData[]> {
     const supabase = createServiceRoleClient();
 
     // Fetch reference data
-    const [retailerResult, provinceResult, productTypeResult] =
-      await Promise.all([
-        supabase
-          .from("retailers")
-          .select("*")
-          .eq("code", mapping.retailerCode)
-          .eq("is_enabled", true)
-          .single(),
-        supabase
-          .from("provinces")
-          .select("*")
-          .eq("code", mapping.provinceCode || "TP. Hồ Chí Minh")
-          .eq("is_enabled", true)
-          .single(),
-        supabase
-          .from("product_types")
-          .select("*")
-          .eq("code", mapping.productTypeCode)
-          .eq("is_enabled", true)
-          .single(),
-      ]);
+    const [retailerResult, provinceResult] = await Promise.all([
+      supabase
+        .from("retailers")
+        .select("*")
+        .eq("code", mapping.retailerCode)
+        .eq("is_enabled", true)
+        .single(),
+      supabase
+        .from("provinces")
+        .select("*")
+        .eq("code", mapping.provinceCode || "TP. Hồ Chí Minh")
+        .eq("is_enabled", true)
+        .single(),
+    ]);
 
     if (retailerResult.error || !retailerResult.data) {
       throw new Error(`Retailer ${mapping.retailerCode} not found or disabled`);
     }
     if (provinceResult.error || !provinceResult.data) {
       throw new Error(`Province ${mapping.provinceCode} not found or disabled`);
-    }
-    if (productTypeResult.error || !productTypeResult.data) {
-      throw new Error(
-        `Product type ${mapping.productTypeCode} not found or disabled`,
-      );
     }
 
     const retailer: Retailer = {
@@ -504,15 +490,6 @@ export class BackfillExecutor {
       sortOrder: provinceResult.data.sort_order,
     };
 
-    const productType: ProductType = {
-      id: productTypeResult.data.id,
-      code: productTypeResult.data.code,
-      label: productTypeResult.data.label,
-      shortLabel: productTypeResult.data.short_label,
-      isEnabled: productTypeResult.data.is_enabled,
-      sortOrder: productTypeResult.data.sort_order,
-    };
-
     // Convert each daily price to snapshot
     // Use type assertion since we know the crawler type matches the daily price type
     return dailyPrices.map((daily) =>
@@ -520,9 +497,8 @@ export class BackfillExecutor {
         daily as any,
         mapping,
         retailer,
-        province,
-        productType,
-      ),
+        province
+      )
     );
   }
 
@@ -551,14 +527,14 @@ export class BackfillExecutor {
         {
           p_retailer: dbSnapshot.retailer,
           p_province: dbSnapshot.province,
-          p_product_type: dbSnapshot.product_type,
+
           p_buy_price: dbSnapshot.buy_price,
           p_sell_price: dbSnapshot.sell_price,
           p_unit: dbSnapshot.unit,
           p_created_at: priceData.createdAt,
           p_source_job_id: this.jobId,
           p_is_backfilled: true,
-        },
+        }
       );
       return error;
     });
@@ -568,7 +544,7 @@ export class BackfillExecutor {
 
     if (errors.length > 0) {
       throw new Error(
-        `Failed to save some price snapshots: ${errors[0]?.message}`,
+        `Failed to save some price snapshots: ${errors[0]?.message}`
       );
     }
 
@@ -581,7 +557,7 @@ export class BackfillExecutor {
   private splitDateRangeIntoChunks(
     startDate: string,
     endDate: string,
-    maxDays: number,
+    maxDays: number
   ): Array<{ startDate: string; days: number }> {
     const chunks: Array<{ startDate: string; days: number }> = [];
     const start = new Date(startDate);
@@ -659,7 +635,7 @@ export class BackfillExecutor {
    */
   private async updateJobStatus(
     status: string,
-    updates: Partial<DbBackfillJob> = {},
+    updates: Partial<DbBackfillJob> = {}
   ): Promise<void> {
     const supabase = createServiceRoleClient();
 
@@ -783,7 +759,7 @@ export class BackfillExecutor {
   private async log(
     level: "info" | "warning" | "error",
     message: string,
-    details?: unknown,
+    details?: unknown
   ): Promise<void> {
     const supabase = createServiceRoleClient();
 

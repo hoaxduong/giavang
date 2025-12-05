@@ -6,12 +6,12 @@ import type { PriceSnapshot } from "@/lib/types";
  * Current Prices API Route
  *
  * Fetches the most recent price snapshots from the database
- * Supports filtering by retailer, province, and product_type
+ * Supports filtering by retailer, province
  *
  * Query parameters:
  * - retailer: Filter by retailer name (e.g., "SJC", "DOJI")
  * - province: Filter by province (e.g., "TP. Hồ Chí Minh")
- * - productType: Filter by product type (e.g., "SJC_BARS")
+
  *
  * Example:
  * GET /api/prices/current?retailer=SJC&province=TP.%20Hồ%20Chí%20Minh
@@ -21,7 +21,6 @@ export async function GET(request: NextRequest) {
     const searchParams = request.nextUrl.searchParams;
     const retailer = searchParams.get("retailer");
     const province = searchParams.get("province");
-    const productType = searchParams.get("productType");
 
     const supabase = await createClient();
 
@@ -41,9 +40,6 @@ export async function GET(request: NextRequest) {
     }
     if (province) {
       query = query.eq("province", province);
-    }
-    if (productType) {
-      query = query.eq("product_type", productType);
     }
 
     const { data, error } = await query;
@@ -70,20 +66,23 @@ export async function GET(request: NextRequest) {
         error: "Failed to fetch prices",
         details: error instanceof Error ? error.message : "Unknown error",
       },
-      { status: 500 },
+      { status: 500 }
     );
   }
 }
 
 /**
  * Helper function to get the latest price for each unique combination
- * of retailer, province, and product_type
+ * of retailer, province, and product
  */
 function getLatestPrices(prices: PriceSnapshot[]): PriceSnapshot[] {
   const latestMap = new Map<string, PriceSnapshot>();
 
   for (const price of prices) {
-    const key = `${price.retailer}-${price.province}-${price.product_type}`;
+    // Use retailer_product_id for uniqueness if available, otherwise fallback to product_name
+    const uniqueId =
+      price.retailer_product_id || price.product_name || "unknown";
+    const key = `${price.retailer}-${price.province}-${uniqueId}`;
 
     const existing = latestMap.get(key);
     if (
@@ -95,6 +94,6 @@ function getLatestPrices(prices: PriceSnapshot[]): PriceSnapshot[] {
   }
 
   return Array.from(latestMap.values()).sort((a, b) =>
-    a.retailer.localeCompare(b.retailer),
+    a.retailer.localeCompare(b.retailer)
   );
 }

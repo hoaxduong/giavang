@@ -27,7 +27,7 @@ export async function GET(request: NextRequest) {
     // Fetch all portfolio entries
     const { data: entries, error } = await supabase
       .from("user_portfolio")
-      .select("*")
+      .select("*, productName:product_type")
       .eq("user_id", user.id)
       .order("bought_at", { ascending: true });
 
@@ -61,26 +61,26 @@ export async function GET(request: NextRequest) {
     // Get all price snapshots we need
     const uniqueGoldTypes = new Map<
       string,
-      { retailer: string; productType: string; province: string | null }
+      { retailer: string; productName: string; province: string | null }
     >();
     portfolioEntries.forEach((entry) => {
-      const key = `${entry.retailer}-${entry.product_type}-${entry.province || ""}`;
+      const key = `${entry.retailer}-${entry.productName}-${entry.province || ""}`;
       if (!uniqueGoldTypes.has(key)) {
         uniqueGoldTypes.set(key, {
           retailer: entry.retailer,
-          productType: entry.product_type,
+          productName: entry.productName,
           province: entry.province || null,
         });
       }
     });
 
     // Fetch price snapshots for all dates and gold types
-    const priceCache = new Map<string, number>(); // key: "date-retailer-productType-province" -> sell_price
+    const priceCache = new Map<string, number>(); // key: "date-retailer-productName-province" -> sell_price
 
     for (const date of dates) {
       for (const {
         retailer,
-        productType,
+        productName,
         province,
       } of uniqueGoldTypes.values()) {
         // Use buy_price (retailer's buy price) for current value calculations
@@ -89,7 +89,7 @@ export async function GET(request: NextRequest) {
           .from("price_snapshots")
           .select("buy_price")
           .eq("retailer", retailer)
-          .eq("product_type", productType)
+          .eq("product_name", productName)
           .lte("created_at", date)
           .order("created_at", { ascending: false })
           .limit(1);
@@ -101,7 +101,7 @@ export async function GET(request: NextRequest) {
         const { data: priceData } = await query;
 
         if (priceData && priceData.length > 0) {
-          const key = `${date}-${retailer}-${productType}-${province || ""}`;
+          const key = `${date}-${retailer}-${productName}-${province || ""}`;
           priceCache.set(key, Number(priceData[0].buy_price));
         } else if (province) {
           // Fallback: try without province
@@ -109,14 +109,14 @@ export async function GET(request: NextRequest) {
             .from("price_snapshots")
             .select("buy_price")
             .eq("retailer", retailer)
-            .eq("product_type", productType)
+            .eq("product_name", productName)
             .lte("created_at", date)
             .order("created_at", { ascending: false })
             .limit(1);
 
           const { data: fallbackData } = await fallbackQuery;
           if (fallbackData && fallbackData.length > 0) {
-            const key = `${date}-${retailer}-${productType}-${province || ""}`;
+            const key = `${date}-${retailer}-${productName}-${province || ""}`;
             priceCache.set(key, Number(fallbackData[0].buy_price));
           }
         }
@@ -146,13 +146,13 @@ export async function GET(request: NextRequest) {
               value += Number(entry.amount) * Number(entry.sell_price || 0);
             } else {
               // Entry not sold yet at this date, use current price
-              const key = `${date}-${entry.retailer}-${entry.product_type}-${entry.province || ""}`;
+              const key = `${date}-${entry.retailer}-${entry.productName}-${entry.province || ""}`;
               const currentPrice = priceCache.get(key) || 0;
               value += Number(entry.amount) * currentPrice;
             }
           } else {
             // Entry not sold, use current price at this date
-            const key = `${date}-${entry.retailer}-${entry.product_type}-${entry.province || ""}`;
+            const key = `${date}-${entry.retailer}-${entry.productName}-${entry.province || ""}`;
             const currentPrice = priceCache.get(key) || 0;
             value += Number(entry.amount) * currentPrice;
           }
@@ -185,7 +185,7 @@ export async function GET(request: NextRequest) {
         const lastDayOfMonth = new Date(
           date.getFullYear(),
           date.getMonth() + 1,
-          0,
+          0
         );
 
         // Use the last day of the month
@@ -201,7 +201,7 @@ export async function GET(request: NextRequest) {
       });
 
       groupedData = Array.from(monthlyMap.values()).sort((a, b) =>
-        a.date.localeCompare(b.date),
+        a.date.localeCompare(b.date)
       );
     } else if (groupBy === "yearly") {
       // Group by year
@@ -225,7 +225,7 @@ export async function GET(request: NextRequest) {
       });
 
       groupedData = Array.from(yearlyMap.values()).sort((a, b) =>
-        a.date.localeCompare(b.date),
+        a.date.localeCompare(b.date)
       );
     }
 
@@ -248,7 +248,7 @@ export async function GET(request: NextRequest) {
         error: "Failed to fetch portfolio growth",
         details: error instanceof Error ? error.message : "Unknown error",
       },
-      { status: 500 },
+      { status: 500 }
     );
   }
 }

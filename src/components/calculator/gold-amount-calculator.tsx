@@ -13,13 +13,11 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { formatCurrency, cn } from "@/lib/utils";
+import { formatCurrency } from "@/lib/utils";
 import {
   RETAILERS,
-  PRODUCT_TYPES,
   PROVINCES,
   type Retailer,
-  type ProductType,
   type Province,
 } from "@/lib/constants";
 import { useCurrentPrices } from "@/lib/queries/use-current-prices";
@@ -27,7 +25,7 @@ import { useCurrentPrices } from "@/lib/queries/use-current-prices";
 export function GoldAmountCalculator() {
   const [vndAmount, setVndAmount] = useState<number>(0);
   const [retailer, setRetailer] = useState<Retailer | "">("");
-  const [productType, setProductType] = useState<ProductType | "">("");
+  const [productName, setProductName] = useState<string>("");
   const [province, setProvince] = useState<Province | "">("");
 
   const { data: currentPrices, isLoading: pricesLoading } = useCurrentPrices();
@@ -38,7 +36,7 @@ export function GoldAmountCalculator() {
     const map = new Map<string, { sellPrice: number; buyPrice: number }>();
     if (currentPrices?.data) {
       currentPrices.data.forEach((price) => {
-        const key = `${price.retailer}-${price.province || ""}-${price.product_type}`;
+        const key = `${price.retailer}-${price.province || ""}-${price.product_name}`;
         map.set(key, {
           sellPrice: Number(price.sell_price),
           buyPrice: Number(price.buy_price),
@@ -48,28 +46,40 @@ export function GoldAmountCalculator() {
     return map;
   }, [currentPrices]);
 
+  const availableProducts = useMemo(() => {
+    if (!currentPrices?.data) return [];
+    let filtered = currentPrices.data;
+    if (retailer) {
+      filtered = filtered.filter((p) => p.retailer === retailer);
+    }
+    if (province) {
+      filtered = filtered.filter((p) => p.province === province);
+    }
+    const names = new Set(filtered.map((p) => p.product_name).filter(Boolean));
+    return Array.from(names).sort() as string[];
+  }, [currentPrices, retailer, province]);
+
   /**
    * Get current sell price for selected options
    */
-  const getCurrentPrice = (
-    r: Retailer | "",
-    prov: Province | "",
-    pt: ProductType | "",
-  ) => {
-    if (!r || !pt) return null;
-    const key = `${r}-${prov || ""}-${pt}`;
-    return currentPriceMap.get(key) || null;
-  };
+  const getCurrentPrice = useMemo(
+    () => (r: Retailer | "", prov: Province | "", prod: string) => {
+      if (!r || !prod) return null;
+      const key = `${r}-${prov || ""}-${prod}`;
+      return currentPriceMap.get(key) || null;
+    },
+    [currentPriceMap]
+  );
 
   /**
    * Calculate gold amount and change
    */
   const calculation = useMemo(() => {
-    if (!retailer || !productType || vndAmount <= 0) {
+    if (!retailer || !productName || vndAmount <= 0) {
       return null;
     }
 
-    const priceData = getCurrentPrice(retailer, province, productType);
+    const priceData = getCurrentPrice(retailer, province, productName);
     if (!priceData) return null;
 
     const sellPrice = priceData.sellPrice;
@@ -86,19 +96,20 @@ export function GoldAmountCalculator() {
       buyPrice: priceData.buyPrice,
       totalCost,
     };
-  }, [vndAmount, retailer, province, productType, currentPriceMap]);
+  }, [vndAmount, retailer, province, productName, getCurrentPrice]);
 
   /**
    * Get comparison with other gold types in same province
    */
   const comparisons = useMemo(() => {
-    if (!retailer || !province || !productType || vndAmount <= 0) {
+    if (!retailer || !province || !productName || vndAmount <= 0) {
       return [];
     }
 
-    return PRODUCT_TYPES.filter((pt) => pt.value !== productType)
-      .map((pt) => {
-        const priceData = getCurrentPrice(retailer, province, pt.value);
+    return availableProducts
+      .filter((prod) => prod !== productName)
+      .map((prod) => {
+        const priceData = getCurrentPrice(retailer, province, prod);
         if (!priceData) return null;
 
         const exactGoldAmount = vndAmount / priceData.sellPrice;
@@ -112,7 +123,7 @@ export function GoldAmountCalculator() {
           : 0;
 
         return {
-          productType: pt,
+          productName: prod,
           goldAmount,
           changeAmount,
           sellPrice: priceData.sellPrice,
@@ -124,19 +135,12 @@ export function GoldAmountCalculator() {
   }, [
     retailer,
     province,
-    productType,
+    productName,
     vndAmount,
     calculation,
-    currentPriceMap,
+    getCurrentPrice,
+    availableProducts,
   ]);
-
-  /**
-   * Get product type label
-   */
-  function getProductTypeLabel(pt: string): string {
-    const product = PRODUCT_TYPES.find((p) => p.value === pt);
-    return product?.label || pt;
-  }
 
   return (
     <div className="space-y-6">
@@ -207,20 +211,21 @@ export function GoldAmountCalculator() {
               </Select>
             </div>
 
-            {/* Product Type Select */}
+            {/* Product Select */}
             <div className="space-y-2">
-              <Label htmlFor="product-type">Loại Vàng</Label>
+              <Label htmlFor="product">Sản Phẩm</Label>
               <Select
-                value={productType}
-                onValueChange={(value) => setProductType(value as ProductType)}
+                value={productName}
+                onValueChange={(value) => setProductName(value)}
+                disabled={!retailer}
               >
-                <SelectTrigger id="product-type">
-                  <SelectValue placeholder="Chọn loại vàng" />
+                <SelectTrigger id="product">
+                  <SelectValue placeholder="Chọn sản phẩm" />
                 </SelectTrigger>
                 <SelectContent>
-                  {PRODUCT_TYPES.map((pt) => (
-                    <SelectItem key={pt.value} value={pt.value}>
-                      {pt.label}
+                  {availableProducts.map((prod) => (
+                    <SelectItem key={prod} value={prod}>
+                      {prod}
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -293,7 +298,7 @@ export function GoldAmountCalculator() {
                       </span>
                       <Badge variant="outline">
                         {formatCurrency(
-                          calculation.sellPrice - calculation.buyPrice,
+                          calculation.sellPrice - calculation.buyPrice
                         )}
                       </Badge>
                     </div>
@@ -311,7 +316,7 @@ export function GoldAmountCalculator() {
                       <span className="font-semibold text-foreground">
                         {calculation.goldAmount.toFixed(1)} chỉ
                       </span>{" "}
-                      {getProductTypeLabel(productType)} tại{" "}
+                      {productName} tại{" "}
                       <span className="font-semibold text-foreground">
                         {retailer}
                       </span>{" "}
@@ -349,13 +354,13 @@ export function GoldAmountCalculator() {
                   <div className="space-y-3">
                     {comparisons.map((comp) => (
                       <div
-                        key={comp.productType.value}
+                        key={comp.productName}
                         className="border rounded-lg p-4 hover:bg-muted/50 transition-colors"
                       >
                         <div className="flex items-start justify-between mb-2">
                           <div>
                             <h4 className="font-semibold">
-                              {comp.productType.label}
+                              {comp.productName}
                             </h4>
                             <p className="text-sm text-muted-foreground">
                               Giá: {formatCurrency(comp.sellPrice)}/chỉ
@@ -397,14 +402,14 @@ export function GoldAmountCalculator() {
                               <span className="text-green-600">
                                 Mua được nhiều hơn {comp.difference.toFixed(1)}{" "}
                                 chỉ ({Math.abs(comp.percentDiff).toFixed(1)}%)
-                                so với {getProductTypeLabel(productType)}
+                                so với {productName}
                               </span>
                             ) : comp.difference < 0 ? (
                               <span className="text-red-600">
                                 Mua được ít hơn{" "}
                                 {Math.abs(comp.difference).toFixed(1)} chỉ (
                                 {Math.abs(comp.percentDiff).toFixed(1)}%) so với{" "}
-                                {getProductTypeLabel(productType)}
+                                {productName}
                               </span>
                             ) : (
                               <span className="text-muted-foreground">
@@ -424,7 +429,7 @@ export function GoldAmountCalculator() {
       )}
 
       {/* Empty State */}
-      {!calculation && vndAmount > 0 && retailer && productType && (
+      {!calculation && vndAmount > 0 && retailer && productName && (
         <Card>
           <CardContent className="py-12">
             <p className="text-center text-muted-foreground">

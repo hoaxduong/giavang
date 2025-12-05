@@ -7,7 +7,7 @@ import { z } from "zod";
 const productSchema = z.object({
   productCode: z.string().min(1).max(100),
   productName: z.string().min(1).max(200),
-  category: z.string().min(1).max(50).nullable().optional(),
+
   description: z.string().nullable().optional(),
   sortOrder: z.number().int().min(0).optional().default(0),
   isEnabled: z.boolean().optional().default(true),
@@ -103,7 +103,7 @@ export async function POST(
         retailer_code: retailerCode,
         product_code: validated.productCode,
         product_name: validated.productName,
-        category: validated.category,
+
         description: validated.description,
         sort_order: validated.sortOrder,
         is_enabled: validated.isEnabled,

@@ -10,15 +10,15 @@ import type { PortfolioEntry } from "@/lib/types";
 async function getPriceAtTimestamp(
   supabase: Awaited<ReturnType<typeof createClient>>,
   retailer: string,
-  productType: string,
+  productName: string,
   province: string | null,
-  timestamp: string,
+  timestamp: string
 ): Promise<{ buyPrice: number; sellPrice: number } | null> {
   let query = supabase
     .from("price_snapshots")
     .select("buy_price, sell_price")
     .eq("retailer", retailer)
-    .eq("product_type", productType)
+    .eq("product_name", productName)
     .lte("created_at", timestamp)
     .order("created_at", { ascending: false })
     .limit(1);
@@ -36,7 +36,7 @@ async function getPriceAtTimestamp(
         .from("price_snapshots")
         .select("buy_price, sell_price")
         .eq("retailer", retailer)
-        .eq("product_type", productType)
+        .eq("product_name", productName)
         .lte("created_at", timestamp)
         .order("created_at", { ascending: false })
         .limit(1);
@@ -74,7 +74,7 @@ export async function GET(request: NextRequest) {
 
     const { data, error } = await supabase
       .from("user_portfolio")
-      .select("*")
+      .select("*, productName:product_type")
       .eq("user_id", user.id)
       .order("bought_at", { ascending: false });
 
@@ -99,7 +99,7 @@ export async function GET(request: NextRequest) {
         error: "Failed to fetch portfolio",
         details: error instanceof Error ? error.message : "Unknown error",
       },
-      { status: 500 },
+      { status: 500 }
     );
   }
 }
@@ -110,16 +110,16 @@ export async function POST(request: NextRequest) {
     const supabase = await createClient();
 
     const body = await request.json();
-    const { amount, retailer, product_type, province, bought_at } = body;
+    const { amount, retailer, productName, province, bought_at } = body;
 
     // Validate required fields
-    if (!amount || !retailer || !product_type || !bought_at) {
+    if (!amount || !retailer || !productName || !bought_at) {
       return NextResponse.json(
         {
           error: "Missing required fields",
-          required: ["amount", "retailer", "product_type", "bought_at"],
+          required: ["amount", "retailer", "productName", "bought_at"],
         },
-        { status: 400 },
+        { status: 400 }
       );
     }
 
@@ -127,9 +127,9 @@ export async function POST(request: NextRequest) {
     const priceAtTime = await getPriceAtTimestamp(
       supabase,
       retailer,
-      product_type,
+      productName,
       province || null,
-      bought_at,
+      bought_at
     );
 
     if (!priceAtTime) {
@@ -138,7 +138,7 @@ export async function POST(request: NextRequest) {
           error:
             "Could not find price data for the specified time and gold type",
         },
-        { status: 400 },
+        { status: 400 }
       );
     }
 
@@ -150,7 +150,7 @@ export async function POST(request: NextRequest) {
         user_id: user.id,
         amount: Number(amount),
         retailer,
-        product_type,
+        product_type: productName,
         province: province || null,
         bought_at,
         buy_price: priceAtTime.sellPrice, // User pays retailer's sell price when buying
@@ -178,7 +178,7 @@ export async function POST(request: NextRequest) {
         error: "Failed to create portfolio entry",
         details: error instanceof Error ? error.message : "Unknown error",
       },
-      { status: 500 },
+      { status: 500 }
     );
   }
 }
@@ -189,7 +189,7 @@ export async function PUT(request: NextRequest) {
     const supabase = await createClient();
 
     const body = await request.json();
-    const { id, sold_at, amount, retailer, product_type, province, bought_at } =
+    const { id, sold_at, amount, retailer, productName, province, bought_at } =
       body;
 
     if (!id) {
@@ -197,14 +197,14 @@ export async function PUT(request: NextRequest) {
         {
           error: "Missing required field: id",
         },
-        { status: 400 },
+        { status: 400 }
       );
     }
 
     // Verify ownership
     const { data: existing } = await supabase
       .from("user_portfolio")
-      .select("*")
+      .select("*, productName:product_type")
       .eq("id", id)
       .eq("user_id", user.id)
       .single();
@@ -214,7 +214,7 @@ export async function PUT(request: NextRequest) {
         {
           error: "Portfolio entry not found",
         },
-        { status: 404 },
+        { status: 404 }
       );
     }
 
@@ -226,9 +226,9 @@ export async function PUT(request: NextRequest) {
       const priceAtTime = await getPriceAtTimestamp(
         supabase,
         existing.retailer,
-        existing.product_type,
+        existing.productName,
         existing.province,
-        sold_at,
+        sold_at
       );
 
       if (!priceAtTime) {
@@ -236,7 +236,7 @@ export async function PUT(request: NextRequest) {
           {
             error: "Could not find price data for the specified sold time",
           },
-          { status: 400 },
+          { status: 400 }
         );
       }
 
@@ -247,7 +247,7 @@ export async function PUT(request: NextRequest) {
     // Update other fields if provided
     if (amount !== undefined) updateData.amount = Number(amount);
     if (retailer !== undefined) updateData.retailer = retailer;
-    if (product_type !== undefined) updateData.product_type = product_type;
+    if (productName !== undefined) updateData.product_type = productName;
     if (province !== undefined) updateData.province = province || null;
     if (bought_at !== undefined) {
       updateData.bought_at = bought_at;
@@ -256,11 +256,11 @@ export async function PUT(request: NextRequest) {
       const newPrice = await getPriceAtTimestamp(
         supabase,
         updateData.retailer || existing.retailer,
-        updateData.product_type || existing.product_type,
+        updateData.product_type || existing.productName,
         updateData.province !== undefined
           ? updateData.province
           : existing.province,
-        bought_at,
+        bought_at
       );
       if (newPrice) {
         updateData.buy_price = newPrice.sellPrice; // User pays retailer's sell price when buying
@@ -295,7 +295,7 @@ export async function PUT(request: NextRequest) {
         error: "Failed to update portfolio entry",
         details: error instanceof Error ? error.message : "Unknown error",
       },
-      { status: 500 },
+      { status: 500 }
     );
   }
 }
@@ -313,7 +313,7 @@ export async function DELETE(request: NextRequest) {
         {
           error: "Missing required parameter: id",
         },
-        { status: 400 },
+        { status: 400 }
       );
     }
 
@@ -330,7 +330,7 @@ export async function DELETE(request: NextRequest) {
         {
           error: "Portfolio entry not found",
         },
-        { status: 404 },
+        { status: 404 }
       );
     }
 
@@ -360,7 +360,7 @@ export async function DELETE(request: NextRequest) {
         error: "Failed to delete portfolio entry",
         details: error instanceof Error ? error.message : "Unknown error",
       },
-      { status: 500 },
+      { status: 500 }
     );
   }
 }

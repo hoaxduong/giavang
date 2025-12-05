@@ -1,5 +1,5 @@
 import type { RawPriceData, PriceData, PriceSnapshot } from "../types";
-import type { Retailer, Province, ProductType } from "../constants";
+import type { Retailer, Province } from "../constants";
 
 /**
  * Normalize raw price data from external API to application format
@@ -10,7 +10,6 @@ export function normalizePriceData(raw: RawPriceData): PriceData {
     createdAt: raw.timestamp || new Date().toISOString(),
     retailer: raw.retailer as Retailer,
     province: raw.province as Province,
-    productType: raw.product_type as ProductType,
     buyPrice: raw.buy_price,
     sellPrice: raw.sell_price,
     unit: raw.unit || "VND/chi",
@@ -27,7 +26,6 @@ export function snapshotToPriceData(snapshot: PriceSnapshot): PriceData {
     createdAt: snapshot.created_at,
     retailer: snapshot.retailer as Retailer,
     province: snapshot.province as Province,
-    productType: snapshot.product_type as ProductType,
     productName: snapshot.product_name || undefined,
     retailerProductId: snapshot.retailer_product_id || undefined,
     buyPrice: Number(snapshot.buy_price),
@@ -41,12 +39,11 @@ export function snapshotToPriceData(snapshot: PriceSnapshot): PriceData {
  * Convert application format to database insert format
  */
 export function priceDataToSnapshot(
-  data: PriceData,
+  data: PriceData
 ): Omit<PriceSnapshot, "id" | "created_at"> {
   return {
     retailer: data.retailer,
     province: data.province,
-    product_type: data.productType,
     product_name: data.productName || null,
     retailer_product_id: data.retailerProductId || null,
     buy_price: data.buyPrice,
@@ -67,7 +64,6 @@ export function dbRetailerProductToRetailerProduct(
     retailerCode: db.retailer_code,
     productCode: db.product_code,
     productName: db.product_name,
-    category: db.category,
     description: db.description,
     isEnabled: db.is_enabled,
     sortOrder: db.sort_order,

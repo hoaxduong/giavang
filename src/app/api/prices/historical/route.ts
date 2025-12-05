@@ -7,7 +7,7 @@ import { createClient } from "@/lib/supabase/server";
  * Fetches historical price data for charts and analysis
  *
  * Required query parameters:
- * - productType: Product type (e.g., "SJC_BARS")
+
  * - startDate: Start date in ISO format (e.g., "2024-01-01")
  * - endDate: End date in ISO format (e.g., "2024-01-31")
  *
@@ -17,24 +17,23 @@ import { createClient } from "@/lib/supabase/server";
  * - interval: Grouping interval ("hourly", "daily", "weekly") - default: "daily"
  *
  * Example:
- * GET /api/prices/historical?productType=SJC_BARS&startDate=2024-01-01&endDate=2024-01-31&interval=daily
+ * GET /api/prices/historical?startDate=2024-01-01&endDate=2024-01-31&interval=daily
  */
 export async function GET(request: NextRequest) {
   try {
     const searchParams = request.nextUrl.searchParams;
 
     // Required parameters
-    const productType = searchParams.get("productType");
     const startDate = searchParams.get("startDate");
     const endDate = searchParams.get("endDate");
 
-    if (!productType || !startDate || !endDate) {
+    if (!startDate || !endDate) {
       return NextResponse.json(
         {
           error: "Missing required parameters",
-          required: ["productType", "startDate", "endDate"],
+          required: ["startDate", "endDate"],
         },
-        { status: 400 },
+        { status: 400 }
       );
     }
 
@@ -49,7 +48,6 @@ export async function GET(request: NextRequest) {
     let query = supabase
       .from("price_snapshots")
       .select("*")
-      .eq("product_type", productType)
       .gte("created_at", startDate)
       .lte("created_at", endDate)
       .order("created_at", { ascending: true });
@@ -71,7 +69,7 @@ export async function GET(request: NextRequest) {
     // Aggregate data based on interval
     const aggregatedData = aggregateByInterval(
       data || [],
-      interval as "hourly" | "daily" | "weekly",
+      interval as "hourly" | "daily" | "weekly"
     );
 
     return NextResponse.json({
@@ -88,7 +86,7 @@ export async function GET(request: NextRequest) {
         error: "Failed to fetch historical prices",
         details: error instanceof Error ? error.message : "Unknown error",
       },
-      { status: 500 },
+      { status: 500 }
     );
   }
 }
@@ -98,7 +96,7 @@ export async function GET(request: NextRequest) {
  */
 function aggregateByInterval(
   prices: any[],
-  interval: "hourly" | "daily" | "weekly",
+  interval: "hourly" | "daily" | "weekly"
 ): any[] {
   if (prices.length === 0) return [];
 
@@ -148,7 +146,6 @@ function aggregateByInterval(
       created_at: latestPrice.created_at,
       retailer: latestPrice.retailer,
       province: latestPrice.province,
-      product_type: latestPrice.product_type,
       buy_price: Math.round(avgBuyPrice),
       sell_price: Math.round(avgSellPrice),
       unit: latestPrice.unit,
@@ -164,7 +161,7 @@ function aggregateByInterval(
  */
 function getWeekNumber(date: Date): number {
   const d = new Date(
-    Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()),
+    Date.UTC(date.getFullYear(), date.getMonth(), date.getDate())
   );
   const dayNum = d.getUTCDay() || 7;
   d.setUTCDate(d.getUTCDate() + 4 - dayNum);

@@ -46,11 +46,10 @@ export interface TypeMapping {
   sourceId: string;
   externalCode: string;
   retailerCode: string;
-  productTypeCode: string;
   provinceCode: string | null;
   label: string;
   isEnabled: boolean;
-  retailerProductId?: string | null; // Link to retailer_products table
+  retailerProductId: string; // Link to retailer_products table (mandatory after migration 027)
 }
 
 /**
@@ -68,15 +67,6 @@ export interface Province {
   id: string;
   code: string;
   name: string;
-  isEnabled: boolean;
-  sortOrder: number;
-}
-
-export interface ProductType {
-  id: string;
-  code: string;
-  label: string;
-  shortLabel: string;
   isEnabled: boolean;
   sortOrder: number;
 }
@@ -162,10 +152,10 @@ export interface DbTypeMapping {
   source_id: string;
   external_code: string;
   retailer_code: string;
-  product_type_code: string;
   province_code: string | null;
   label: string;
   is_enabled: boolean;
+  retailer_product_id: string; // Mandatory after migration 027
   created_at: string;
   updated_at: string;
 }
@@ -184,17 +174,6 @@ export interface DbProvince {
   id: string;
   code: string;
   name: string;
-  is_enabled: boolean;
-  sort_order: number;
-  created_at: string;
-  updated_at: string;
-}
-
-export interface DbProductType {
-  id: string;
-  code: string;
-  label: string;
-  short_label: string;
   is_enabled: boolean;
   sort_order: number;
   created_at: string;
@@ -225,10 +204,10 @@ export function dbTypeMappingToTypeMapping(db: DbTypeMapping): TypeMapping {
     sourceId: db.source_id,
     externalCode: db.external_code,
     retailerCode: db.retailer_code,
-    productTypeCode: db.product_type_code,
     provinceCode: db.province_code,
     label: db.label,
     isEnabled: db.is_enabled,
+    retailerProductId: db.retailer_product_id,
   };
 }
 
@@ -247,17 +226,6 @@ export function dbProvinceToProvince(db: DbProvince): Province {
     id: db.id,
     code: db.code,
     name: db.name,
-    isEnabled: db.is_enabled,
-    sortOrder: db.sort_order,
-  };
-}
-
-export function dbProductTypeToProductType(db: DbProductType): ProductType {
-  return {
-    id: db.id,
-    code: db.code,
-    label: db.label,
-    shortLabel: db.short_label,
     isEnabled: db.is_enabled,
     sortOrder: db.sort_order,
   };

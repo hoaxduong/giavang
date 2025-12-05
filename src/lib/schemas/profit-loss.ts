@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { RETAILERS, PRODUCT_TYPES, PROVINCES } from "../constants";
+import { RETAILERS, PROVINCES } from "../constants";
 
 export const profitLossFormSchema = z
   .object({
@@ -10,9 +10,7 @@ export const profitLossFormSchema = z
       .positive("Số lượng vàng phải lớn hơn 0")
       .min(0.001, "Số lượng vàng phải ít nhất 0.001 chỉ"),
     retailer: z.enum(RETAILERS as unknown as [string, ...string[]]),
-    product_type: z.enum(
-      PRODUCT_TYPES.map((t) => t.value) as unknown as [string, ...string[]],
-    ),
+    productName: z.string().min(1, "Tên sản phẩm là bắt buộc"),
     province: z
       .union([
         z.enum(PROVINCES as unknown as [string, ...string[]]),
@@ -34,7 +32,7 @@ export const profitLossFormSchema = z
     {
       message: "Thời gian bán phải sau hoặc bằng thời gian mua",
       path: ["sell_date"],
-    },
+    }
   );
 
 export type ProfitLossFormData = z.infer<typeof profitLossFormSchema>;

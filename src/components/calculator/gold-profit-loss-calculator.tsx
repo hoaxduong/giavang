@@ -31,12 +31,11 @@ import {
 import { formatCurrency, formatCurrencyCompact, cn } from "@/lib/utils";
 import {
   RETAILERS,
-  PRODUCT_TYPES,
   PROVINCES,
   type Retailer,
-  type ProductType,
   type Province,
 } from "@/lib/constants";
+import { useCurrentPrices } from "@/lib/queries/use-current-prices";
 import { useHistoricalPrices } from "@/lib/queries/use-historical-prices";
 import {
   profitLossFormSchema,
@@ -69,6 +68,16 @@ export function GoldProfitLossCalculator() {
   const [results, setResults] = useState<CalculationResults | null>(null);
   const [showResults, setShowResults] = useState(false);
 
+  const { data: currentPrices } = useCurrentPrices();
+
+  const availableProducts = useMemo(() => {
+    if (!currentPrices?.data) return [];
+    const names = new Set(
+      currentPrices.data.map((p) => p.product_name).filter(Boolean)
+    );
+    return Array.from(names).sort() as string[];
+  }, [currentPrices]);
+
   const {
     register,
     handleSubmit,
@@ -86,7 +95,7 @@ export function GoldProfitLossCalculator() {
   const buyDate = watch("buy_date");
   const sellDate = watch("sell_date");
   const retailer = watch("retailer");
-  const productType = watch("product_type");
+  const productName = watch("productName");
   const province = watch("province");
   const goldAmount = watch("gold_amount");
 
@@ -96,7 +105,6 @@ export function GoldProfitLossCalculator() {
       startDate: buyDate ? new Date(buyDate) : new Date(),
       endDate: buyDate ? new Date(buyDate) : new Date(),
       retailer: retailer as Retailer,
-      productType: productType as ProductType,
       province: (province || "TP. Hồ Chí Minh") as Province,
       interval: "daily",
     });
@@ -107,7 +115,6 @@ export function GoldProfitLossCalculator() {
       startDate: sellDate ? new Date(sellDate) : new Date(),
       endDate: sellDate ? new Date(sellDate) : new Date(),
       retailer: retailer as Retailer,
-      productType: productType as ProductType,
       province: (province || "TP. Hồ Chí Minh") as Province,
       interval: "daily",
     });
@@ -118,22 +125,24 @@ export function GoldProfitLossCalculator() {
       startDate: buyDate && showResults ? new Date(buyDate) : new Date(),
       endDate: sellDate && showResults ? new Date(sellDate) : new Date(),
       retailer: retailer as Retailer,
-      productType: productType as ProductType,
       province: (province || "TP. Hồ Chí Minh") as Province,
       interval: "daily",
-    },
+    }
   );
 
   // Auto-update buy price when data is fetched
   useEffect(() => {
-    if (
-      priceState.buyPriceMode === "auto" &&
-      buyPriceData?.data &&
-      buyPriceData.data.length > 0
-    ) {
+    if (priceState.buyPriceMode === "auto" && buyPriceData?.data) {
       // For buying gold, customer pays the retailer's sell_price
-      const price = Number(buyPriceData.data[0].sell_price);
-      setPriceState((prev) => ({ ...prev, buyPrice: price }));
+      // Filter by product name if available
+      const productPrice = productName
+        ? buyPriceData.data.find((p) => p.product_name === productName)
+        : buyPriceData.data[0];
+
+      if (productPrice) {
+        const price = Number(productPrice.sell_price);
+        setPriceState((prev) => ({ ...prev, buyPrice: price }));
+      }
     } else if (
       priceState.buyPriceMode === "auto" &&
       buyPriceData?.data &&
@@ -146,18 +155,21 @@ export function GoldProfitLossCalculator() {
         buyPrice: null,
       }));
     }
-  }, [buyPriceData, priceState.buyPriceMode]);
+  }, [buyPriceData, priceState.buyPriceMode, productName]);
 
   // Auto-update sell price when data is fetched
   useEffect(() => {
-    if (
-      priceState.sellPriceMode === "auto" &&
-      sellPriceData?.data &&
-      sellPriceData.data.length > 0
-    ) {
+    if (priceState.sellPriceMode === "auto" && sellPriceData?.data) {
       // For selling gold, customer receives the retailer's buy_price
-      const price = Number(sellPriceData.data[0].buy_price);
-      setPriceState((prev) => ({ ...prev, sellPrice: price }));
+      // Filter by product name if available
+      const productPrice = productName
+        ? sellPriceData.data.find((p) => p.product_name === productName)
+        : sellPriceData.data[0];
+
+      if (productPrice) {
+        const price = Number(productPrice.buy_price);
+        setPriceState((prev) => ({ ...prev, sellPrice: price }));
+      }
     } else if (
       priceState.sellPriceMode === "auto" &&
       sellPriceData?.data &&
@@ -170,7 +182,7 @@ export function GoldProfitLossCalculator() {
         sellPrice: null,
       }));
     }
-  }, [sellPriceData, priceState.sellPriceMode]);
+  }, [sellPriceData, priceState.sellPriceMode, productName]);
 
   // Calculate results
   const calculateProfitLoss = (data: ProfitLossFormData) => {
@@ -193,7 +205,7 @@ export function GoldProfitLossCalculator() {
     const sellDateTime = new Date(sell_date).getTime();
     const holdingDays = Math.max(
       1,
-      Math.floor((sellDateTime - buyDateTime) / 86400000),
+      Math.floor((sellDateTime - buyDateTime) / 86400000)
     );
 
     // Calculate APY (Annual Percentage Yield)
@@ -215,18 +227,19 @@ export function GoldProfitLossCalculator() {
   const chartData = useMemo(() => {
     if (!chartPriceData?.data || !results) return [];
 
-    return chartPriceData.data.map((item) => {
-      // Use buy_price (what customer receives when selling)
-      const dailyValue = goldAmount * Number(item.buy_price);
-      const dailyProfitLoss = dailyValue - results.totalInvestment;
+    return chartPriceData.data
+      .filter((item) => !productName || item.product_name === productName)
+      .map((item) => {
+        // Use buy_price (what customer receives when selling)
+        const dailyValue = goldAmount * Number(item.buy_price);
 
-      return {
-        date: item.created_at,
-        "Giá Trị": dailyValue,
-        "Vốn Đầu Tư": results.totalInvestment,
-      };
-    });
-  }, [chartPriceData, results, goldAmount]);
+        return {
+          date: item.created_at,
+          "Giá Trị": dailyValue,
+          "Vốn Đầu Tư": results.totalInvestment,
+        };
+      });
+  }, [chartPriceData, results, goldAmount, productName]);
 
   const formatDate = (dateString: string) => {
     try {
@@ -334,28 +347,28 @@ export function GoldProfitLossCalculator() {
             {/* Row 3: Product Type and Province */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                <Label htmlFor="product_type">Loại Vàng</Label>
+                <Label htmlFor="productName">Sản Phẩm</Label>
                 <Controller
-                  name="product_type"
+                  name="productName"
                   control={control}
                   render={({ field }) => (
                     <Select value={field.value} onValueChange={field.onChange}>
                       <SelectTrigger className="mt-1">
-                        <SelectValue placeholder="Chọn loại vàng" />
+                        <SelectValue placeholder="Chọn sản phẩm" />
                       </SelectTrigger>
                       <SelectContent>
-                        {PRODUCT_TYPES.map((product) => (
-                          <SelectItem key={product.value} value={product.value}>
-                            {product.label}
+                        {availableProducts.map((prod) => (
+                          <SelectItem key={prod} value={prod}>
+                            {prod}
                           </SelectItem>
                         ))}
                       </SelectContent>
                     </Select>
                   )}
                 />
-                {errors.product_type && (
+                {errors.productName && (
                   <p className="text-sm text-destructive mt-1">
-                    {errors.product_type.message}
+                    {errors.productName.message}
                   </p>
                 )}
               </div>
@@ -587,7 +600,7 @@ export function GoldProfitLossCalculator() {
                       ? "text-green-600"
                       : results.profitLoss < 0
                         ? "text-red-600"
-                        : "text-muted-foreground",
+                        : "text-muted-foreground"
                   )}
                 >
                   {results.profitLossPercent > 0 ? "+" : ""}
@@ -625,7 +638,7 @@ export function GoldProfitLossCalculator() {
                       ? "text-green-600"
                       : results.apy < 0
                         ? "text-red-600"
-                        : "text-muted-foreground",
+                        : "text-muted-foreground"
                   )}
                 >
                   {results.apy > 0 ? "+" : ""}
@@ -724,7 +737,7 @@ export function GoldProfitLossCalculator() {
                         ? "text-green-600"
                         : results.profitLoss < 0
                           ? "text-red-600"
-                          : "text-muted-foreground",
+                          : "text-muted-foreground"
                     )}
                   >
                     {formatCurrency(results.profitLoss)} (

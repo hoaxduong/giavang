@@ -6,17 +6,15 @@ import type {
   CrawlerResult,
   TypeMapping,
   Retailer,
-  ProductType,
   Province,
   ZoneMapping,
   OnusGoldsResponse,
 } from "./types";
 import type {
   Retailer as RetailerLiteral,
-  ProductType as ProductTypeLiteral,
   Province as ProvinceLiteral,
 } from "@/lib/constants";
-import type { PriceData } from "@/lib/types";
+import type { PriceData, RetailerProduct } from "@/lib/types";
 
 /**
  * Retailer source normalization map
@@ -77,8 +75,7 @@ export class OnusCrawler extends BaseCrawler {
         method: "GET",
         headers: {
           Accept: "application/json",
-          "User-Agent":
-            "Mozilla/5.0 (compatible; GoldPriceApp/1.0)",
+          "User-Agent": "Mozilla/5.0 (compatible; GoldPriceApp/1.0)",
           ...this.config.headers,
         },
         bodyTimeout: timeout,
@@ -257,8 +254,8 @@ export class OnusCrawler extends BaseCrawler {
     const prices: PriceData[] = [];
     const errors: Array<{ item: string; error: string }> = [];
 
-    // Fetch all enabled mappings, retailers, provinces, product types, zone mappings
-    const { mappings, retailers, provinces, productTypes, zoneMappings } =
+    // Fetch all enabled mappings, retailers, provinces, retailer products, zone mappings
+    const { mappings, retailers, provinces, retailerProducts, zoneMappings } =
       await this.fetchReferenceData();
 
     // Create lookup maps for fast access
@@ -271,8 +268,8 @@ export class OnusCrawler extends BaseCrawler {
     const provinceMap = new Map<string, Province>();
     provinces.forEach((p) => provinceMap.set(p.code, p));
 
-    const productTypeMap = new Map<string, ProductType>();
-    productTypes.forEach((pt) => productTypeMap.set(pt.code, pt));
+    const retailerProductMap = new Map<string, RetailerProduct>();
+    retailerProducts.forEach((rp) => retailerProductMap.set(rp.id, rp));
 
     const zoneMappingMap = new Map<string, ZoneMapping>();
     zoneMappings.forEach((zm) => zoneMappingMap.set(zm.zoneText, zm));
@@ -316,12 +313,14 @@ export class OnusCrawler extends BaseCrawler {
           continue;
         }
 
-        // Check if product type is enabled
-        const productType = productTypeMap.get(mapping.productTypeCode);
-        if (!productType || !productType.isEnabled) {
+        // Check if retailer product is enabled
+        const retailerProduct = retailerProductMap.get(
+          mapping.retailerProductId
+        );
+        if (!retailerProduct || !retailerProduct.isEnabled) {
           errors.push({
             item: `${item.slug} (${item.source})`,
-            error: `Product type ${mapping.productTypeCode} is disabled`,
+            error: `Retailer product is disabled or not found`,
           });
           continue;
         }
@@ -381,9 +380,9 @@ export class OnusCrawler extends BaseCrawler {
           createdAt: timestamp,
           retailer: retailerCode as unknown as RetailerLiteral,
           province: provinceCode as unknown as ProvinceLiteral,
-          productType: mapping.productTypeCode as unknown as ProductTypeLiteral,
+
           productName: mapping.label, // Store specific product name from mapping
-          retailerProductId: mapping.retailerProductId || undefined, // Link to retailer_products
+          retailerProductId: mapping.retailerProductId, // Link to retailer_products (mandatory)
           buyPrice,
           sellPrice,
           unit: "VND/chi",
@@ -408,7 +407,7 @@ export class OnusCrawler extends BaseCrawler {
     mappings: TypeMapping[];
     retailers: Retailer[];
     provinces: Province[];
-    productTypes: ProductType[];
+    retailerProducts: RetailerProduct[];
     zoneMappings: ZoneMapping[];
   }> {
     const supabase = createServiceRoleClient();
@@ -418,7 +417,7 @@ export class OnusCrawler extends BaseCrawler {
       mappingsResult,
       retailersResult,
       provincesResult,
-      productTypesResult,
+      retailerProductsResult,
       zoneMappingsResult,
     ] = await Promise.all([
       supabase
@@ -428,7 +427,7 @@ export class OnusCrawler extends BaseCrawler {
         .eq("is_enabled", true),
       supabase.from("retailers").select("*").eq("is_enabled", true),
       supabase.from("provinces").select("*").eq("is_enabled", true),
-      supabase.from("product_types").select("*").eq("is_enabled", true),
+      supabase.from("retailer_products").select("*").eq("is_enabled", true),
       supabase
         .from("zone_mappings")
         .select("*")
@@ -442,11 +441,10 @@ export class OnusCrawler extends BaseCrawler {
         sourceId: m.source_id,
         externalCode: m.external_code,
         retailerCode: m.retailer_code,
-        productTypeCode: m.product_type_code,
         provinceCode: m.province_code,
         label: m.label,
         isEnabled: m.is_enabled,
-        retailerProductId: m.retailer_product_id || null,
+        retailerProductId: m.retailer_product_id, // Mandatory after migration 027
       })) || [];
 
     const retailers: Retailer[] =
@@ -467,14 +465,19 @@ export class OnusCrawler extends BaseCrawler {
         sortOrder: p.sort_order,
       })) || [];
 
-    const productTypes: ProductType[] =
-      productTypesResult.data?.map((pt) => ({
-        id: pt.id,
-        code: pt.code,
-        label: pt.label,
-        shortLabel: pt.short_label,
-        isEnabled: pt.is_enabled,
-        sortOrder: pt.sort_order,
+    const retailerProducts: RetailerProduct[] =
+      retailerProductsResult.data?.map((rp) => ({
+        id: rp.id,
+        retailerCode: rp.retailer_code,
+        productCode: rp.product_code,
+        productName: rp.product_name,
+
+        description: rp.description,
+        isEnabled: rp.is_enabled,
+        sortOrder: rp.sort_order,
+        metadata: rp.metadata,
+        createdAt: rp.created_at,
+        updatedAt: rp.updated_at,
       })) || [];
 
     const zoneMappings: ZoneMapping[] =
@@ -486,7 +489,7 @@ export class OnusCrawler extends BaseCrawler {
         isEnabled: zm.is_enabled,
       })) || [];
 
-    return { mappings, retailers, provinces, productTypes, zoneMappings };
+    return { mappings, retailers, provinces, retailerProducts, zoneMappings };
   }
 
   /**
@@ -522,7 +525,10 @@ export class OnusCrawler extends BaseCrawler {
    */
   protected shouldIncludeRetailer(source: string): boolean {
     // If no filter configured, include all retailers
-    if (!this.config.retailerFilter || this.config.retailerFilter.length === 0) {
+    if (
+      !this.config.retailerFilter ||
+      this.config.retailerFilter.length === 0
+    ) {
       return true;
     }
 

@@ -2,19 +2,12 @@ import { BaseCrawler } from "./base-crawler";
 import { crawlerLogger } from "./logger";
 import { createServiceRoleClient } from "@/lib/supabase/service-role";
 import { request } from "undici";
-import type {
-  CrawlerResult,
-  TypeMapping,
-  Retailer,
-  ProductType,
-  Province,
-} from "./types";
+import type { CrawlerResult, TypeMapping, Retailer, Province } from "./types";
 import type {
   Retailer as RetailerLiteral,
-  ProductType as ProductTypeLiteral,
   Province as ProvinceLiteral,
 } from "@/lib/constants";
-import type { PriceData } from "@/lib/types";
+import type { PriceData, RetailerProduct } from "@/lib/types";
 
 /**
  * API Response from SJC
@@ -326,8 +319,8 @@ export class SjcCrawler extends BaseCrawler {
     const prices: PriceData[] = [];
     const errors: Array<{ item: string; error: string }> = [];
 
-    // Fetch all enabled mappings, retailers, provinces, product types
-    const { mappings, retailers, provinces, productTypes } =
+    // Fetch all enabled mappings, retailers, provinces, retailer products
+    const { mappings, retailers, provinces, retailerProducts } =
       await this.fetchReferenceData();
 
     // Create lookup maps for fast access
@@ -340,8 +333,8 @@ export class SjcCrawler extends BaseCrawler {
     const provinceMap = new Map<string, Province>();
     provinces.forEach((p) => provinceMap.set(p.code, p));
 
-    const productTypeMap = new Map<string, ProductType>();
-    productTypes.forEach((pt) => productTypeMap.set(pt.code, pt));
+    const retailerProductMap = new Map<string, RetailerProduct>();
+    retailerProducts.forEach((rp) => retailerProductMap.set(rp.id, rp));
 
     // Parse each price entry
     for (const item of apiResponse.data) {
@@ -369,12 +362,14 @@ export class SjcCrawler extends BaseCrawler {
           continue;
         }
 
-        // Check if product type is enabled
-        const productType = productTypeMap.get(mapping.productTypeCode);
-        if (!productType || !productType.isEnabled) {
+        // Check if retailer product is enabled
+        const retailerProduct = retailerProductMap.get(
+          mapping.retailerProductId
+        );
+        if (!retailerProduct || !retailerProduct.isEnabled) {
           errors.push({
             item: `${externalCode} (${item.BranchName})`,
-            error: `Product type ${mapping.productTypeCode} is disabled`,
+            error: `Retailer product is disabled or not found`,
           });
           continue;
         }
@@ -440,9 +435,9 @@ export class SjcCrawler extends BaseCrawler {
           createdAt: timestamp,
           retailer: mapping.retailerCode as unknown as RetailerLiteral,
           province: provinceCode as unknown as ProvinceLiteral,
-          productType: mapping.productTypeCode as unknown as ProductTypeLiteral,
+
           productName: mapping.label, // Store specific product name from mapping
-          retailerProductId: mapping.retailerProductId || undefined, // Link to retailer_products
+          retailerProductId: mapping.retailerProductId, // Link to retailer_products (mandatory)
           buyPrice: buyPriceInChi,
           sellPrice: sellPriceInChi,
           unit: "VND/chi",
@@ -467,7 +462,7 @@ export class SjcCrawler extends BaseCrawler {
     mappings: TypeMapping[];
     retailers: Retailer[];
     provinces: Province[];
-    productTypes: ProductType[];
+    retailerProducts: RetailerProduct[];
   }> {
     const supabase = createServiceRoleClient();
 
@@ -476,7 +471,7 @@ export class SjcCrawler extends BaseCrawler {
       mappingsResult,
       retailersResult,
       provincesResult,
-      productTypesResult,
+      retailerProductsResult,
     ] = await Promise.all([
       supabase
         .from("crawler_type_mappings")
@@ -485,7 +480,7 @@ export class SjcCrawler extends BaseCrawler {
         .eq("is_enabled", true),
       supabase.from("retailers").select("*").eq("is_enabled", true),
       supabase.from("provinces").select("*").eq("is_enabled", true),
-      supabase.from("product_types").select("*").eq("is_enabled", true),
+      supabase.from("retailer_products").select("*").eq("is_enabled", true),
     ]);
 
     const mappings: TypeMapping[] =
@@ -494,11 +489,10 @@ export class SjcCrawler extends BaseCrawler {
         sourceId: m.source_id,
         externalCode: m.external_code,
         retailerCode: m.retailer_code,
-        productTypeCode: m.product_type_code,
         provinceCode: m.province_code,
         label: m.label,
         isEnabled: m.is_enabled,
-        retailerProductId: m.retailer_product_id || null,
+        retailerProductId: m.retailer_product_id, // Mandatory after migration 027
       })) || [];
 
     const retailers: Retailer[] =
@@ -519,17 +513,22 @@ export class SjcCrawler extends BaseCrawler {
         sortOrder: p.sort_order,
       })) || [];
 
-    const productTypes: ProductType[] =
-      productTypesResult.data?.map((pt) => ({
-        id: pt.id,
-        code: pt.code,
-        label: pt.label,
-        shortLabel: pt.short_label,
-        isEnabled: pt.is_enabled,
-        sortOrder: pt.sort_order,
+    const retailerProducts: RetailerProduct[] =
+      retailerProductsResult.data?.map((rp) => ({
+        id: rp.id,
+        retailerCode: rp.retailer_code,
+        productCode: rp.product_code,
+        productName: rp.product_name,
+
+        description: rp.description,
+        isEnabled: rp.is_enabled,
+        sortOrder: rp.sort_order,
+        metadata: rp.metadata,
+        createdAt: rp.created_at,
+        updatedAt: rp.updated_at,
       })) || [];
 
-    return { mappings, retailers, provinces, productTypes };
+    return { mappings, retailers, provinces, retailerProducts };
   }
 
   /**

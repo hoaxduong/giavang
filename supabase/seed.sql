@@ -48,27 +48,6 @@ INSERT INTO provinces (code, name, sort_order, is_enabled) VALUES
 ON CONFLICT (code) DO NOTHING;
 
 -- ============================================================================
--- PRODUCT TYPES
--- ============================================================================
-
-INSERT INTO product_types (code, label, short_label, sort_order, is_enabled) VALUES
-  ('VANG_MIENG', 'Vàng miếng', 'Miếng', 1, true),
-  ('VANG_NHAN', 'Vàng nhẫn', 'Nhẫn', 2, true),
-  ('NU_TRANG', 'Nữ trang', 'Trang sức', 3, true),
-  ('VANG_KHAC', 'Vàng khác', 'Khác', 4, true),
-  ('BAC', 'Bạc', 'Silver', 5, true),
-  ('SJC_BARS', 'Vàng miếng SJC', 'Miếng SJC', 101, true),
-  ('SJC_RINGS', 'Vàng nhẫn SJC', 'Nhẫn SJC', 102, true),
-  ('GOLD_9999', 'Vàng 9999', '9999', 103, true),
-  ('GOLD_999', 'Vàng 999', '999', 104, true),
-  ('GOLD_24K', 'Vàng 24K', '24K', 105, true)
-ON CONFLICT (code) DO UPDATE SET
-  label = EXCLUDED.label,
-  short_label = EXCLUDED.short_label,
-  sort_order = EXCLUDED.sort_order,
-  is_enabled = EXCLUDED.is_enabled;
-
--- ============================================================================
 -- BLOG CATEGORIES
 -- ============================================================================
 
@@ -179,7 +158,6 @@ ON CONFLICT (source_id, zone_text) DO NOTHING;
 DO $$
 DECLARE
   sjc_source_id UUID;
-  gold_bar_product_type_code VARCHAR;
   product_id UUID;
 BEGIN
   -- Get SJC source ID
@@ -188,19 +166,9 @@ BEGIN
   WHERE api_type = 'sjc';
 
   IF sjc_source_id IS NOT NULL THEN
-    -- Get the gold bar product type code
-    SELECT code INTO gold_bar_product_type_code
-    FROM product_types
-    WHERE code IN ('VANG_MIENG', 'SJC_GOLD_BAR', 'GOLD_BAR')
-    ORDER BY CASE code
-      WHEN 'VANG_MIENG' THEN 1
-      ELSE 2
-    END
-    LIMIT 1;
-
     -- Create or get retailer product for SJC Bars
-    INSERT INTO retailer_products (retailer_code, product_code, product_name, category, is_enabled, sort_order)
-    VALUES ('SJC', 'MIENG_1L_10L_1KG', 'Vàng SJC 1L, 10L, 1KG', 'vang_mieng', true, 1)
+    INSERT INTO retailer_products (retailer_code, product_code, product_name, is_enabled, sort_order)
+    VALUES ('SJC', 'MIENG_1L_10L_1KG', 'Vàng SJC 1L, 10L, 1KG', true, 1)
     ON CONFLICT (retailer_code, product_code) DO UPDATE SET is_enabled = true
     RETURNING id INTO product_id;
 
@@ -209,8 +177,6 @@ BEGIN
       source_id,
       external_code,
       retailer_code,
-      product_type_code,
-      province_code,
       label,
       is_enabled,
       retailer_product_id
@@ -219,8 +185,6 @@ BEGIN
         sjc_source_id,
         'Vàng SJC 1L, 10L, 1KG',
         'SJC',
-        COALESCE(gold_bar_product_type_code, 'VANG_MIENG'),
-        NULL,
         'SJC Gold Bars (1L, 10L, 1KG)',
         true,
         product_id
@@ -228,7 +192,6 @@ BEGIN
     ON CONFLICT (source_id, external_code) DO UPDATE
     SET
       retailer_code = EXCLUDED.retailer_code,
-      product_type_code = EXCLUDED.product_type_code,
       label = EXCLUDED.label,
       is_enabled = EXCLUDED.is_enabled,
       retailer_product_id = EXCLUDED.retailer_product_id;
@@ -254,319 +217,319 @@ BEGIN
     -- ===== SJC Products =====
 
     -- Vàng miếng SJC theo lượng
-    INSERT INTO retailer_products (retailer_code, product_code, product_name, category, is_enabled, sort_order)
-    VALUES ('SJC', 'MIENG_1L', 'Vàng miếng SJC theo lượng', 'vang_mieng', true, 1)
+    INSERT INTO retailer_products (retailer_code, product_code, product_name, is_enabled, sort_order)
+    VALUES ('SJC', 'MIENG_1L', 'Vàng miếng SJC theo lượng', true, 1)
     ON CONFLICT (retailer_code, product_code) DO UPDATE SET is_enabled = true
     RETURNING id INTO product_id;
 
-    INSERT INTO crawler_type_mappings (source_id, external_code, retailer_code, product_type_code, province_code, label, retailer_product_id, is_enabled)
-    VALUES (onus_source_id, 'sjc-1l-10l-1kg', 'SJC', 'VANG_MIENG', NULL, 'Vàng miếng SJC theo lượng', product_id, true)
+    INSERT INTO crawler_type_mappings (source_id, external_code, retailer_code, label, retailer_product_id, is_enabled)
+    VALUES (onus_source_id, 'sjc-1l-10l-1kg', 'SJC', 'Vàng miếng SJC theo lượng', product_id, true)
     ON CONFLICT (source_id, external_code) DO UPDATE SET retailer_product_id = product_id;
 
     -- Vàng SJC 5 chỉ
-    INSERT INTO retailer_products (retailer_code, product_code, product_name, category, is_enabled, sort_order)
-    VALUES ('SJC', 'MIENG_5C', 'Vàng SJC 5 chỉ', 'vang_mieng', true, 2)
+    INSERT INTO retailer_products (retailer_code, product_code, product_name, is_enabled, sort_order)
+    VALUES ('SJC', 'MIENG_5C', 'Vàng SJC 5 chỉ', true, 2)
     ON CONFLICT (retailer_code, product_code) DO UPDATE SET is_enabled = true
     RETURNING id INTO product_id;
 
-    INSERT INTO crawler_type_mappings (source_id, external_code, retailer_code, product_type_code, province_code, label, retailer_product_id, is_enabled)
-    VALUES (onus_source_id, 'sjc-5c', 'SJC', 'VANG_MIENG', NULL, 'Vàng SJC 5 chỉ', product_id, true)
+    INSERT INTO crawler_type_mappings (source_id, external_code, retailer_code, label, retailer_product_id, is_enabled)
+    VALUES (onus_source_id, 'sjc-5c', 'SJC', 'Vàng SJC 5 chỉ', product_id, true)
     ON CONFLICT (source_id, external_code) DO UPDATE SET retailer_product_id = product_id;
 
     -- Vàng SJC 1 chỉ
-    INSERT INTO retailer_products (retailer_code, product_code, product_name, category, is_enabled, sort_order)
-    VALUES ('SJC', 'MIENG_1C', 'Vàng SJC 1 chỉ', 'vang_mieng', true, 3)
+    INSERT INTO retailer_products (retailer_code, product_code, product_name, is_enabled, sort_order)
+    VALUES ('SJC', 'MIENG_1C', 'Vàng SJC 1 chỉ', true, 3)
     ON CONFLICT (retailer_code, product_code) DO UPDATE SET is_enabled = true
     RETURNING id INTO product_id;
 
-    INSERT INTO crawler_type_mappings (source_id, external_code, retailer_code, product_type_code, province_code, label, retailer_product_id, is_enabled)
-    VALUES (onus_source_id, 'sjc-2c-1c-5-phan', 'SJC', 'VANG_MIENG', NULL, 'Vàng SJC 1 chỉ', product_id, true)
+    INSERT INTO crawler_type_mappings (source_id, external_code, retailer_code, label, retailer_product_id, is_enabled)
+    VALUES (onus_source_id, 'sjc-2c-1c-5-phan', 'SJC', 'Vàng SJC 1 chỉ', product_id, true)
     ON CONFLICT (source_id, external_code) DO UPDATE SET retailer_product_id = product_id;
 
     -- Vàng SJC 2 chỉ
-    INSERT INTO retailer_products (retailer_code, product_code, product_name, category, is_enabled, sort_order)
-    VALUES ('SJC', 'MIENG_2C', 'Vàng SJC 2 chỉ', 'vang_mieng', true, 4)
+    INSERT INTO retailer_products (retailer_code, product_code, product_name, is_enabled, sort_order)
+    VALUES ('SJC', 'MIENG_2C', 'Vàng SJC 2 chỉ', true, 4)
     ON CONFLICT (retailer_code, product_code) DO UPDATE SET is_enabled = true
     RETURNING id INTO product_id;
 
-    INSERT INTO crawler_type_mappings (source_id, external_code, retailer_code, product_type_code, province_code, label, retailer_product_id, is_enabled)
-    VALUES (onus_source_id, 'sjc-2c', 'SJC', 'VANG_MIENG', NULL, 'Vàng SJC 2 chỉ', product_id, true)
+    INSERT INTO crawler_type_mappings (source_id, external_code, retailer_code, label, retailer_product_id, is_enabled)
+    VALUES (onus_source_id, 'sjc-2c', 'SJC', 'Vàng SJC 2 chỉ', product_id, true)
     ON CONFLICT (source_id, external_code) DO UPDATE SET retailer_product_id = product_id;
 
     -- Vàng nhẫn SJC 9999 theo chỉ
-    INSERT INTO retailer_products (retailer_code, product_code, product_name, category, is_enabled, sort_order)
-    VALUES ('SJC', 'NHAN_9999_CHI', 'Vàng nhẫn SJC 9999 theo chỉ', 'vang_nhan', true, 10)
+    INSERT INTO retailer_products (retailer_code, product_code, product_name, is_enabled, sort_order)
+    VALUES ('SJC', 'NHAN_9999_CHI', 'Vàng nhẫn SJC 9999 theo chỉ', true, 10)
     ON CONFLICT (retailer_code, product_code) DO UPDATE SET is_enabled = true
     RETURNING id INTO product_id;
 
-    INSERT INTO crawler_type_mappings (source_id, external_code, retailer_code, product_type_code, province_code, label, retailer_product_id, is_enabled)
-    VALUES (onus_source_id, 'vang-nhan-sjc-9999-1-chi-2-chi-5-chi', 'SJC', 'VANG_NHAN', NULL, 'Vàng nhẫn SJC 9999 theo chỉ', product_id, true)
+    INSERT INTO crawler_type_mappings (source_id, external_code, retailer_code, label, retailer_product_id, is_enabled)
+    VALUES (onus_source_id, 'vang-nhan-sjc-9999-1-chi-2-chi-5-chi', 'SJC', 'Vàng nhẫn SJC 9999 theo chỉ', product_id, true)
     ON CONFLICT (source_id, external_code) DO UPDATE SET retailer_product_id = product_id;
 
     -- Vàng nhẫn SJC 9999 theo phân
-    INSERT INTO retailer_products (retailer_code, product_code, product_name, category, is_enabled, sort_order)
-    VALUES ('SJC', 'NHAN_9999_PHAN', 'Vàng nhẫn SJC 9999 theo phân', 'vang_nhan', true, 11)
+    INSERT INTO retailer_products (retailer_code, product_code, product_name, is_enabled, sort_order)
+    VALUES ('SJC', 'NHAN_9999_PHAN', 'Vàng nhẫn SJC 9999 theo phân', true, 11)
     ON CONFLICT (retailer_code, product_code) DO UPDATE SET is_enabled = true
     RETURNING id INTO product_id;
 
-    INSERT INTO crawler_type_mappings (source_id, external_code, retailer_code, product_type_code, province_code, label, retailer_product_id, is_enabled)
-    VALUES (onus_source_id, 'vang-nhan-sjc-9999-03-chi-05-chi', 'SJC', 'VANG_NHAN', NULL, 'Vàng nhẫn SJC 9999 theo phân', product_id, true)
+    INSERT INTO crawler_type_mappings (source_id, external_code, retailer_code, label, retailer_product_id, is_enabled)
+    VALUES (onus_source_id, 'vang-nhan-sjc-9999-03-chi-05-chi', 'SJC', 'Vàng nhẫn SJC 9999 theo phân', product_id, true)
     ON CONFLICT (source_id, external_code) DO UPDATE SET retailer_product_id = product_id;
 
     -- Trang sức vàng SJC 9999
-    INSERT INTO retailer_products (retailer_code, product_code, product_name, category, is_enabled, sort_order)
-    VALUES ('SJC', 'NU_TRANG_9999', 'Trang sức vàng SJC 9999', 'nu_trang', true, 20)
+    INSERT INTO retailer_products (retailer_code, product_code, product_name, is_enabled, sort_order)
+    VALUES ('SJC', 'NU_TRANG_9999', 'Trang sức vàng SJC 9999', true, 20)
     ON CONFLICT (retailer_code, product_code) DO UPDATE SET is_enabled = true
     RETURNING id INTO product_id;
 
-    INSERT INTO crawler_type_mappings (source_id, external_code, retailer_code, product_type_code, province_code, label, retailer_product_id, is_enabled)
-    VALUES (onus_source_id, 'nu-trang-9999', 'SJC', 'NU_TRANG', NULL, 'Trang sức vàng SJC 9999', product_id, true)
+    INSERT INTO crawler_type_mappings (source_id, external_code, retailer_code, label, retailer_product_id, is_enabled)
+    VALUES (onus_source_id, 'nu-trang-9999', 'SJC', 'Trang sức vàng SJC 9999', product_id, true)
     ON CONFLICT (source_id, external_code) DO UPDATE SET retailer_product_id = product_id;
 
     -- Vàng trang sức SJC 99%
-    INSERT INTO retailer_products (retailer_code, product_code, product_name, category, is_enabled, sort_order)
-    VALUES ('SJC', 'NU_TRANG_99', 'Vàng trang sức SJC 99%', 'nu_trang', true, 21)
+    INSERT INTO retailer_products (retailer_code, product_code, product_name, is_enabled, sort_order)
+    VALUES ('SJC', 'NU_TRANG_99', 'Vàng trang sức SJC 99%', true, 21)
     ON CONFLICT (retailer_code, product_code) DO UPDATE SET is_enabled = true
     RETURNING id INTO product_id;
 
-    INSERT INTO crawler_type_mappings (source_id, external_code, retailer_code, product_type_code, province_code, label, retailer_product_id, is_enabled)
-    VALUES (onus_source_id, 'nu-trang-99', 'SJC', 'NU_TRANG', NULL, 'Vàng trang sức SJC 99%', product_id, true)
+    INSERT INTO crawler_type_mappings (source_id, external_code, retailer_code, label, retailer_product_id, is_enabled)
+    VALUES (onus_source_id, 'nu-trang-99', 'SJC', 'Vàng trang sức SJC 99%', product_id, true)
     ON CONFLICT (source_id, external_code) DO UPDATE SET retailer_product_id = product_id;
 
     -- Nữ trang 68%
-    INSERT INTO retailer_products (retailer_code, product_code, product_name, category, is_enabled, sort_order)
-    VALUES ('SJC', 'NU_TRANG_68', 'Nữ trang 68%', 'nu_trang', true, 22)
+    INSERT INTO retailer_products (retailer_code, product_code, product_name, is_enabled, sort_order)
+    VALUES ('SJC', 'NU_TRANG_68', 'Nữ trang 68%', true, 22)
     ON CONFLICT (retailer_code, product_code) DO UPDATE SET is_enabled = true
     RETURNING id INTO product_id;
 
-    INSERT INTO crawler_type_mappings (source_id, external_code, retailer_code, product_type_code, province_code, label, retailer_product_id, is_enabled)
-    VALUES (onus_source_id, 'nu-trang-68', 'SJC', 'NU_TRANG', NULL, 'Nữ trang 68%', product_id, true)
+    INSERT INTO crawler_type_mappings (source_id, external_code, retailer_code, label, retailer_product_id, is_enabled)
+    VALUES (onus_source_id, 'nu-trang-68', 'SJC', 'Nữ trang 68%', product_id, true)
     ON CONFLICT (source_id, external_code) DO UPDATE SET retailer_product_id = product_id;
 
     -- Nữ trang 41,7%
-    INSERT INTO retailer_products (retailer_code, product_code, product_name, category, is_enabled, sort_order)
-    VALUES ('SJC', 'NU_TRANG_417', 'Nữ trang 41,7%', 'nu_trang', true, 23)
+    INSERT INTO retailer_products (retailer_code, product_code, product_name, is_enabled, sort_order)
+    VALUES ('SJC', 'NU_TRANG_417', 'Nữ trang 41,7%', true, 23)
     ON CONFLICT (retailer_code, product_code) DO UPDATE SET is_enabled = true
     RETURNING id INTO product_id;
 
-    INSERT INTO crawler_type_mappings (source_id, external_code, retailer_code, product_type_code, province_code, label, retailer_product_id, is_enabled)
-    VALUES (onus_source_id, 'nu-trang-417', 'SJC', 'NU_TRANG', NULL, 'Nữ trang 41,7%', product_id, true)
+    INSERT INTO crawler_type_mappings (source_id, external_code, retailer_code, label, retailer_product_id, is_enabled)
+    VALUES (onus_source_id, 'nu-trang-417', 'SJC', 'Nữ trang 41,7%', product_id, true)
     ON CONFLICT (source_id, external_code) DO UPDATE SET retailer_product_id = product_id;
 
     -- ===== PNJ Products =====
 
     -- Vàng miếng SJC PNJ
-    INSERT INTO retailer_products (retailer_code, product_code, product_name, category, is_enabled, sort_order)
-    VALUES ('PNJ', 'MIENG_SJC', 'Vàng miếng SJC PNJ', 'vang_mieng', true, 1)
+    INSERT INTO retailer_products (retailer_code, product_code, product_name, is_enabled, sort_order)
+    VALUES ('PNJ', 'MIENG_SJC', 'Vàng miếng SJC PNJ', true, 1)
     ON CONFLICT (retailer_code, product_code) DO UPDATE SET is_enabled = true
     RETURNING id INTO product_id;
 
-    INSERT INTO crawler_type_mappings (source_id, external_code, retailer_code, product_type_code, province_code, label, retailer_product_id, is_enabled)
-    VALUES (onus_source_id, 'vang-mieng-sjc-9999-00', 'PNJ', 'VANG_MIENG', NULL, 'Vàng miếng SJC PNJ', product_id, true)
+    INSERT INTO crawler_type_mappings (source_id, external_code, retailer_code, label, retailer_product_id, is_enabled)
+    VALUES (onus_source_id, 'vang-mieng-sjc-9999-00', 'PNJ', 'Vàng miếng SJC PNJ', product_id, true)
     ON CONFLICT (source_id, external_code) DO UPDATE SET retailer_product_id = product_id;
 
     -- Vàng nhẫn trơn 9999
-    INSERT INTO retailer_products (retailer_code, product_code, product_name, category, is_enabled, sort_order)
-    VALUES ('PNJ', 'NHAN_TRON_9999', 'Vàng nhẫn trơn 9999', 'vang_nhan', true, 10)
+    INSERT INTO retailer_products (retailer_code, product_code, product_name, is_enabled, sort_order)
+    VALUES ('PNJ', 'NHAN_TRON_9999', 'Vàng nhẫn trơn 9999', true, 10)
     ON CONFLICT (retailer_code, product_code) DO UPDATE SET is_enabled = true
     RETURNING id INTO product_id;
 
-    INSERT INTO crawler_type_mappings (source_id, external_code, retailer_code, product_type_code, province_code, label, retailer_product_id, is_enabled)
-    VALUES (onus_source_id, 'nhan-tron-pnj-9999-00', 'PNJ', 'VANG_NHAN', NULL, 'Vàng nhẫn trơn 9999', product_id, true)
+    INSERT INTO crawler_type_mappings (source_id, external_code, retailer_code, label, retailer_product_id, is_enabled)
+    VALUES (onus_source_id, 'nhan-tron-pnj-9999-00', 'PNJ', 'Vàng nhẫn trơn 9999', product_id, true)
     ON CONFLICT (source_id, external_code) DO UPDATE SET retailer_product_id = product_id;
 
     -- Vàng Kim Bảo 9999
-    INSERT INTO retailer_products (retailer_code, product_code, product_name, category, is_enabled, sort_order)
-    VALUES ('PNJ', 'KIM_BAO_9999', 'Vàng Kim Bảo 9999', 'vang_mieng', true, 2)
+    INSERT INTO retailer_products (retailer_code, product_code, product_name, is_enabled, sort_order)
+    VALUES ('PNJ', 'KIM_BAO_9999', 'Vàng Kim Bảo 9999', true, 2)
     ON CONFLICT (retailer_code, product_code) DO UPDATE SET is_enabled = true
     RETURNING id INTO product_id;
 
-    INSERT INTO crawler_type_mappings (source_id, external_code, retailer_code, product_type_code, province_code, label, retailer_product_id, is_enabled)
-    VALUES (onus_source_id, 'vang-kim-bao-9999-00', 'PNJ', 'VANG_MIENG', NULL, 'Vàng Kim Bảo 9999', product_id, true)
+    INSERT INTO crawler_type_mappings (source_id, external_code, retailer_code, label, retailer_product_id, is_enabled)
+    VALUES (onus_source_id, 'vang-kim-bao-9999-00', 'PNJ', 'Vàng Kim Bảo 9999', product_id, true)
     ON CONFLICT (source_id, external_code) DO UPDATE SET retailer_product_id = product_id;
 
     -- Vàng miếng PNJ - Phượng Hoàng
-    INSERT INTO retailer_products (retailer_code, product_code, product_name, category, is_enabled, sort_order)
-    VALUES ('PNJ', 'MIENG_PHUONG_HOANG', 'Vàng miếng PNJ - Phượng Hoàng', 'vang_mieng', true, 3)
+    INSERT INTO retailer_products (retailer_code, product_code, product_name, is_enabled, sort_order)
+    VALUES ('PNJ', 'MIENG_PHUONG_HOANG', 'Vàng miếng PNJ - Phượng Hoàng', true, 3)
     ON CONFLICT (retailer_code, product_code) DO UPDATE SET is_enabled = true
     RETURNING id INTO product_id;
 
-    INSERT INTO crawler_type_mappings (source_id, external_code, retailer_code, product_type_code, province_code, label, retailer_product_id, is_enabled)
-    VALUES (onus_source_id, 'vang-mieng-phuong-hoang-9999-00', 'PNJ', 'VANG_MIENG', NULL, 'Vàng miếng PNJ - Phượng Hoàng', product_id, true)
+    INSERT INTO crawler_type_mappings (source_id, external_code, retailer_code, label, retailer_product_id, is_enabled)
+    VALUES (onus_source_id, 'vang-mieng-phuong-hoang-9999-00', 'PNJ', 'Vàng miếng PNJ - Phượng Hoàng', product_id, true)
     ON CONFLICT (source_id, external_code) DO UPDATE SET retailer_product_id = product_id;
 
     -- Vàng 24K
-    INSERT INTO retailer_products (retailer_code, product_code, product_name, category, is_enabled, sort_order)
-    VALUES ('PNJ', 'VANG_24K', 'Vàng 24K', 'nu_trang', true, 20)
+    INSERT INTO retailer_products (retailer_code, product_code, product_name, is_enabled, sort_order)
+    VALUES ('PNJ', 'VANG_24K', 'Vàng 24K', true, 20)
     ON CONFLICT (retailer_code, product_code) DO UPDATE SET is_enabled = true
     RETURNING id INTO product_id;
 
-    INSERT INTO crawler_type_mappings (source_id, external_code, retailer_code, product_type_code, province_code, label, retailer_product_id, is_enabled)
-    VALUES (onus_source_id, 'vang-24k', 'PNJ', 'NU_TRANG', NULL, 'Vàng 24K', product_id, true)
+    INSERT INTO crawler_type_mappings (source_id, external_code, retailer_code, label, retailer_product_id, is_enabled)
+    VALUES (onus_source_id, 'vang-24k', 'PNJ', 'Vàng 24K', product_id, true)
     ON CONFLICT (source_id, external_code) DO UPDATE SET retailer_product_id = product_id;
 
     -- Vàng 18K
-    INSERT INTO retailer_products (retailer_code, product_code, product_name, category, is_enabled, sort_order)
-    VALUES ('PNJ', 'VANG_18K', 'Vàng 18K', 'nu_trang', true, 21)
+    INSERT INTO retailer_products (retailer_code, product_code, product_name, is_enabled, sort_order)
+    VALUES ('PNJ', 'VANG_18K', 'Vàng 18K', true, 21)
     ON CONFLICT (retailer_code, product_code) DO UPDATE SET is_enabled = true
     RETURNING id INTO product_id;
 
-    INSERT INTO crawler_type_mappings (source_id, external_code, retailer_code, product_type_code, province_code, label, retailer_product_id, is_enabled)
-    VALUES (onus_source_id, 'vang-18k', 'PNJ', 'NU_TRANG', NULL, 'Vàng 18K', product_id, true)
+    INSERT INTO crawler_type_mappings (source_id, external_code, retailer_code, label, retailer_product_id, is_enabled)
+    VALUES (onus_source_id, 'vang-18k', 'PNJ', 'Vàng 18K', product_id, true)
     ON CONFLICT (source_id, external_code) DO UPDATE SET retailer_product_id = product_id;
 
     -- Vàng 14K
-    INSERT INTO retailer_products (retailer_code, product_code, product_name, category, is_enabled, sort_order)
-    VALUES ('PNJ', 'VANG_14K', 'Vàng 14K', 'nu_trang', true, 22)
+    INSERT INTO retailer_products (retailer_code, product_code, product_name, is_enabled, sort_order)
+    VALUES ('PNJ', 'VANG_14K', 'Vàng 14K', true, 22)
     ON CONFLICT (retailer_code, product_code) DO UPDATE SET is_enabled = true
     RETURNING id INTO product_id;
 
-    INSERT INTO crawler_type_mappings (source_id, external_code, retailer_code, product_type_code, province_code, label, retailer_product_id, is_enabled)
-    VALUES (onus_source_id, 'vang-14k', 'PNJ', 'NU_TRANG', NULL, 'Vàng 14K', product_id, true)
+    INSERT INTO crawler_type_mappings (source_id, external_code, retailer_code, label, retailer_product_id, is_enabled)
+    VALUES (onus_source_id, 'vang-14k', 'PNJ', 'Vàng 14K', product_id, true)
     ON CONFLICT (source_id, external_code) DO UPDATE SET retailer_product_id = product_id;
 
     -- Vàng 10K
-    INSERT INTO retailer_products (retailer_code, product_code, product_name, category, is_enabled, sort_order)
-    VALUES ('PNJ', 'VANG_10K', 'Vàng 10K', 'nu_trang', true, 23)
+    INSERT INTO retailer_products (retailer_code, product_code, product_name, is_enabled, sort_order)
+    VALUES ('PNJ', 'VANG_10K', 'Vàng 10K', true, 23)
     ON CONFLICT (retailer_code, product_code) DO UPDATE SET is_enabled = true
     RETURNING id INTO product_id;
 
-    INSERT INTO crawler_type_mappings (source_id, external_code, retailer_code, product_type_code, province_code, label, retailer_product_id, is_enabled)
-    VALUES (onus_source_id, 'vang-10k', 'PNJ', 'NU_TRANG', NULL, 'Vàng 10K', product_id, true)
+    INSERT INTO crawler_type_mappings (source_id, external_code, retailer_code, label, retailer_product_id, is_enabled)
+    VALUES (onus_source_id, 'vang-10k', 'PNJ', 'Vàng 10K', product_id, true)
     ON CONFLICT (source_id, external_code) DO UPDATE SET retailer_product_id = product_id;
 
     -- Bạc
-    INSERT INTO retailer_products (retailer_code, product_code, product_name, category, is_enabled, sort_order)
-    VALUES ('PNJ', 'BAC', 'Bạc', 'bac', true, 30)
+    INSERT INTO retailer_products (retailer_code, product_code, product_name, is_enabled, sort_order)
+    VALUES ('PNJ', 'BAC', 'Bạc', true, 30)
     ON CONFLICT (retailer_code, product_code) DO UPDATE SET is_enabled = true
     RETURNING id INTO product_id;
 
-    INSERT INTO crawler_type_mappings (source_id, external_code, retailer_code, product_type_code, province_code, label, retailer_product_id, is_enabled)
-    VALUES (onus_source_id, 'bac', 'PNJ', 'BAC', NULL, 'Bạc', product_id, true)
+    INSERT INTO crawler_type_mappings (source_id, external_code, retailer_code, label, retailer_product_id, is_enabled)
+    VALUES (onus_source_id, 'bac', 'PNJ', 'Bạc', product_id, true)
     ON CONFLICT (source_id, external_code) DO UPDATE SET retailer_product_id = product_id;
 
     -- ===== DOJI Products =====
 
     -- Vàng miếng DOJI lẻ
-    INSERT INTO retailer_products (retailer_code, product_code, product_name, category, is_enabled, sort_order)
-    VALUES ('DOJI', 'MIENG_LE', 'Vàng miếng DOJI lẻ', 'vang_mieng', true, 1)
+    INSERT INTO retailer_products (retailer_code, product_code, product_name, is_enabled, sort_order)
+    VALUES ('DOJI', 'MIENG_LE', 'Vàng miếng DOJI lẻ', true, 1)
     ON CONFLICT (retailer_code, product_code) DO UPDATE SET is_enabled = true
     RETURNING id INTO product_id;
 
-    INSERT INTO crawler_type_mappings (source_id, external_code, retailer_code, product_type_code, province_code, label, retailer_product_id, is_enabled)
-    VALUES (onus_source_id, 'vang-mieng-doji-le', 'DOJI', 'VANG_MIENG', NULL, 'Vàng miếng DOJI lẻ', product_id, true)
+    INSERT INTO crawler_type_mappings (source_id, external_code, retailer_code, label, retailer_product_id, is_enabled)
+    VALUES (onus_source_id, 'vang-mieng-doji-le', 'DOJI', 'Vàng miếng DOJI lẻ', product_id, true)
     ON CONFLICT (source_id, external_code) DO UPDATE SET retailer_product_id = product_id;
 
     -- Vàng miếng DOJI thanh (1-5 chỉ)
-    INSERT INTO retailer_products (retailer_code, product_code, product_name, category, is_enabled, sort_order)
-    VALUES ('DOJI', 'MIENG_THANH_1_5C', 'Vàng miếng DOJI thanh (1-5 chỉ)', 'vang_mieng', true, 2)
+    INSERT INTO retailer_products (retailer_code, product_code, product_name, is_enabled, sort_order)
+    VALUES ('DOJI', 'MIENG_THANH_1_5C', 'Vàng miếng DOJI thanh (1-5 chỉ)', true, 2)
     ON CONFLICT (retailer_code, product_code) DO UPDATE SET is_enabled = true
     RETURNING id INTO product_id;
 
-    INSERT INTO crawler_type_mappings (source_id, external_code, retailer_code, product_type_code, province_code, label, retailer_product_id, is_enabled)
-    VALUES (onus_source_id, 'vang-mieng-doji-thanh-1-5-chi', 'DOJI', 'VANG_MIENG', NULL, 'Vàng miếng DOJI thanh (1-5 chỉ)', product_id, true)
+    INSERT INTO crawler_type_mappings (source_id, external_code, retailer_code, label, retailer_product_id, is_enabled)
+    VALUES (onus_source_id, 'vang-mieng-doji-thanh-1-5-chi', 'DOJI', 'Vàng miếng DOJI thanh (1-5 chỉ)', product_id, true)
     ON CONFLICT (source_id, external_code) DO UPDATE SET retailer_product_id = product_id;
 
     -- Nhẫn Tròn 9999 Hưng Thịnh Vượng
-    INSERT INTO retailer_products (retailer_code, product_code, product_name, category, is_enabled, sort_order)
-    VALUES ('DOJI', 'NHAN_HUNG_THINH_VUONG', 'Nhẫn Tròn 9999 Hưng Thịnh Vượng', 'vang_nhan', true, 10)
+    INSERT INTO retailer_products (retailer_code, product_code, product_name, is_enabled, sort_order)
+    VALUES ('DOJI', 'NHAN_HUNG_THINH_VUONG', 'Nhẫn Tròn 9999 Hưng Thịnh Vượng', true, 10)
     ON CONFLICT (retailer_code, product_code) DO UPDATE SET is_enabled = true
     RETURNING id INTO product_id;
 
-    INSERT INTO crawler_type_mappings (source_id, external_code, retailer_code, product_type_code, province_code, label, retailer_product_id, is_enabled)
-    VALUES (onus_source_id, 'nhan-tron-9999-hung-thinh-vuong', 'DOJI', 'VANG_NHAN', NULL, 'Nhẫn Tròn 9999 Hưng Thịnh Vượng', product_id, true)
+    INSERT INTO crawler_type_mappings (source_id, external_code, retailer_code, label, retailer_product_id, is_enabled)
+    VALUES (onus_source_id, 'nhan-tron-9999-hung-thinh-vuong', 'DOJI', 'Nhẫn Tròn 9999 Hưng Thịnh Vượng', product_id, true)
     ON CONFLICT (source_id, external_code) DO UPDATE SET retailer_product_id = product_id;
 
     -- Nữ trang 9999
-    INSERT INTO retailer_products (retailer_code, product_code, product_name, category, is_enabled, sort_order)
-    VALUES ('DOJI', 'NU_TRANG_9999', 'Nữ trang 9999', 'nu_trang', true, 20)
+    INSERT INTO retailer_products (retailer_code, product_code, product_name, is_enabled, sort_order)
+    VALUES ('DOJI', 'NU_TRANG_9999', 'Nữ trang 9999', true, 20)
     ON CONFLICT (retailer_code, product_code) DO UPDATE SET is_enabled = true
     RETURNING id INTO product_id;
 
-    INSERT INTO crawler_type_mappings (source_id, external_code, retailer_code, product_type_code, province_code, label, retailer_product_id, is_enabled)
-    VALUES (onus_source_id, 'nu-trang-9999', 'DOJI', 'NU_TRANG', NULL, 'Nữ trang 9999', product_id, true)
+    INSERT INTO crawler_type_mappings (source_id, external_code, retailer_code, label, retailer_product_id, is_enabled)
+    VALUES (onus_source_id, 'nu-trang-9999', 'DOJI', 'Nữ trang 9999', product_id, true)
     ON CONFLICT (source_id, external_code) DO UPDATE SET retailer_product_id = product_id;
 
     -- Vàng Ngoại tệ 99.99
-    INSERT INTO retailer_products (retailer_code, product_code, product_name, category, is_enabled, sort_order)
-    VALUES ('DOJI', 'NGOAI_TE_9999', 'Vàng Ngoại tệ 99.99', 'vang_mieng', true, 3)
+    INSERT INTO retailer_products (retailer_code, product_code, product_name, is_enabled, sort_order)
+    VALUES ('DOJI', 'NGOAI_TE_9999', 'Vàng Ngoại tệ 99.99', true, 3)
     ON CONFLICT (retailer_code, product_code) DO UPDATE SET is_enabled = true
     RETURNING id INTO product_id;
 
-    INSERT INTO crawler_type_mappings (source_id, external_code, retailer_code, product_type_code, province_code, label, retailer_product_id, is_enabled)
-    VALUES (onus_source_id, 'vang-ngoai-te-9999', 'DOJI', 'VANG_MIENG', NULL, 'Vàng Ngoại tệ 99.99', product_id, true)
+    INSERT INTO crawler_type_mappings (source_id, external_code, retailer_code, label, retailer_product_id, is_enabled)
+    VALUES (onus_source_id, 'vang-ngoai-te-9999', 'DOJI', 'Vàng Ngoại tệ 99.99', product_id, true)
     ON CONFLICT (source_id, external_code) DO UPDATE SET retailer_product_id = product_id;
 
     -- ===== Bảo Tín Minh Châu Products =====
 
     -- Vàng miếng SJC
-    INSERT INTO retailer_products (retailer_code, product_code, product_name, category, is_enabled, sort_order)
-    VALUES ('Bảo Tín Minh Châu', 'MIENG_SJC', 'Vàng miếng SJC', 'vang_mieng', true, 1)
+    INSERT INTO retailer_products (retailer_code, product_code, product_name, is_enabled, sort_order)
+    VALUES ('Bảo Tín Minh Châu', 'MIENG_SJC', 'Vàng miếng SJC', true, 1)
     ON CONFLICT (retailer_code, product_code) DO UPDATE SET is_enabled = true
     RETURNING id INTO product_id;
 
-    INSERT INTO crawler_type_mappings (source_id, external_code, retailer_code, product_type_code, province_code, label, retailer_product_id, is_enabled)
-    VALUES (onus_source_id, 'vang-mieng-sjc', 'Bảo Tín Minh Châu', 'VANG_MIENG', NULL, 'Vàng miếng SJC', product_id, true)
+    INSERT INTO crawler_type_mappings (source_id, external_code, retailer_code, label, retailer_product_id, is_enabled)
+    VALUES (onus_source_id, 'vang-mieng-sjc', 'Bảo Tín Minh Châu', 'Vàng miếng SJC', product_id, true)
     ON CONFLICT (source_id, external_code) DO UPDATE SET retailer_product_id = product_id;
 
     -- Vàng nữ trang 9999 - HCM
-    INSERT INTO retailer_products (retailer_code, product_code, product_name, category, is_enabled, sort_order)
-    VALUES ('Bảo Tín Minh Châu', 'NU_TRANG_9999_HCM', 'Vàng nữ trang 9999 - HCM', 'nu_trang', true, 10)
+    INSERT INTO retailer_products (retailer_code, product_code, product_name, is_enabled, sort_order)
+    VALUES ('Bảo Tín Minh Châu', 'NU_TRANG_9999_HCM', 'Vàng nữ trang 9999 - HCM', true, 10)
     ON CONFLICT (retailer_code, product_code) DO UPDATE SET is_enabled = true
     RETURNING id INTO product_id;
 
-    INSERT INTO crawler_type_mappings (source_id, external_code, retailer_code, product_type_code, province_code, label, retailer_product_id, is_enabled)
-    VALUES (onus_source_id, 'vang-nu-trang-9999-hcm', 'Bảo Tín Minh Châu', 'NU_TRANG', NULL, 'Vàng nữ trang 9999 - HCM', product_id, true)
+    INSERT INTO crawler_type_mappings (source_id, external_code, retailer_code, label, retailer_product_id, is_enabled)
+    VALUES (onus_source_id, 'vang-nu-trang-9999-hcm', 'Bảo Tín Minh Châu', 'Vàng nữ trang 9999 - HCM', product_id, true)
     ON CONFLICT (source_id, external_code) DO UPDATE SET retailer_product_id = product_id;
 
     -- Vàng nữ trang 9999 - HN
-    INSERT INTO retailer_products (retailer_code, product_code, product_name, category, is_enabled, sort_order)
-    VALUES ('Bảo Tín Minh Châu', 'NU_TRANG_9999_HN', 'Vàng nữ trang 9999 - HN', 'nu_trang', true, 11)
+    INSERT INTO retailer_products (retailer_code, product_code, product_name, is_enabled, sort_order)
+    VALUES ('Bảo Tín Minh Châu', 'NU_TRANG_9999_HN', 'Vàng nữ trang 9999 - HN', true, 11)
     ON CONFLICT (retailer_code, product_code) DO UPDATE SET is_enabled = true
     RETURNING id INTO product_id;
 
-    INSERT INTO crawler_type_mappings (source_id, external_code, retailer_code, product_type_code, province_code, label, retailer_product_id, is_enabled)
-    VALUES (onus_source_id, 'vang-nu-trang-9999-hn', 'Bảo Tín Minh Châu', 'NU_TRANG', NULL, 'Vàng nữ trang 9999 - HN', product_id, true)
+    INSERT INTO crawler_type_mappings (source_id, external_code, retailer_code, label, retailer_product_id, is_enabled)
+    VALUES (onus_source_id, 'vang-nu-trang-9999-hn', 'Bảo Tín Minh Châu', 'Vàng nữ trang 9999 - HN', product_id, true)
     ON CONFLICT (source_id, external_code) DO UPDATE SET retailer_product_id = product_id;
 
     -- Vàng nhẫn trơn 9999 - HCM
-    INSERT INTO retailer_products (retailer_code, product_code, product_name, category, is_enabled, sort_order)
-    VALUES ('Bảo Tín Minh Châu', 'NHAN_TRON_9999_HCM', 'Vàng nhẫn trơn 9999 - HCM', 'vang_nhan', true, 20)
+    INSERT INTO retailer_products (retailer_code, product_code, product_name, is_enabled, sort_order)
+    VALUES ('Bảo Tín Minh Châu', 'NHAN_TRON_9999_HCM', 'Vàng nhẫn trơn 9999 - HCM', true, 20)
     ON CONFLICT (retailer_code, product_code) DO UPDATE SET is_enabled = true
     RETURNING id INTO product_id;
 
-    INSERT INTO crawler_type_mappings (source_id, external_code, retailer_code, product_type_code, province_code, label, retailer_product_id, is_enabled)
-    VALUES (onus_source_id, 'vang-nhan-tron-9999-hcm', 'Bảo Tín Minh Châu', 'VANG_NHAN', NULL, 'Vàng nhẫn trơn 9999 - HCM', product_id, true)
+    INSERT INTO crawler_type_mappings (source_id, external_code, retailer_code, label, retailer_product_id, is_enabled)
+    VALUES (onus_source_id, 'vang-nhan-tron-9999-hcm', 'Bảo Tín Minh Châu', 'Vàng nhẫn trơn 9999 - HCM', product_id, true)
     ON CONFLICT (source_id, external_code) DO UPDATE SET retailer_product_id = product_id;
 
     -- Vàng nhẫn trơn 9999 - HN
-    INSERT INTO retailer_products (retailer_code, product_code, product_name, category, is_enabled, sort_order)
-    VALUES ('Bảo Tín Minh Châu', 'NHAN_TRON_9999_HN', 'Vàng nhẫn trơn 9999 - HN', 'vang_nhan', true, 21)
+    INSERT INTO retailer_products (retailer_code, product_code, product_name, is_enabled, sort_order)
+    VALUES ('Bảo Tín Minh Châu', 'NHAN_TRON_9999_HN', 'Vàng nhẫn trơn 9999 - HN', true, 21)
     ON CONFLICT (retailer_code, product_code) DO UPDATE SET is_enabled = true
     RETURNING id INTO product_id;
 
-    INSERT INTO crawler_type_mappings (source_id, external_code, retailer_code, product_type_code, province_code, label, retailer_product_id, is_enabled)
-    VALUES (onus_source_id, 'vang-nhan-tron-9999-hn', 'Bảo Tín Minh Châu', 'VANG_NHAN', NULL, 'Vàng nhẫn trơn 9999 - HN', product_id, true)
+    INSERT INTO crawler_type_mappings (source_id, external_code, retailer_code, label, retailer_product_id, is_enabled)
+    VALUES (onus_source_id, 'vang-nhan-tron-9999-hn', 'Bảo Tín Minh Châu', 'Vàng nhẫn trơn 9999 - HN', product_id, true)
     ON CONFLICT (source_id, external_code) DO UPDATE SET retailer_product_id = product_id;
 
     -- Vàng nữ trang 99 - HCM
-    INSERT INTO retailer_products (retailer_code, product_code, product_name, category, is_enabled, sort_order)
-    VALUES ('Bảo Tín Minh Châu', 'NU_TRANG_99_HCM', 'Vàng nữ trang 99 - HCM', 'nu_trang', true, 12)
+    INSERT INTO retailer_products (retailer_code, product_code, product_name, is_enabled, sort_order)
+    VALUES ('Bảo Tín Minh Châu', 'NU_TRANG_99_HCM', 'Vàng nữ trang 99 - HCM', true, 12)
     ON CONFLICT (retailer_code, product_code) DO UPDATE SET is_enabled = true
     RETURNING id INTO product_id;
 
-    INSERT INTO crawler_type_mappings (source_id, external_code, retailer_code, product_type_code, province_code, label, retailer_product_id, is_enabled)
-    VALUES (onus_source_id, 'vang-nu-trang-99-hcm', 'Bảo Tín Minh Châu', 'NU_TRANG', NULL, 'Vàng nữ trang 99 - HCM', product_id, true)
+    INSERT INTO crawler_type_mappings (source_id, external_code, retailer_code, label, retailer_product_id, is_enabled)
+    VALUES (onus_source_id, 'vang-nu-trang-99-hcm', 'Bảo Tín Minh Châu', 'Vàng nữ trang 99 - HCM', product_id, true)
     ON CONFLICT (source_id, external_code) DO UPDATE SET retailer_product_id = product_id;
 
     -- Vàng nữ trang 99 - HN
-    INSERT INTO retailer_products (retailer_code, product_code, product_name, category, is_enabled, sort_order)
-    VALUES ('Bảo Tín Minh Châu', 'NU_TRANG_99_HN', 'Vàng nữ trang 99 - HN', 'nu_trang', true, 13)
+    INSERT INTO retailer_products (retailer_code, product_code, product_name, is_enabled, sort_order)
+    VALUES ('Bảo Tín Minh Châu', 'NU_TRANG_99_HN', 'Vàng nữ trang 99 - HN', true, 13)
     ON CONFLICT (retailer_code, product_code) DO UPDATE SET is_enabled = true
     RETURNING id INTO product_id;
 
-    INSERT INTO crawler_type_mappings (source_id, external_code, retailer_code, product_type_code, province_code, label, retailer_product_id, is_enabled)
-    VALUES (onus_source_id, 'vang-nu-trang-99-hn', 'Bảo Tín Minh Châu', 'NU_TRANG', NULL, 'Vàng nữ trang 99 - HN', product_id, true)
+    INSERT INTO crawler_type_mappings (source_id, external_code, retailer_code, label, retailer_product_id, is_enabled)
+    VALUES (onus_source_id, 'vang-nu-trang-99-hn', 'Bảo Tín Minh Châu', 'Vàng nữ trang 99 - HN', product_id, true)
     ON CONFLICT (source_id, external_code) DO UPDATE SET retailer_product_id = product_id;
 
   END IF;

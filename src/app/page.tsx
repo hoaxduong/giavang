@@ -7,38 +7,31 @@ import { PriceTable } from "@/components/prices/price-table";
 import { WorldGoldPrice } from "@/components/prices/world-gold-price";
 import { ProvinceFilter } from "@/components/prices/province-filter";
 import { RetailerFilter } from "@/components/prices/retailer-filter";
-import { ProductTypeFilter } from "@/components/prices/product-type-filter";
+
 import { RefreshIndicator } from "@/components/shared/refresh-indicator";
 import { PriceLineChart } from "@/components/charts/price-line-chart";
 import { ChartTimeFilter } from "@/components/charts/chart-time-filter";
 import { useCurrentPrices } from "@/lib/queries/use-current-prices";
 import { useHistoricalPrices } from "@/lib/queries/use-historical-prices";
-import type {
-  Province,
-  Retailer,
-  ProductType,
-  TimeRange,
-} from "@/lib/constants";
+import type { Province, Retailer, TimeRange } from "@/lib/constants";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 
 export default function Home() {
   // Chart-specific filters
   const [chartProvince, setChartProvince] = useState<Province | undefined>(
-    "TP. Hồ Chí Minh",
+    "TP. Hồ Chí Minh"
   );
   const [chartRetailer, setChartRetailer] = useState<Retailer | undefined>(
-    "SJC",
+    "SJC"
   );
-  const [chartProductType, setChartProductType] =
-    useState<ProductType>("SJC_BARS");
+
   const [timeRange, setTimeRange] = useState<TimeRange>("month");
 
   // Price table shows all data (no filters)
   const { data, isLoading } = useCurrentPrices({
     province: undefined,
     retailer: undefined,
-    productType: undefined,
   });
 
   const { startDate, endDate } = useMemo(() => {
@@ -70,7 +63,6 @@ export default function Home() {
     isLoading: chartLoading,
     error: chartError,
   } = useHistoricalPrices({
-    productType: chartProductType,
     retailer: chartRetailer,
     province: chartProvince,
     startDate,
@@ -111,10 +103,7 @@ export default function Home() {
 
           <div className="flex flex-wrap gap-4">
             <ChartTimeFilter value={timeRange} onChange={setTimeRange} />
-            <ProductTypeFilter
-              value={chartProductType}
-              onValueChange={(val) => setChartProductType(val || "SJC_BARS")}
-            />
+
             <RetailerFilter
               value={chartRetailer}
               onValueChange={setChartRetailer}

@@ -26,13 +26,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+
 import Link from "next/link";
 
 interface RetailerProduct {
@@ -40,7 +34,7 @@ interface RetailerProduct {
   retailerCode: string;
   productCode: string;
   productName: string;
-  category?: string | null;
+
   description?: string | null;
   isEnabled: boolean;
   sortOrder: number;
@@ -52,14 +46,6 @@ interface Retailer {
   name: string;
 }
 
-const CATEGORIES = [
-  { value: "vang_mieng", label: "Vàng miếng" },
-  { value: "vang_nhan", label: "Vàng nhẫn" },
-  { value: "nu_trang", label: "Nữ trang" },
-  { value: "vang_khac", label: "Vàng khác" },
-  { value: "bac", label: "Bạc" },
-];
-
 export function RetailerProductsManager({
   retailerCode,
 }: {
@@ -67,12 +53,13 @@ export function RetailerProductsManager({
 }) {
   const queryClient = useQueryClient();
   const [isDialogOpen, setIsDialogOpen] = useState(false);
-  const [editingProduct, setEditingProduct] =
-    useState<RetailerProduct | null>(null);
+  const [editingProduct, setEditingProduct] = useState<RetailerProduct | null>(
+    null
+  );
   const [formData, setFormData] = useState({
     productCode: "",
     productName: "",
-    category: "",
+
     description: "",
     sortOrder: 0,
     isEnabled: true,
@@ -83,9 +70,7 @@ export function RetailerProductsManager({
   const { data, isLoading } = useQuery({
     queryKey: ["retailer-products", retailerCode],
     queryFn: async () => {
-      const res = await fetch(
-        `/api/admin/retailers/${retailerCode}/products`
-      );
+      const res = await fetch(`/api/admin/retailers/${retailerCode}/products`);
       if (!res.ok) throw new Error("Failed to fetch products");
       return res.json() as Promise<{
         retailer: Retailer;
@@ -99,19 +84,16 @@ export function RetailerProductsManager({
     mutationFn: async (productData: {
       productCode: string;
       productName: string;
-      category?: string | null;
+
       description?: string | null;
       sortOrder: number;
       isEnabled: boolean;
     }) => {
-      const res = await fetch(
-        `/api/admin/retailers/${retailerCode}/products`,
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(productData),
-        }
-      );
+      const res = await fetch(`/api/admin/retailers/${retailerCode}/products`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(productData),
+      });
       if (!res.ok) {
         const error = await res.json();
         throw new Error(error.error || "Failed to create product");
@@ -214,7 +196,7 @@ export function RetailerProductsManager({
     setFormData({
       productCode: "",
       productName: "",
-      category: "",
+
       description: "",
       sortOrder: 0,
       isEnabled: true,
@@ -229,7 +211,7 @@ export function RetailerProductsManager({
       setFormData({
         productCode: product.productCode,
         productName: product.productName,
-        category: product.category || "",
+
         description: product.description || "",
         sortOrder: product.sortOrder,
         isEnabled: product.isEnabled,
@@ -246,7 +228,7 @@ export function RetailerProductsManager({
     const productData = {
       productCode: formData.productCode,
       productName: formData.productName,
-      category: formData.category || null,
+
       description: formData.description || null,
       sortOrder: formData.sortOrder,
       isEnabled: formData.isEnabled,
@@ -260,12 +242,6 @@ export function RetailerProductsManager({
     } else {
       createMutation.mutate(productData);
     }
-  };
-
-  const getCategoryLabel = (category: string | null | undefined) => {
-    if (!category) return "-";
-    const cat = CATEGORIES.find((c) => c.value === category);
-    return cat?.label || category;
   };
 
   if (isLoading) {
@@ -315,7 +291,7 @@ export function RetailerProductsManager({
             <TableRow>
               <TableHead>Mã sản phẩm</TableHead>
               <TableHead>Tên sản phẩm</TableHead>
-              <TableHead>Danh mục</TableHead>
+
               <TableHead>Trạng thái</TableHead>
               <TableHead>Thứ tự</TableHead>
               <TableHead className="text-right">Thao tác</TableHead>
@@ -325,7 +301,7 @@ export function RetailerProductsManager({
             {!data?.products || data.products.length === 0 ? (
               <TableRow>
                 <TableCell
-                  colSpan={6}
+                  colSpan={5}
                   className="text-center py-8 text-muted-foreground"
                 >
                   Chưa có sản phẩm nào. Nhấn &quot;Thêm sản phẩm&quot; để bắt
@@ -341,7 +317,7 @@ export function RetailerProductsManager({
                   <TableCell className="font-medium">
                     {product.productName}
                   </TableCell>
-                  <TableCell>{getCategoryLabel(product.category)}</TableCell>
+
                   <TableCell>
                     <div className="flex items-center gap-2">
                       <Switch
@@ -409,46 +385,22 @@ export function RetailerProductsManager({
           </DialogHeader>
 
           <div className="space-y-4">
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <Label htmlFor="productCode">
-                  Mã sản phẩm <span className="text-destructive">*</span>
-                </Label>
-                <Input
-                  id="productCode"
-                  value={formData.productCode}
-                  onChange={(e) =>
-                    setFormData({ ...formData, productCode: e.target.value })
-                  }
-                  placeholder="VD: MIENG_1L, NHAN_9999"
-                  disabled={!!editingProduct}
-                />
-                <p className="text-xs text-muted-foreground mt-1">
-                  Mã duy nhất cho sản phẩm này (chữ in hoa, gạch dưới)
-                </p>
-              </div>
-
-              <div>
-                <Label htmlFor="category">Danh mục</Label>
-                <Select
-                  value={formData.category}
-                  onValueChange={(value) =>
-                    setFormData({ ...formData, category: value })
-                  }
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Chọn danh mục" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="">Không có</SelectItem>
-                    {CATEGORIES.map((cat) => (
-                      <SelectItem key={cat.value} value={cat.value}>
-                        {cat.label}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
+            <div>
+              <Label htmlFor="productCode">
+                Mã sản phẩm <span className="text-destructive">*</span>
+              </Label>
+              <Input
+                id="productCode"
+                value={formData.productCode}
+                onChange={(e) =>
+                  setFormData({ ...formData, productCode: e.target.value })
+                }
+                placeholder="VD: MIENG_1L, NHAN_9999"
+                disabled={!!editingProduct}
+              />
+              <p className="text-xs text-muted-foreground mt-1">
+                Mã duy nhất cho sản phẩm này (chữ in hoa, gạch dưới)
+              </p>
             </div>
 
             <div>

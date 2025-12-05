@@ -16,7 +16,6 @@ import {
   formatVietnameseDate,
   calculatePercentChange,
 } from "@/lib/utils";
-import { PRODUCT_TYPES } from "@/lib/constants";
 import {
   usePortfolio,
   useUpdatePortfolioEntry,
@@ -26,14 +25,6 @@ import { useCurrentPrices } from "@/lib/queries/use-current-prices";
 import type { PortfolioEntry } from "@/lib/types";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-
-/**
- * Get user-friendly label for product type
- */
-function getProductTypeLabel(productType: string): string {
-  const product = PRODUCT_TYPES.find((p) => p.value === productType);
-  return product?.label || productType;
-}
 
 interface PortfolioTableProps {
   onEdit?: (entry: PortfolioEntry) => void;
@@ -49,7 +40,7 @@ export function PortfolioTable({ onEdit }: PortfolioTableProps) {
   const [soldAt, setSoldAt] = useState(() => {
     const now = new Date();
     const localDateTime = new Date(
-      now.getTime() - now.getTimezoneOffset() * 60000,
+      now.getTime() - now.getTimezoneOffset() * 60000
     );
     return localDateTime.toISOString().slice(0, 16);
   });
@@ -59,7 +50,7 @@ export function PortfolioTable({ onEdit }: PortfolioTableProps) {
   const currentPriceMap = new Map<string, number>();
   if (currentPrices?.data) {
     currentPrices.data.forEach((price) => {
-      const key = `${price.retailer}-${price.province}-${price.product_type}`;
+      const key = `${price.retailer}-${price.province}-${price.product_name}`;
       currentPriceMap.set(key, Number(price.buy_price));
     });
   }
@@ -80,7 +71,7 @@ export function PortfolioTable({ onEdit }: PortfolioTableProps) {
       setSoldAt(() => {
         const now = new Date();
         const localDateTime = new Date(
-          now.getTime() - now.getTimezoneOffset() * 60000,
+          now.getTime() - now.getTimezoneOffset() * 60000
         );
         return localDateTime.toISOString().slice(0, 16);
       });
@@ -108,7 +99,7 @@ export function PortfolioTable({ onEdit }: PortfolioTableProps) {
     }
 
     // Not sold - use current price
-    const key = `${entry.retailer}-${entry.province || ""}-${entry.product_type}`;
+    const key = `${entry.retailer}-${entry.province || ""}-${entry.productName}`;
     const currentPrice = currentPriceMap.get(key);
 
     if (currentPrice) {
@@ -168,7 +159,7 @@ export function PortfolioTable({ onEdit }: PortfolioTableProps) {
             <thead>
               <tr className="border-b">
                 <th className="pb-3 px-4 text-left font-semibold">Nhà Bán</th>
-                <th className="pb-3 px-4 text-left font-semibold">Loại Vàng</th>
+                <th className="pb-3 px-4 text-left font-semibold">Sản Phẩm</th>
                 <th className="pb-3 px-4 text-left font-semibold">Số Lượng</th>
                 <th className="pb-3 px-4 text-right font-semibold">Giá Mua</th>
                 <th className="pb-3 px-4 text-right font-semibold">Giá Bán</th>
@@ -192,7 +183,7 @@ export function PortfolioTable({ onEdit }: PortfolioTableProps) {
                 const profitLoss = calculateProfitLoss(entry);
                 const profitLossPercent = calculatePercentChange(
                   Number(entry.amount) * Number(entry.buy_price),
-                  calculateEntryValue(entry),
+                  calculateEntryValue(entry)
                 );
                 const isSold = !!entry.sold_at;
 
@@ -204,7 +195,7 @@ export function PortfolioTable({ onEdit }: PortfolioTableProps) {
                     <td className="py-4 px-4 font-medium">{entry.retailer}</td>
                     <td className="py-4 px-4">
                       <Badge variant="outline" className="text-xs">
-                        {getProductTypeLabel(entry.product_type)}
+                        {entry.productName}
                       </Badge>
                     </td>
                     <td className="py-4 px-4 text-sm">{entry.amount} chỉ</td>
@@ -250,14 +241,14 @@ export function PortfolioTable({ onEdit }: PortfolioTableProps) {
                     <td className="py-4 px-4 text-sm text-muted-foreground">
                       {formatVietnameseDate(
                         entry.bought_at,
-                        "dd/MM/yyyy HH:mm",
+                        "dd/MM/yyyy HH:mm"
                       )}
                     </td>
                     <td className="py-4 px-4 text-sm text-muted-foreground">
                       {entry.sold_at
                         ? formatVietnameseDate(
                             entry.sold_at,
-                            "dd/MM/yyyy HH:mm",
+                            "dd/MM/yyyy HH:mm"
                           )
                         : "-"}
                     </td>

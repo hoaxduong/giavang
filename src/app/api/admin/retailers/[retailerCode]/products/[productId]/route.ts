@@ -7,7 +7,7 @@ import { z } from "zod";
 const updateProductSchema = z.object({
   productCode: z.string().min(1).max(100).optional(),
   productName: z.string().min(1).max(200).optional(),
-  category: z.string().min(1).max(50).nullable().optional(),
+
   description: z.string().nullable().optional(),
   sortOrder: z.number().int().min(0).optional(),
   isEnabled: z.boolean().optional(),
@@ -35,10 +35,7 @@ export async function GET(
       .single();
 
     if (error || !data) {
-      return NextResponse.json(
-        { error: "Product not found" },
-        { status: 404 }
-      );
+      return NextResponse.json({ error: "Product not found" }, { status: 404 });
     }
 
     return NextResponse.json({
@@ -72,9 +69,7 @@ export async function PUT(
     if (validated.productName !== undefined) {
       updateData.product_name = validated.productName;
     }
-    if (validated.category !== undefined) {
-      updateData.category = validated.category;
-    }
+
     if (validated.description !== undefined) {
       updateData.description = validated.description;
     }

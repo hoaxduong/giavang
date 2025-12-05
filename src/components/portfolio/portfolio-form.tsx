@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useMemo } from "react";
 import { useForm, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Button } from "@/components/ui/button";
@@ -20,7 +20,8 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { RETAILERS, PRODUCT_TYPES, PROVINCES } from "@/lib/constants";
+import { RETAILERS, PROVINCES } from "@/lib/constants";
+import { useCurrentPrices } from "@/lib/queries/use-current-prices";
 import {
   useCreatePortfolioEntry,
   useUpdatePortfolioEntry,
@@ -48,18 +49,27 @@ export function PortfolioForm({
 
   const createMutation = useCreatePortfolioEntry();
   const updateMutation = useUpdatePortfolioEntry();
+  const { data: currentPrices } = useCurrentPrices();
+
+  const availableProducts = useMemo(() => {
+    if (!currentPrices?.data) return [];
+    const names = new Set(
+      currentPrices.data.map((p) => p.product_name).filter(Boolean)
+    );
+    return Array.from(names).sort() as string[];
+  }, [currentPrices]);
 
   const getDefaultValues = () => {
     if (entry) {
       // Convert ISO string to datetime-local format
       const boughtAtDate = new Date(entry.bought_at);
       const localDateTime = new Date(
-        boughtAtDate.getTime() - boughtAtDate.getTimezoneOffset() * 60000,
+        boughtAtDate.getTime() - boughtAtDate.getTimezoneOffset() * 60000
       );
       return {
         amount: entry.amount,
         retailer: entry.retailer,
-        product_type: entry.product_type,
+        productName: entry.productName,
         province: entry.province || null,
         bought_at: localDateTime.toISOString().slice(0, 16),
       };
@@ -68,12 +78,12 @@ export function PortfolioForm({
     // Default to now, formatted for datetime-local input
     const now = new Date();
     const localDateTime = new Date(
-      now.getTime() - now.getTimezoneOffset() * 60000,
+      now.getTime() - now.getTimezoneOffset() * 60000
     );
     return {
       amount: 0,
       retailer: "" as any,
-      product_type: "" as any,
+      productName: "" as any,
       province: null,
       bought_at: localDateTime.toISOString().slice(0, 16),
     };
@@ -108,7 +118,7 @@ export function PortfolioForm({
           id: entry.id,
           amount: data.amount,
           retailer: data.retailer,
-          product_type: data.product_type,
+          productName: data.productName,
           province: data.province || null,
           bought_at: boughtAtISO,
         });
@@ -117,7 +127,7 @@ export function PortfolioForm({
         await createMutation.mutateAsync({
           amount: data.amount,
           retailer: data.retailer,
-          product_type: data.product_type,
+          productName: data.productName,
           province: data.province || null,
           bought_at: boughtAtISO,
         });
@@ -127,7 +137,7 @@ export function PortfolioForm({
     } catch (error) {
       console.error(
         `Failed to ${isEditing ? "update" : "create"} portfolio entry:`,
-        error,
+        error
       );
     }
   };
@@ -183,28 +193,28 @@ export function PortfolioForm({
         </div>
 
         <div className="space-y-2">
-          <Label htmlFor="productType">Loại Vàng *</Label>
+          <Label htmlFor="productName">Sản Phẩm *</Label>
           <Controller
-            name="product_type"
+            name="productName"
             control={control}
             render={({ field }) => (
               <Select value={field.value || ""} onValueChange={field.onChange}>
-                <SelectTrigger id="productType">
-                  <SelectValue placeholder="Chọn loại vàng" />
+                <SelectTrigger id="productName">
+                  <SelectValue placeholder="Chọn sản phẩm" />
                 </SelectTrigger>
                 <SelectContent>
-                  {PRODUCT_TYPES.map((type) => (
-                    <SelectItem key={type.value} value={type.value}>
-                      {type.label}
+                  {availableProducts.map((prod) => (
+                    <SelectItem key={prod} value={prod}>
+                      {prod}
                     </SelectItem>
                   ))}
                 </SelectContent>
               </Select>
             )}
           />
-          {errors.product_type && (
+          {errors.productName && (
             <p className="text-sm text-destructive">
-              {errors.product_type.message}
+              {errors.productName.message}
             </p>
           )}
         </div>

@@ -16,10 +16,8 @@ import {
 import { formatCurrency, calculatePercentChange, cn } from "@/lib/utils";
 import {
   RETAILERS,
-  PRODUCT_TYPES,
   PROVINCES,
   type Retailer,
-  type ProductType,
   type Province,
 } from "@/lib/constants";
 import { useCurrentPrices } from "@/lib/queries/use-current-prices";
@@ -32,16 +30,8 @@ interface TransactionRow {
   goldAmount: number;
   buyPrice: number;
   retailer: Retailer | "";
-  productType: ProductType | "";
+  productName: string;
   province: Province | "";
-}
-
-/**
- * Get product type label
- */
-function getProductTypeLabel(productType: string): string {
-  const product = PRODUCT_TYPES.find((p) => p.value === productType);
-  return product?.label || productType;
 }
 
 export function GoldCostCalculator() {
@@ -54,11 +44,19 @@ export function GoldCostCalculator() {
     const map = new Map<string, number>();
     if (currentPrices?.data) {
       currentPrices.data.forEach((price) => {
-        const key = `${price.retailer}-${price.province || ""}-${price.product_type}`;
+        const key = `${price.retailer}-${price.province || ""}-${price.product_name}`;
         map.set(key, Number(price.buy_price));
       });
     }
     return map;
+  }, [currentPrices]);
+
+  const availableProducts = useMemo(() => {
+    if (!currentPrices?.data) return [];
+    const names = new Set(
+      currentPrices.data.map((p) => p.product_name).filter(Boolean)
+    );
+    return Array.from(names).sort() as string[];
   }, [currentPrices]);
 
   /**
@@ -70,7 +68,7 @@ export function GoldCostCalculator() {
       goldAmount: 0,
       buyPrice: 0,
       retailer: "",
-      productType: "",
+      productName: "",
       province: "",
     };
     setTransactions([...transactions, newTransaction]);
@@ -89,10 +87,10 @@ export function GoldCostCalculator() {
   const updateTransaction = (
     id: string,
     field: keyof TransactionRow,
-    value: any,
+    value: any
   ) => {
     setTransactions(
-      transactions.map((tx) => (tx.id === id ? { ...tx, [field]: value } : tx)),
+      transactions.map((tx) => (tx.id === id ? { ...tx, [field]: value } : tx))
     );
   };
 
@@ -102,10 +100,10 @@ export function GoldCostCalculator() {
   const getCurrentPrice = (
     retailer: Retailer | "",
     province: Province | "",
-    productType: ProductType | "",
+    productName: string
   ): number => {
-    if (!retailer || !productType) return 0;
-    const key = `${retailer}-${province || ""}-${productType}`;
+    if (!retailer || !productName) return 0;
+    const key = `${retailer}-${province || ""}-${productName}`;
     return currentPriceMap.get(key) || 0;
   };
 
@@ -116,7 +114,7 @@ export function GoldCostCalculator() {
     const currentPrice = getCurrentPrice(
       tx.retailer,
       tx.province,
-      tx.productType,
+      tx.productName
     );
     return (tx.goldAmount || 0) * currentPrice;
   };
@@ -136,21 +134,21 @@ export function GoldCostCalculator() {
   const calculationResults = useMemo(() => {
     const totalGold = transactions.reduce(
       (sum, tx) => sum + (tx.goldAmount || 0),
-      0,
+      0
     );
     const totalInvested = transactions.reduce(
       (sum, tx) => sum + (tx.goldAmount || 0) * (tx.buyPrice || 0),
-      0,
+      0
     );
     const averageCost = totalGold > 0 ? totalInvested / totalGold : 0;
     const estimatedRevenue = transactions.reduce(
       (sum, tx) => sum + calculateCurrentValue(tx),
-      0,
+      0
     );
     const profitLoss = estimatedRevenue - totalInvested;
     const profitLossPercent = calculatePercentChange(
       totalInvested,
-      estimatedRevenue,
+      estimatedRevenue
     );
 
     return {
@@ -203,7 +201,7 @@ export function GoldCostCalculator() {
                       Tỉnh/TP
                     </th>
                     <th className="pb-2 px-2 text-left font-semibold text-xs">
-                      Loại Vàng
+                      Sản Phẩm
                     </th>
                     <th className="pb-2 px-2 text-right font-semibold text-xs">
                       Vốn
@@ -227,11 +225,11 @@ export function GoldCostCalculator() {
                     const currentPrice = getCurrentPrice(
                       tx.retailer,
                       tx.province,
-                      tx.productType,
+                      tx.productName
                     );
                     const invested = calculateTransactionTotal(
                       tx.goldAmount,
-                      tx.buyPrice,
+                      tx.buyPrice
                     );
                     const currentValue = calculateCurrentValue(tx);
                     const profitLoss = calculateTransactionProfitLoss(tx);
@@ -255,7 +253,7 @@ export function GoldCostCalculator() {
                               updateTransaction(
                                 tx.id,
                                 "goldAmount",
-                                parseFloat(e.target.value) || 0,
+                                parseFloat(e.target.value) || 0
                               )
                             }
                             className="w-24 text-sm"
@@ -272,7 +270,7 @@ export function GoldCostCalculator() {
                               updateTransaction(
                                 tx.id,
                                 "buyPrice",
-                                parseInt(e.target.value) || 0,
+                                parseInt(e.target.value) || 0
                               )
                             }
                             className="w-32 text-sm"
@@ -286,7 +284,7 @@ export function GoldCostCalculator() {
                               updateTransaction(
                                 tx.id,
                                 "retailer",
-                                value as Retailer,
+                                value as Retailer
                               )
                             }
                           >
@@ -309,7 +307,7 @@ export function GoldCostCalculator() {
                               updateTransaction(
                                 tx.id,
                                 "province",
-                                value as Province,
+                                value as Province
                               )
                             }
                           >
@@ -327,25 +325,18 @@ export function GoldCostCalculator() {
                         </td>
                         <td className="py-3 px-2">
                           <Select
-                            value={tx.productType}
+                            value={tx.productName}
                             onValueChange={(value) =>
-                              updateTransaction(
-                                tx.id,
-                                "productType",
-                                value as ProductType,
-                              )
+                              updateTransaction(tx.id, "productName", value)
                             }
                           >
                             <SelectTrigger className="w-32 text-sm">
                               <SelectValue placeholder="Chọn" />
                             </SelectTrigger>
                             <SelectContent>
-                              {PRODUCT_TYPES.map((product) => (
-                                <SelectItem
-                                  key={product.value}
-                                  value={product.value}
-                                >
-                                  {product.label}
+                              {availableProducts.map((prod) => (
+                                <SelectItem key={prod} value={prod}>
+                                  {prod}
                                 </SelectItem>
                               ))}
                             </SelectContent>
@@ -392,7 +383,7 @@ export function GoldCostCalculator() {
                                     ? "text-green-600"
                                     : profitLoss < 0
                                       ? "text-red-600"
-                                      : "text-muted-foreground",
+                                      : "text-muted-foreground"
                                 )}
                               >
                                 {profitLossPercent > 0 ? "+" : ""}
@@ -497,7 +488,7 @@ export function GoldCostCalculator() {
                       ? "text-green-600"
                       : calculationResults.profitLoss < 0
                         ? "text-red-600"
-                        : "text-muted-foreground",
+                        : "text-muted-foreground"
                   )}
                 >
                   {calculationResults.profitLossPercent > 0 ? "+" : ""}
@@ -563,7 +554,7 @@ export function GoldCostCalculator() {
                         ? "text-green-600"
                         : calculationResults.profitLoss < 0
                           ? "text-red-600"
-                          : "text-muted-foreground",
+                          : "text-muted-foreground"
                     )}
                   >
                     {formatCurrency(calculationResults.profitLoss)} (

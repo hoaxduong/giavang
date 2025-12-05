@@ -11,7 +11,7 @@ import { REFRESH_INTERVAL } from "../constants";
  * Features:
  * - Auto-refetches every 5 minutes
  * - Caches data for 5 minutes
- * - Supports filtering by retailer, province, product type
+ * - Supports filtering by retailer, province
  * - Prefetches related data
  */
 export function useCurrentPrices(filters?: PriceFilters) {
@@ -24,8 +24,6 @@ export function useCurrentPrices(filters?: PriceFilters) {
 
       if (filters?.retailer) params.append("retailer", filters.retailer);
       if (filters?.province) params.append("province", filters.province);
-      if (filters?.productType)
-        params.append("productType", filters.productType);
 
       const url = `/api/prices/current${params.toString() ? `?${params}` : ""}`;
       const response = await fetch(url);

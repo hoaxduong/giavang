@@ -1,10 +1,9 @@
 import { SjcCrawler } from "./sjc-crawler";
 import { request } from "undici";
 import type { PriceData } from "@/lib/types";
-import type { TypeMapping, Retailer, ProductType, Province } from "./types";
+import type { TypeMapping, Retailer, Province } from "./types";
 import {
   Retailer as RetailerLiteral,
-  ProductType as ProductTypeLiteral,
   Province as ProvinceLiteral,
 } from "@/lib/constants";
 
@@ -81,8 +80,6 @@ export class SjcHistoricalCrawler extends SjcCrawler {
     typeCode: string,
     days: number
   ): Promise<HistoricalCrawlerResult> {
-    const startTime = Date.now();
-
     try {
       // Validate days parameter
       if (days < 1 || days > 365) {
@@ -250,7 +247,6 @@ export class SjcHistoricalCrawler extends SjcCrawler {
     for (const item of matchingItems) {
       try {
         // Map branch name to province code
-        const provinceCode = this.mapBranchToProvince(item.BranchName);
 
         // Extract prices
         const buyPrice = item.BuyValue;
@@ -318,9 +314,8 @@ export class SjcHistoricalCrawler extends SjcCrawler {
   convertDailyToSnapshot(
     dailyPrice: SjcDailyPriceData,
     mapping: TypeMapping,
-    retailer: Retailer,
-    province: Province,
-    productType: ProductType
+    _retailer: Retailer,
+    _province: Province
   ): PriceData {
     // Map branch name to province code (using the same logic as SjcCrawler)
     const provinceCode = this.mapBranchToProvince(dailyPrice.branchName);
@@ -338,7 +333,8 @@ export class SjcHistoricalCrawler extends SjcCrawler {
       createdAt: dailyPrice.timestamp,
       retailer: mapping.retailerCode as unknown as RetailerLiteral,
       province: provinceCode as unknown as ProvinceLiteral,
-      productType: mapping.productTypeCode as unknown as ProductTypeLiteral,
+      productName: mapping.label,
+      retailerProductId: mapping.retailerProductId,
       buyPrice: buyPriceInChi,
       sellPrice: sellPriceInChi,
       unit: "VND/chi",

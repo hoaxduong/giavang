@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { RETAILERS, PRODUCT_TYPES, PROVINCES } from "../constants";
+import { RETAILERS, PROVINCES } from "../constants";
 
 export const portfolioFormSchema = z.object({
   amount: z
@@ -7,9 +7,7 @@ export const portfolioFormSchema = z.object({
     .positive("Số lượng phải lớn hơn 0")
     .min(0.001, "Số lượng phải lớn hơn 0"),
   retailer: z.enum(RETAILERS as unknown as [string, ...string[]]),
-  product_type: z.enum(
-    PRODUCT_TYPES.map((t) => t.value) as unknown as [string, ...string[]],
-  ),
+  productName: z.string().min(1, "Tên sản phẩm là bắt buộc"),
   province: z
     .union([
       z.enum(PROVINCES as unknown as [string, ...string[]]),

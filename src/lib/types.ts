@@ -1,4 +1,4 @@
-import type { ProductType, Retailer, Province, PriceTrend } from "./constants";
+import type { Retailer, Province, PriceTrend } from "./constants";
 
 // Retailer Product (retailer-specific product catalog)
 export interface RetailerProduct {
@@ -6,7 +6,6 @@ export interface RetailerProduct {
   retailerCode: string;
   productCode: string; // Unique within retailer
   productName: string; // Display name
-  category?: string | null; // vang_mieng, vang_nhan, nu_trang, etc.
   description?: string | null;
   isEnabled: boolean;
   sortOrder: number;
@@ -20,7 +19,6 @@ export interface DbRetailerProduct {
   retailer_code: string;
   product_code: string;
   product_name: string;
-  category?: string | null;
   description?: string | null;
   is_enabled: boolean;
   sort_order: number;
@@ -35,7 +33,6 @@ export interface PriceSnapshot {
   created_at: string;
   retailer: string;
   province: string;
-  product_type: string;
   product_name?: string | null; // Specific product name from retailer
   retailer_product_id?: string | null; // Link to retailer_products table
   buy_price: number;
@@ -50,7 +47,6 @@ export interface PriceData {
   createdAt: string;
   retailer: Retailer;
   province: Province;
-  productType: ProductType;
   productName?: string; // Specific product name (e.g., "Vàng miếng SJC theo lượng")
   retailerProductId?: string; // Link to retailer_products table
   buyPrice: number;
@@ -78,7 +74,6 @@ export interface HistoricalPricesResponse {
 export interface PriceFilters {
   retailer?: Retailer;
   province?: Province;
-  productType?: ProductType;
 }
 
 export interface HistoricalFilters extends PriceFilters {
@@ -100,7 +95,6 @@ export interface ChartDataPoint {
 export interface RawPriceData {
   retailer: string;
   province: string;
-  product_type: string;
   buy_price: number;
   sell_price: number;
   unit?: string;
@@ -110,7 +104,6 @@ export interface RawPriceData {
 
 // Price comparison types
 export interface PriceComparison {
-  productType: ProductType;
   prices: Array<{
     retailer: Retailer;
     province: Province;
@@ -143,7 +136,7 @@ export interface PortfolioEntry {
   user_id: string;
   amount: number;
   retailer: Retailer;
-  product_type: ProductType;
+  productName: string; // Product name (replaces category)
   province?: Province | null;
   bought_at: string;
   sold_at?: string | null;
