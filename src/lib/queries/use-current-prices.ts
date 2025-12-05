@@ -24,6 +24,7 @@ export function useCurrentPrices(filters?: PriceFilters) {
 
       if (filters?.retailer) params.append("retailer", filters.retailer);
       if (filters?.province) params.append("province", filters.province);
+      if (filters?.date) params.append("date", filters.date.toISOString()); // Or format as YYYY-MM-DD
 
       const url = `/api/prices/current${params.toString() ? `?${params}` : ""}`;
       const response = await fetch(url);

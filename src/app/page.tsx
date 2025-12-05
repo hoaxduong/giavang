@@ -12,6 +12,7 @@ import { RefreshIndicator } from "@/components/shared/refresh-indicator";
 import { PriceLineChart } from "@/components/charts/price-line-chart";
 import { ChartTimeFilter } from "@/components/charts/chart-time-filter";
 import { RetailerProductFilter } from "@/components/prices/retailer-product-filter";
+// DatePicker import is now unused in page.tsx
 import { useRetailerProducts } from "@/lib/queries/use-retailer-products";
 import { useCurrentPrices } from "@/lib/queries/use-current-prices";
 import { useHistoricalPrices } from "@/lib/queries/use-historical-prices";
@@ -29,6 +30,9 @@ export default function Home() {
   const [chartRetailerProduct, setChartRetailerProduct] = useState<
     string | undefined
   >(undefined);
+  const [selectedDate, setSelectedDate] = useState<Date | undefined>(
+    new Date()
+  );
 
   const { data: retailerProducts } = useRetailerProducts(chartRetailer);
 
@@ -54,6 +58,7 @@ export default function Home() {
   const { data, isLoading } = useCurrentPrices({
     province: undefined,
     retailer: undefined,
+    date: selectedDate,
   });
 
   const { startDate, endDate } = useMemo(() => {
@@ -115,7 +120,12 @@ export default function Home() {
           <WorldGoldPrice />
         </div>
 
-        <PriceTable data={data?.data || []} isLoading={isLoading} />
+        <PriceTable
+          data={data?.data || []}
+          isLoading={isLoading}
+          date={selectedDate}
+          onDateChange={setSelectedDate}
+        />
 
         <div className="mt-8 mb-8 space-y-4">
           <div className="flex items-center justify-between">

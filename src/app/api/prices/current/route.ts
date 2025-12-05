@@ -24,25 +24,40 @@ export async function GET(request: NextRequest) {
     const supabase = await createClient();
 
     // Calculate start of today in VN time (UTC+7) robustly
-    const now = new Date();
+    // Calculate reference date (either now or user selected date)
+    // We want "current" to mean "latest available at end of reference date"
+    // And "yesterday" to mean "latest available before start of reference date"
+
+    let referenceDate = new Date();
+    const dateParam = searchParams.get("date");
+    if (dateParam) {
+      referenceDate = new Date(dateParam);
+    }
+
     const formatter = new Intl.DateTimeFormat("en-US", {
       timeZone: "Asia/Ho_Chi_Minh",
       year: "numeric",
       month: "2-digit",
       day: "2-digit",
     });
-    const parts = formatter.formatToParts(now);
+
+    // Get parts for reference date in VN time
+    const parts = formatter.formatToParts(referenceDate);
     const year = parts.find((p) => p.type === "year")?.value;
     const month = parts.find((p) => p.type === "month")?.value;
     const day = parts.find((p) => p.type === "day")?.value;
 
-    // Construct start of today string in VN offset
-    const startOfTodayVnIso = `${year}-${month}-${day}T00:00:00.000+07:00`;
-    // Convert to Date object (which will be in UTC or local, but represent the correct instant)
-    const startOfTodayUtc = new Date(startOfTodayVnIso);
+    // Start of the reference day (00:00:00 VN time) - cutoff for yesterday data
+    const startOfCurrentDayVnIso = `${year}-${month}-${day}T00:00:00.000+07:00`;
+    const startOfCurrentDayUtc = new Date(startOfCurrentDayVnIso);
+
+    // End of the reference day (start of next day) - cutoff for current data
+    // If date is today, this will be start of tomorrow, effectively showing all data from today
+    const startOfNextDayUtc = new Date(startOfCurrentDayUtc);
+    startOfNextDayUtc.setDate(startOfNextDayUtc.getDate() + 1);
 
     // Helper to build query
-    const buildQuery = (maxDate?: Date) => {
+    const buildQuery = () => {
       let query = supabase
         .from("price_snapshots")
         .select(
@@ -59,9 +74,8 @@ export async function GET(request: NextRequest) {
       if (province) {
         query = query.eq("province", province);
       }
-      if (maxDate) {
-        query = query.lt("created_at", maxDate.toISOString());
-      }
+      // Always limit to before the end of the reference day
+      query = query.lt("created_at", startOfNextDayUtc.toISOString());
 
       return query;
     };
@@ -120,7 +134,7 @@ export async function GET(request: NextRequest) {
           )
           .eq("retailer_products.is_enabled", true)
           .eq("retailer_products.retailer_code", retailerCode)
-          .lt("created_at", startOfTodayUtc.toISOString())
+          .lt("created_at", startOfCurrentDayUtc.toISOString())
           .in("retailer_product_id", ids)
           .order("created_at", { ascending: false })
           .limit(limit);

@@ -7,12 +7,21 @@ import { formatCurrency, formatRelativeTime } from "@/lib/utils";
 
 import type { EnrichedPriceSnapshot } from "@/lib/types";
 
+import { DatePicker } from "@/components/ui/date-picker";
+
 interface PriceTableProps {
   data: EnrichedPriceSnapshot[];
   isLoading: boolean;
+  date?: Date;
+  onDateChange?: (date?: Date) => void;
 }
 
-export function PriceTable({ data, isLoading }: PriceTableProps) {
+export function PriceTable({
+  data,
+  isLoading,
+  date,
+  onDateChange,
+}: PriceTableProps) {
   if (isLoading) {
     return (
       <Card>
@@ -30,15 +39,18 @@ export function PriceTable({ data, isLoading }: PriceTableProps) {
     );
   }
 
+  // Handle empty data but allow changing date back
   if (!data || data.length === 0) {
     return (
       <Card>
-        <CardHeader>
-          <CardTitle>Giá Vàng Hiện Tại</CardTitle>
+        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+          <CardTitle className="text-xl font-bold">Giá Vàng</CardTitle>
+          {onDateChange && <DatePicker date={date} setDate={onDateChange} />}
         </CardHeader>
         <CardContent>
           <p className="text-center text-muted-foreground py-8">
             Không có dữ liệu giá vàng
+            {date && " cho ngày này"}
           </p>
         </CardContent>
       </Card>
@@ -47,10 +59,16 @@ export function PriceTable({ data, isLoading }: PriceTableProps) {
 
   return (
     <Card>
-      <CardHeader>
-        <CardTitle>Giá Vàng Hiện Tại ({data.length} mục)</CardTitle>
+      <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+        <div className="space-y-1">
+          <CardTitle className="text-xl font-bold">Giá Vàng Hiện Tại</CardTitle>
+          <p className="text-sm text-muted-foreground">
+            {data.length} địa điểm/sản phẩm được cập nhật
+          </p>
+        </div>
+        {onDateChange && <DatePicker date={date} setDate={onDateChange} />}
       </CardHeader>
-      <CardContent>
+      <CardContent className="pt-6">
         <div className="overflow-x-auto">
           <table className="w-full">
             <thead>
@@ -81,7 +99,7 @@ export function PriceTable({ data, isLoading }: PriceTableProps) {
                       {price.product_name || "Vàng SJC"}
                     </td>
                     <td className="py-4 px-4 text-sm text-muted-foreground">
-                      {price.province}
+                      {price.province || "Toàn quốc"}
                     </td>
                     <td className="py-4 px-4 text-right font-mono text-sm">
                       <div className="flex flex-col items-end">

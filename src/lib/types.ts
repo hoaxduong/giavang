@@ -85,6 +85,7 @@ export interface PriceFilters {
   retailer?: Retailer;
   province?: Province | string;
   retailerProductId?: string;
+  date?: Date;
 }
 
 export interface HistoricalFilters extends PriceFilters {

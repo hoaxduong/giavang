@@ -30,7 +30,7 @@ export function ProvinceFilter({ value, onValueChange }: ProvinceFilterProps) {
       </SelectTrigger>
       <SelectContent>
         <SelectItem value="all">Tất cả tỉnh/TP</SelectItem>
-        <SelectItem value="__empty__">Khác (Không xác định)</SelectItem>
+        <SelectItem value="__empty__">Toàn quốc</SelectItem>
         {PROVINCES.map((province) => (
           <SelectItem key={province} value={province}>
             {province}
