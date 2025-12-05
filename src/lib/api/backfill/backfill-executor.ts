@@ -458,18 +458,24 @@ export class BackfillExecutor {
         .eq("code", mapping.retailerCode)
         .eq("is_enabled", true)
         .single(),
-      supabase
-        .from("provinces")
-        .select("*")
-        .eq("code", mapping.provinceCode || "TP. Hồ Chí Minh")
-        .eq("is_enabled", true)
-        .single(),
+      mapping.provinceCode
+        ? supabase
+            .from("provinces")
+            .select("*")
+            .eq("code", mapping.provinceCode)
+            .eq("is_enabled", true)
+            .single()
+        : Promise.resolve({ data: null, error: null }),
     ]);
 
     if (retailerResult.error || !retailerResult.data) {
       throw new Error(`Retailer ${mapping.retailerCode} not found or disabled`);
     }
-    if (provinceResult.error || !provinceResult.data) {
+    // Only throw if province code was specifically requested but not found
+    if (
+      mapping.provinceCode &&
+      (provinceResult.error || !provinceResult.data)
+    ) {
       throw new Error(`Province ${mapping.provinceCode} not found or disabled`);
     }
 
@@ -481,13 +487,21 @@ export class BackfillExecutor {
       sortOrder: retailerResult.data.sort_order,
     };
 
-    const province: Province = {
-      id: provinceResult.data.id,
-      code: provinceResult.data.code,
-      name: provinceResult.data.name,
-      isEnabled: provinceResult.data.is_enabled,
-      sortOrder: provinceResult.data.sort_order,
-    };
+    const province: Province = provinceResult.data
+      ? {
+          id: provinceResult.data.id,
+          code: provinceResult.data.code,
+          name: provinceResult.data.name,
+          isEnabled: provinceResult.data.is_enabled,
+          sortOrder: provinceResult.data.sort_order,
+        }
+      : {
+          id: "",
+          code: "",
+          name: "",
+          isEnabled: true,
+          sortOrder: 0,
+        };
 
     // Convert each daily price to snapshot
     // Use type assertion since we know the crawler type matches the daily price type

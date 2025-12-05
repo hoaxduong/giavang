@@ -59,7 +59,7 @@ export async function GET(request: NextRequest) {
     } else if (retailer) {
       query = query.eq("retailer_products.retailer_code", retailer);
     }
-    if (province) {
+    if (province !== null) {
       query = query.eq("province", province);
     }
 

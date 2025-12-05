@@ -20,10 +20,9 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 
 export default function Home() {
-  // Chart-specific filters
-  const [chartProvince, setChartProvince] = useState<Province | undefined>(
-    "TP. Hồ Chí Minh"
-  );
+  const [chartProvince, setChartProvince] = useState<
+    Province | string | undefined
+  >("");
   const [chartRetailer, setChartRetailer] = useState<Retailer | undefined>(
     "SJC"
   );

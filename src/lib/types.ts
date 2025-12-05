@@ -45,6 +45,10 @@ export interface PriceSnapshot {
 export interface EnrichedPriceSnapshot extends PriceSnapshot {
   product_name?: string | null;
   retailer: string;
+  buyChange?: number;
+  buyChangePercent?: number;
+  sellChange?: number;
+  sellChangePercent?: number;
 }
 
 // Application types (normalized)
@@ -79,7 +83,7 @@ export interface HistoricalPricesResponse {
 // Filter types
 export interface PriceFilters {
   retailer?: Retailer;
-  province?: Province;
+  province?: Province | string;
   retailerProductId?: string;
 }
 

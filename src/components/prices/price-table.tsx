@@ -84,13 +84,51 @@ export function PriceTable({ data, isLoading }: PriceTableProps) {
                       {price.province}
                     </td>
                     <td className="py-4 px-4 text-right font-mono text-sm">
-                      <div className="flex items-center justify-end gap-1">
-                        {formatCurrency(Number(price.buy_price))}
+                      <div className="flex flex-col items-end">
+                        <div className="flex items-center justify-end gap-1">
+                          {formatCurrency(Number(price.buy_price))}
+                        </div>
+                        <div
+                          className={`text-xs flex items-center gap-1 ${
+                            (price.buyChange || 0) > 0
+                              ? "text-green-600"
+                              : (price.buyChange || 0) < 0
+                                ? "text-red-600"
+                                : "text-muted-foreground"
+                          }`}
+                        >
+                          <span>
+                            {(price.buyChange || 0) > 0 ? "+" : ""}
+                            {formatCurrency(price.buyChange || 0)}
+                          </span>
+                          <span className="opacity-80">
+                            ({(price.buyChangePercent || 0).toFixed(2)}%)
+                          </span>
+                        </div>
                       </div>
                     </td>
                     <td className="py-4 px-4 text-right font-mono text-sm">
-                      <div className="flex items-center justify-end gap-1">
-                        {formatCurrency(Number(price.sell_price))}
+                      <div className="flex flex-col items-end">
+                        <div className="flex items-center justify-end gap-1">
+                          {formatCurrency(Number(price.sell_price))}
+                        </div>
+                        <div
+                          className={`text-xs flex items-center gap-1 ${
+                            (price.sellChange || 0) > 0
+                              ? "text-green-600"
+                              : (price.sellChange || 0) < 0
+                                ? "text-red-600"
+                                : "text-muted-foreground"
+                          }`}
+                        >
+                          <span>
+                            {(price.sellChange || 0) > 0 ? "+" : ""}
+                            {formatCurrency(price.sellChange || 0)}
+                          </span>
+                          <span className="opacity-80">
+                            ({(price.sellChangePercent || 0).toFixed(2)}%)
+                          </span>
+                        </div>
                       </div>
                     </td>
                     <td className="py-4 px-4 text-right">

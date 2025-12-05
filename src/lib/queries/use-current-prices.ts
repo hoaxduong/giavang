@@ -18,7 +18,7 @@ export function useCurrentPrices(filters?: PriceFilters) {
   const queryClient = useQueryClient();
 
   const query = useQuery({
-    queryKey: ["prices", "current", filters],
+    queryKey: ["prices", "current", "v2", filters],
     queryFn: async () => {
       const params = new URLSearchParams();
 

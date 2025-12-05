@@ -9,7 +9,7 @@ import { useCurrentPrices } from "@/lib/queries/use-current-prices";
 import type { Province, Retailer } from "@/lib/constants";
 
 export function DashboardClient() {
-  const [province, setProvince] = useState<Province | undefined>();
+  const [province, setProvince] = useState<Province | string | undefined>();
   const [retailer, setRetailer] = useState<Retailer | undefined>();
 
   const { data, isLoading } = useCurrentPrices({

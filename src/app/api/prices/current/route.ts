@@ -23,57 +23,176 @@ export async function GET(request: NextRequest) {
 
     const supabase = await createClient();
 
-    // Get the latest price for each retailer/product/province combination
-    // We fetch recent records ordered by created_at DESC, then filter to get
-    // the latest price for each unique combination (regardless of when it was updated)
-    // Using a reasonable limit to balance performance and completeness
-    let query = supabase
-      .from("price_snapshots")
-      .select(
-        "*, retailer_products!inner(product_name, is_enabled, retailer_code)"
-      )
-      .eq("retailer_products.is_enabled", true)
-      .order("created_at", { ascending: false })
-      .limit(5000); // Limit to prevent fetching too many records while ensuring we get all combinations
+    // Calculate start of today in VN time (UTC+7) robustly
+    const now = new Date();
+    const formatter = new Intl.DateTimeFormat("en-US", {
+      timeZone: "Asia/Ho_Chi_Minh",
+      year: "numeric",
+      month: "2-digit",
+      day: "2-digit",
+    });
+    const parts = formatter.formatToParts(now);
+    const year = parts.find((p) => p.type === "year")?.value;
+    const month = parts.find((p) => p.type === "month")?.value;
+    const day = parts.find((p) => p.type === "day")?.value;
 
-    // Apply filters if provided
-    if (retailer) {
-      query = query.eq("retailer_products.retailer_code", retailer);
-    }
-    if (province) {
-      query = query.eq("province", province);
-    }
+    // Construct start of today string in VN offset
+    const startOfTodayVnIso = `${year}-${month}-${day}T00:00:00.000+07:00`;
+    // Convert to Date object (which will be in UTC or local, but represent the correct instant)
+    const startOfTodayUtc = new Date(startOfTodayVnIso);
 
-    const { data: rawData, error } = await query;
+    // Helper to build query
+    const buildQuery = (maxDate?: Date) => {
+      let query = supabase
+        .from("price_snapshots")
+        .select(
+          "*, retailer_products!inner(product_name, is_enabled, retailer_code)"
+        )
+        .eq("retailer_products.is_enabled", true)
+        .order("created_at", { ascending: false })
+        .limit(5000); // Limit to prevent fetching too many records while ensuring we get all combinations
 
-    if (error) {
-      console.error("Database query error:", error);
-      throw error;
-    }
+      // Apply filters if provided
+      if (retailer) {
+        query = query.eq("retailer_products.retailer_code", retailer);
+      }
+      if (province) {
+        query = query.eq("province", province);
+      }
+      if (maxDate) {
+        query = query.lt("created_at", maxDate.toISOString());
+      }
 
-    // Map the joined data to flat structure
-    const data = (rawData || []).map((item) => {
-      const joinedItem = item as PriceSnapshot & {
-        retailer_products: {
-          product_name: string;
-          retailer_code: string;
-        } | null;
-      };
+      return query;
+    };
 
-      return {
-        ...joinedItem,
-        product_name: joinedItem.retailer_products?.product_name || null,
-        retailer: joinedItem.retailer_products?.retailer_code || "unknown",
-      } as EnrichedPriceSnapshot;
+    // Execute current query first
+    const { data: rawCurrentData, error: currentError } = await buildQuery();
+
+    if (currentError) throw currentError;
+
+    // Process raw data
+    const processData = (rawData: unknown[]) =>
+      (rawData || []).map((item) => {
+        const joinedItem = item as PriceSnapshot & {
+          retailer_products: {
+            product_name: string;
+            retailer_code: string;
+          } | null;
+        };
+
+        return {
+          ...joinedItem,
+          product_name: joinedItem.retailer_products?.product_name || null,
+          retailer: joinedItem.retailer_products?.retailer_code || "unknown",
+        } as EnrichedPriceSnapshot;
+      });
+
+    const currentData = getLatestPrices(processData(rawCurrentData));
+
+    // Group product IDs by retailer code to optimize partial fetching
+    // (Avoiding one huge query that might hit limits or timeout)
+    const productsByRetailer: Record<string, string[]> = {};
+    currentData.forEach((p) => {
+      const r = p.retailer;
+      if (!productsByRetailer[r]) productsByRetailer[r] = [];
+      if (p.retailer_product_id)
+        productsByRetailer[r].push(p.retailer_product_id);
     });
 
-    // Get the latest price for each retailer/province/product combination
-    // This ensures we get the most recent price regardless of when it was last updated
-    const latestPrices = getLatestPrices(data);
+    const yesterdayData: EnrichedPriceSnapshot[] = [];
+
+    // Fetch yesterday data for each retailer in parallel
+    const retailerQueries = Object.entries(productsByRetailer).map(
+      async ([retailerCode, ids]) => {
+        if (ids.length === 0) return [];
+
+        // Increase limit per product to ensure we capture the latest record
+        // even if there are many updates in the day.
+        // Assuming max 100 updates per product per day is safe enough coverage
+        // for "finding the latest one".
+        const limit = Math.min(ids.length * 100, 2000);
+
+        const { data, error } = await supabase
+          .from("price_snapshots")
+          .select(
+            "*, retailer_products!inner(product_name, is_enabled, retailer_code)"
+          )
+          .eq("retailer_products.is_enabled", true)
+          .eq("retailer_products.retailer_code", retailerCode)
+          .lt("created_at", startOfTodayUtc.toISOString())
+          .in("retailer_product_id", ids)
+          .order("created_at", { ascending: false })
+          .limit(limit);
+
+        if (error) {
+          console.error(
+            `Error fetching yesterday prices for ${retailerCode}:`,
+            error
+          );
+          return [];
+        }
+
+        return processData(data || []);
+      }
+    );
+
+    const retailerResults = await Promise.all(retailerQueries);
+    retailerResults.forEach((results) => {
+      // We might get multiple rows per product, we only need the latest one (which is first due to sort)
+      // usage of getLatestPrices will handle deduping
+      yesterdayData.push(...results);
+    });
+
+    // Deduplicate to get strictly the single latest price per product
+    const latestYesterdayData = getLatestPrices(yesterdayData);
+
+    // Create map for yesterday's prices for quick lookup
+    const yesterdayMap = new Map<string, EnrichedPriceSnapshot>();
+    latestYesterdayData.forEach((p) => {
+      const uniqueId = p.retailer_product_id || p.product_name || "unknown";
+      const key = `${p.retailer}-${p.province}-${uniqueId}`;
+      yesterdayMap.set(key, p);
+    });
+
+    // Calculate changes
+    const result = currentData.map((price) => {
+      const uniqueId =
+        price.retailer_product_id || price.product_name || "unknown";
+      const key = `${price.retailer}-${price.province}-${uniqueId}`;
+      const yesterdayPrice = yesterdayMap.get(key);
+
+      if (yesterdayPrice) {
+        // Calculate change based on both buy and sell prices
+        const currentBuyVal = Number(price.buy_price);
+        const yesterdayBuyVal = Number(yesterdayPrice.buy_price);
+
+        const buyChange = currentBuyVal - yesterdayBuyVal;
+        const buyChangePercent =
+          yesterdayBuyVal !== 0 ? (buyChange / yesterdayBuyVal) * 100 : 0;
+
+        const currentSellVal = Number(price.sell_price);
+        const yesterdaySellVal = Number(yesterdayPrice.sell_price);
+
+        const sellChange = currentSellVal - yesterdaySellVal;
+        const sellChangePercent =
+          yesterdaySellVal !== 0 ? (sellChange / yesterdaySellVal) * 100 : 0;
+
+        return {
+          ...price,
+          buyChange,
+          buyChangePercent,
+          sellChange,
+          sellChangePercent,
+        };
+      }
+
+      return price;
+    });
 
     return NextResponse.json({
-      data: latestPrices,
-      count: latestPrices.length,
+      data: result,
+      count: result.length,
       timestamp: new Date().toISOString(),
     });
   } catch (error) {
