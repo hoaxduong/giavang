@@ -71,7 +71,7 @@ export function PriceLineChart({
           >
             <CartesianGrid
               strokeDasharray="3 3"
-              stroke="#e5e7eb"
+              stroke="var(--border)"
               strokeWidth={1}
               horizontal={true}
               vertical={false}
@@ -79,13 +79,13 @@ export function PriceLineChart({
             <XAxis
               dataKey="date"
               tickFormatter={formatDate}
-              tick={{ fill: "hsl(var(--foreground))", fontSize: 12 }}
-              stroke="hsl(var(--border))"
+              tick={{ fill: "var(--foreground)", fontSize: 12 }}
+              stroke="var(--border)"
             />
             <YAxis
               tickFormatter={formatPrice}
-              tick={{ fill: "hsl(var(--foreground))", fontSize: 12 }}
-              stroke="hsl(var(--border))"
+              tick={{ fill: "var(--foreground)", fontSize: 12 }}
+              stroke="var(--border)"
               domain={["auto", "auto"]}
             />
             <Tooltip
@@ -98,15 +98,15 @@ export function PriceLineChart({
                 }
               }}
               contentStyle={{
-                backgroundColor: "hsl(var(--popover))",
-                border: "1px solid hsl(var(--border))",
+                backgroundColor: "var(--popover)",
+                border: "1px solid var(--border)",
                 borderRadius: "8px",
-                color: "hsl(var(--popover-foreground))",
+                color: "var(--popover-foreground)",
               }}
             />
             <Legend
               wrapperStyle={{
-                color: "hsl(var(--foreground))",
+                color: "var(--foreground)",
               }}
             />
             <Line
