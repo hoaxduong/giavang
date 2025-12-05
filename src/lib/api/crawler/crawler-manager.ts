@@ -1,6 +1,5 @@
 import { createServiceRoleClient } from "@/lib/supabase/service-role";
 import { priceDataToSnapshot } from "../price-normalizer";
-import { VangTodayCrawler } from "./vang-today-crawler";
 import { SjcCrawler } from "./sjc-crawler";
 import type { BaseCrawler } from "./base-crawler";
 import type { CrawlerConfig, SyncResult, DbCrawlerSource } from "./types";
@@ -154,11 +153,6 @@ export class CrawlerManager {
     };
 
     switch (source.api_type) {
-      case "vang_today": {
-        const crawler = new VangTodayCrawler(config);
-        crawler.setTriggerInfo(triggerType, triggerUserId);
-        return crawler;
-      }
       case "sjc": {
         const crawler = new SjcCrawler(config);
         crawler.setTriggerInfo(triggerType, triggerUserId);

@@ -1,6 +1,5 @@
 import { createServiceRoleClient } from "@/lib/supabase/service-role";
 import { priceDataToSnapshot } from "../price-normalizer";
-import { VangTodayHistoricalCrawler } from "../crawler/vang-today-historical-crawler";
 import { SjcHistoricalCrawler } from "../crawler/sjc-historical-crawler";
 import { RateLimiter } from "./rate-limiter";
 import type {
@@ -33,8 +32,7 @@ export class BackfillExecutor {
   private isPaused: boolean = false;
   private isCancelled: boolean = false;
   private rateLimiter: RateLimiter | null = null;
-  private crawler: VangTodayHistoricalCrawler | SjcHistoricalCrawler | null =
-    null;
+  private crawler: SjcHistoricalCrawler | null = null;
 
   // Progress tracking
   private itemsProcessed: number = 0;
@@ -387,9 +385,6 @@ export class BackfillExecutor {
 
     // Create crawler instance based on source type
     switch (source.api_type) {
-      case "vang_today":
-        this.crawler = new VangTodayHistoricalCrawler(crawlerConfig);
-        break;
       case "sjc":
         this.crawler = new SjcHistoricalCrawler(crawlerConfig);
         break;

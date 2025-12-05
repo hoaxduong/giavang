@@ -46,9 +46,6 @@ export default function Home() {
     let startDate: Date;
 
     switch (timeRange) {
-      case "day":
-        startDate = subDays(endDate, 1);
-        break;
       case "week":
         startDate = subDays(endDate, 7);
         break;
@@ -78,7 +75,7 @@ export default function Home() {
     province: chartProvince,
     startDate,
     endDate,
-    interval: timeRange === "day" ? "hourly" : "daily",
+    interval: "daily",
   });
 
   return (

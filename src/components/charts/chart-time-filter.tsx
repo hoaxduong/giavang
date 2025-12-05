@@ -12,7 +12,6 @@ export function ChartTimeFilter({ value, onChange }: ChartTimeFilterProps) {
   return (
     <Tabs value={value} onValueChange={(val) => onChange(val as TimeRange)}>
       <TabsList>
-        <TabsTrigger value="day">Ngày</TabsTrigger>
         <TabsTrigger value="week">Tuần</TabsTrigger>
         <TabsTrigger value="month">Tháng</TabsTrigger>
         <TabsTrigger value="quarter">3 Tháng</TabsTrigger>

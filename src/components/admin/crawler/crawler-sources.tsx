@@ -81,7 +81,7 @@ export function CrawlerSources() {
   const [formData, setFormData] = useState({
     name: "",
     apiUrl: "",
-    apiType: "vang_today",
+    apiType: "sjc",
     priority: 1,
     rateLimitPerMinute: 60,
     timeoutSeconds: 30,
@@ -334,7 +334,7 @@ export function CrawlerSources() {
     setFormData({
       name: "",
       apiUrl: "",
-      apiType: "vang_today",
+      apiType: "sjc",
       priority: 1,
       rateLimitPerMinute: 60,
       timeoutSeconds: 30,
@@ -616,7 +616,7 @@ export function CrawlerSources() {
                       onChange={(e) =>
                         setFormData({ ...formData, name: e.target.value })
                       }
-                      placeholder="VD: vang.today"
+                      placeholder="VD: SJC, DOJI"
                     />
                   </div>
                   <div>
@@ -627,7 +627,7 @@ export function CrawlerSources() {
                       onChange={(e) =>
                         setFormData({ ...formData, apiType: e.target.value })
                       }
-                      placeholder="VD: vang_today"
+                      placeholder="VD: sjc"
                     />
                   </div>
                 </div>
