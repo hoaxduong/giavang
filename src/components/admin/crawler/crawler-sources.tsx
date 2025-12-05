@@ -105,7 +105,7 @@ export function CrawlerSources() {
   // Type mapping state
   const [isMappingDialogOpen, setIsMappingDialogOpen] = useState(false);
   const [editingMapping, setEditingMapping] = useState<TypeMapping | null>(
-    null,
+    null
   );
   const [mappingFormData, setMappingFormData] = useState({
     externalCode: "",
@@ -131,7 +131,7 @@ export function CrawlerSources() {
     queryFn: async () => {
       if (!editingItem?.id) return [];
       const res = await fetch(
-        `/api/admin/crawler/mappings?sourceId=${editingItem.id}`,
+        `/api/admin/crawler/mappings?sourceId=${editingItem.id}`
       );
       if (!res.ok) throw new Error("Failed to fetch mappings");
       const json = await res.json();
@@ -537,6 +537,10 @@ export function CrawlerSources() {
                     <div className="flex items-center gap-2">
                       <Switch
                         checked={source.is_enabled}
+                        loading={
+                          toggleEnabledMutation.isPending &&
+                          toggleEnabledMutation.variables?.id === source.id
+                        }
                         onCheckedChange={(checked) =>
                           toggleEnabledMutation.mutate({
                             id: source.id,
@@ -868,6 +872,7 @@ export function CrawlerSources() {
                 </Button>
                 <Button
                   onClick={handleSubmit}
+                  loading={createMutation.isPending || updateMutation.isPending}
                   disabled={!formData.name || !formData.apiUrl}
                 >
                   {editingItem ? "Cập nhật" : "Thêm mới"}
@@ -947,6 +952,11 @@ export function CrawlerSources() {
                                     id: mapping.id,
                                     isEnabled: checked,
                                   })
+                                }
+                                loading={
+                                  toggleMappingEnabledMutation.isPending &&
+                                  toggleMappingEnabledMutation.variables?.id ===
+                                    mapping.id
                                 }
                               />
                               <Badge
@@ -1125,6 +1135,10 @@ export function CrawlerSources() {
             </Button>
             <Button
               onClick={handleMappingSubmit}
+              loading={
+                createMappingMutation.isPending ||
+                updateMappingMutation.isPending
+              }
               disabled={
                 !mappingFormData.externalCode ||
                 !mappingFormData.retailerCode ||

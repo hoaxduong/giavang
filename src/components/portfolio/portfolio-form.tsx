@@ -278,14 +278,8 @@ export function PortfolioForm({
             Hủy
           </Button>
         )}
-        <Button type="submit" disabled={isLoading}>
-          {isLoading
-            ? isEditing
-              ? "Đang cập nhật..."
-              : "Đang thêm..."
-            : isEditing
-              ? "Cập nhật Giao Dịch"
-              : "Thêm Giao Dịch"}
+        <Button type="submit" loading={isLoading} disabled={isLoading}>
+          {isEditing ? "Cập nhật Giao Dịch" : "Thêm Giao Dịch"}
         </Button>
       </div>
 

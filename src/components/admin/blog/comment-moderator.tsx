@@ -184,6 +184,11 @@ export function CommentModerator() {
                           size="sm"
                           variant="outline"
                           onClick={() => handleModerate(comment.id, "approved")}
+                          loading={
+                            moderateMutation.isPending &&
+                            moderateMutation.variables?.id === comment.id &&
+                            moderateMutation.variables?.status === "approved"
+                          }
                           title="Duyệt"
                         >
                           <Check className="h-4 w-4 text-green-600" />
@@ -194,6 +199,11 @@ export function CommentModerator() {
                           size="sm"
                           variant="outline"
                           onClick={() => handleModerate(comment.id, "rejected")}
+                          loading={
+                            moderateMutation.isPending &&
+                            moderateMutation.variables?.id === comment.id &&
+                            moderateMutation.variables?.status === "rejected"
+                          }
                           title="Từ chối"
                         >
                           <X className="h-4 w-4 text-red-600" />
@@ -204,6 +214,11 @@ export function CommentModerator() {
                           size="sm"
                           variant="outline"
                           onClick={() => handleModerate(comment.id, "spam")}
+                          loading={
+                            moderateMutation.isPending &&
+                            moderateMutation.variables?.id === comment.id &&
+                            moderateMutation.variables?.status === "spam"
+                          }
                           title="Đánh dấu spam"
                         >
                           <AlertTriangle className="h-4 w-4 text-orange-600" />
@@ -213,6 +228,10 @@ export function CommentModerator() {
                         size="sm"
                         variant="destructive"
                         onClick={() => handleDelete(comment.id)}
+                        loading={
+                          deleteMutation.isPending &&
+                          deleteMutation.variables === comment.id
+                        }
                         title="Xóa"
                       >
                         <Trash2 className="h-4 w-4" />

@@ -58,7 +58,7 @@ export function UserManagement() {
 
   const handleRoleChange = async (
     userId: string,
-    newRole: "user" | "admin",
+    newRole: "user" | "admin"
   ) => {
     setSelectedRole((prev) => ({ ...prev, [userId]: newRole }));
     await updateRole.mutateAsync({ userId, role: newRole });
@@ -133,6 +133,11 @@ export function UserManagement() {
                         size="sm"
                         variant={user.role === "user" ? "default" : "outline"}
                         onClick={() => handleRoleChange(user.id, "user")}
+                        loading={
+                          updateRole.isPending &&
+                          updateRole.variables?.userId === user.id &&
+                          updateRole.variables?.role === "user"
+                        }
                         disabled={
                           updateRole.isPending || user.id === currentUser?.id
                         }
@@ -148,6 +153,11 @@ export function UserManagement() {
                         size="sm"
                         variant={user.role === "admin" ? "default" : "outline"}
                         onClick={() => handleRoleChange(user.id, "admin")}
+                        loading={
+                          updateRole.isPending &&
+                          updateRole.variables?.userId === user.id &&
+                          updateRole.variables?.role === "admin"
+                        }
                         disabled={
                           updateRole.isPending || user.id === currentUser?.id
                         }

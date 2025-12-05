@@ -124,18 +124,13 @@ export function CrawlerSync() {
               </SelectContent>
             </Select>
 
-            <Button onClick={handleSync} disabled={syncMutation.isPending}>
-              {syncMutation.isPending ? (
-                <>
-                  <RefreshCw className="mr-2 h-4 w-4 animate-spin" />
-                  Đang đồng bộ...
-                </>
-              ) : (
-                <>
-                  <Play className="mr-2 h-4 w-4" />
-                  Đồng bộ ngay
-                </>
-              )}
+            <Button
+              onClick={handleSync}
+              loading={syncMutation.isPending}
+              disabled={syncMutation.isPending}
+            >
+              <Play className="mr-2 h-4 w-4" />
+              Đồng bộ ngay
             </Button>
           </div>
 
@@ -213,7 +208,7 @@ export function CrawlerSync() {
                           {format(
                             new Date(source.lastSync),
                             "dd/MM/yyyy HH:mm",
-                            { locale: vi },
+                            { locale: vi }
                           )}
                         </div>
                         <div>Tỷ lệ thành công: {source.successRate}%</div>

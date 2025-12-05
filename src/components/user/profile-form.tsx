@@ -102,8 +102,8 @@ export function ProfileForm() {
             </p>
           </div>
 
-          <Button type="submit" disabled={isUpdating}>
-            {isUpdating ? "Đang cập nhật..." : "Cập nhật"}
+          <Button type="submit" loading={isUpdating} disabled={isUpdating}>
+            Cập nhật
           </Button>
         </form>
       </CardContent>

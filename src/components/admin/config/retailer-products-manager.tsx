@@ -322,6 +322,11 @@ export function RetailerProductsManager({
                     <div className="flex items-center gap-2">
                       <Switch
                         checked={product.isEnabled}
+                        loading={
+                          toggleEnabledMutation.isPending &&
+                          toggleEnabledMutation.variables?.productId ===
+                            product.id
+                        }
                         onCheckedChange={(checked) =>
                           toggleEnabledMutation.mutate({
                             productId: product.id,
@@ -358,6 +363,10 @@ export function RetailerProductsManager({
                             deleteMutation.mutate(product.id);
                           }
                         }}
+                        loading={
+                          deleteMutation.isPending &&
+                          deleteMutation.variables === product.id
+                        }
                       >
                         <Trash2 className="h-4 w-4" />
                       </Button>
@@ -474,12 +483,8 @@ export function RetailerProductsManager({
             </Button>
             <Button
               onClick={handleSubmit}
-              disabled={
-                !formData.productCode ||
-                !formData.productName ||
-                createMutation.isPending ||
-                updateMutation.isPending
-              }
+              loading={createMutation.isPending || updateMutation.isPending}
+              disabled={!formData.productCode || !formData.productName}
             >
               {editingProduct ? "Cập nhật" : "Thêm sản phẩm"}
             </Button>

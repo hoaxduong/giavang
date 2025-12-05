@@ -299,10 +299,11 @@ export function PostForm({
           <Button
             type="button"
             onClick={onSubmit}
+            loading={isSubmitting}
             disabled={isSubmitting}
             className="flex-1"
           >
-            {isSubmitting ? "Đang lưu..." : submitLabel}
+            {submitLabel}
           </Button>
           {showCancel && (
             <Link href={cancelHref}>
@@ -414,11 +415,12 @@ export function PostForm({
                   createCategoryMutation.mutate(newCategoryName.trim());
                 }
               }}
+              loading={createCategoryMutation.isPending}
               disabled={
                 !newCategoryName.trim() || createCategoryMutation.isPending
               }
             >
-              {createCategoryMutation.isPending ? "Đang tạo..." : "Tạo"}
+              Tạo
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -468,9 +470,10 @@ export function PostForm({
                   createTagMutation.mutate(newTagName.trim());
                 }
               }}
+              loading={createTagMutation.isPending}
               disabled={!newTagName.trim() || createTagMutation.isPending}
             >
-              {createTagMutation.isPending ? "Đang tạo..." : "Tạo"}
+              Tạo
             </Button>
           </DialogFooter>
         </DialogContent>

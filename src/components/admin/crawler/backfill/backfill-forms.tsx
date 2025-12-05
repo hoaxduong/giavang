@@ -33,7 +33,7 @@ export function BackfillForms({ onJobCreated }: BackfillFormsProps) {
   const { toast } = useToast();
   const createJobMutation = useCreateBackfillJob();
   const [jobType, setJobType] = useState<"full_historical" | "date_range">(
-    "full_historical",
+    "full_historical"
   );
 
   // Fetch sources
@@ -239,17 +239,14 @@ export function BackfillForms({ onJobCreated }: BackfillFormsProps) {
             <Button
               type="submit"
               className="w-full"
+              loading={
+                createJobMutation.isPending && jobType === "full_historical"
+              }
               disabled={
                 !fullHistoricalData.sourceId || createJobMutation.isPending
               }
             >
-              {createJobMutation.isPending ? (
-                <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" /> Đang tạo...
-                </>
-              ) : (
-                "Bắt đầu thu thập"
-              )}
+              Bắt đầu thu thập
             </Button>
           </form>
         </CardContent>
@@ -360,6 +357,7 @@ export function BackfillForms({ onJobCreated }: BackfillFormsProps) {
             <Button
               type="submit"
               className="w-full"
+              loading={createJobMutation.isPending && jobType === "date_range"}
               disabled={
                 !dateRangeData.sourceId ||
                 !dateRangeData.startDate ||
@@ -367,13 +365,7 @@ export function BackfillForms({ onJobCreated }: BackfillFormsProps) {
                 createJobMutation.isPending
               }
             >
-              {createJobMutation.isPending ? (
-                <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" /> Đang tạo...
-                </>
-              ) : (
-                "Bắt đầu thu thập"
-              )}
+              Bắt đầu thu thập
             </Button>
           </form>
         </CardContent>

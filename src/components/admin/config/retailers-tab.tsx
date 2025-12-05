@@ -229,6 +229,10 @@ export function RetailersTab() {
                     <div className="flex items-center gap-2">
                       <Switch
                         checked={item.is_enabled}
+                        loading={
+                          toggleEnabledMutation.isPending &&
+                          toggleEnabledMutation.variables?.id === item.id
+                        }
                         onCheckedChange={(checked) =>
                           toggleEnabledMutation.mutate({
                             id: item.id,
@@ -267,6 +271,10 @@ export function RetailersTab() {
                             deleteMutation.mutate(item.id);
                           }
                         }}
+                        loading={
+                          deleteMutation.isPending &&
+                          deleteMutation.variables === item.id
+                        }
                       >
                         <Trash2 className="h-4 w-4" />
                       </Button>
@@ -336,7 +344,10 @@ export function RetailersTab() {
             <Button variant="outline" onClick={() => setIsDialogOpen(false)}>
               Hủy
             </Button>
-            <Button onClick={handleSubmit}>
+            <Button
+              onClick={handleSubmit}
+              loading={createMutation.isPending || updateMutation.isPending}
+            >
               {editingItem ? "Cập nhật" : "Thêm mới"}
             </Button>
           </DialogFooter>
