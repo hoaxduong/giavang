@@ -26,6 +26,9 @@ export function useHistoricalPrices(filters: HistoricalFilters) {
       if (filters.retailer) {
         params.append("retailer", filters.retailer);
       }
+      if (filters.retailerProductId) {
+        params.append("retailerProductId", filters.retailerProductId);
+      }
       if (filters.province) {
         params.append("province", filters.province);
       }

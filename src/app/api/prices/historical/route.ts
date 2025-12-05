@@ -38,6 +38,7 @@ export async function GET(request: NextRequest) {
     }
 
     // Optional parameters
+    const retailerProductId = searchParams.get("retailerProductId");
     const retailer = searchParams.get("retailer");
     const province = searchParams.get("province");
     const interval = searchParams.get("interval") || "daily";
@@ -53,7 +54,9 @@ export async function GET(request: NextRequest) {
       .lte("created_at", endDate)
       .order("created_at", { ascending: true });
 
-    if (retailer) {
+    if (retailerProductId) {
+      query = query.eq("retailer_product_id", retailerProductId);
+    } else if (retailer) {
       query = query.eq("retailer_products.retailer_code", retailer);
     }
     if (province) {

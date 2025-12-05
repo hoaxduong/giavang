@@ -11,6 +11,8 @@ import { RetailerFilter } from "@/components/prices/retailer-filter";
 import { RefreshIndicator } from "@/components/shared/refresh-indicator";
 import { PriceLineChart } from "@/components/charts/price-line-chart";
 import { ChartTimeFilter } from "@/components/charts/chart-time-filter";
+import { RetailerProductFilter } from "@/components/prices/retailer-product-filter";
+import { useRetailerProducts } from "@/lib/queries/use-retailer-products";
 import { useCurrentPrices } from "@/lib/queries/use-current-prices";
 import { useHistoricalPrices } from "@/lib/queries/use-historical-prices";
 import type { Province, Retailer, TimeRange } from "@/lib/constants";
@@ -25,6 +27,27 @@ export default function Home() {
   const [chartRetailer, setChartRetailer] = useState<Retailer | undefined>(
     "SJC"
   );
+  const [chartRetailerProduct, setChartRetailerProduct] = useState<
+    string | undefined
+  >(undefined);
+
+  const { data: retailerProducts } = useRetailerProducts(chartRetailer);
+
+  /*
+   * Derive the selected product:
+   * 1. If user explicitly selected something (including "all"), use it.
+   * 2. If 'undefined' (initial state) and we have products, default to first product.
+   * 3. Otherwise (loading or no products), fallback to undefined (which implicitly means "all" in some contexts, or "none" in others).
+   */
+  const selectedProduct = useMemo(() => {
+    if (chartRetailerProduct !== undefined) {
+      return chartRetailerProduct;
+    }
+    if (retailerProducts?.data && retailerProducts.data.length > 0) {
+      return retailerProducts.data[0].id;
+    }
+    return undefined;
+  }, [chartRetailerProduct, retailerProducts]);
 
   const [timeRange, setTimeRange] = useState<TimeRange>("month");
 
@@ -64,6 +87,7 @@ export default function Home() {
     error: chartError,
   } = useHistoricalPrices({
     retailer: chartRetailer,
+    retailerProductId: selectedProduct === "all" ? undefined : selectedProduct,
     province: chartProvince,
     startDate,
     endDate,
@@ -106,7 +130,15 @@ export default function Home() {
 
             <RetailerFilter
               value={chartRetailer}
-              onValueChange={setChartRetailer}
+              onValueChange={(val) => {
+                setChartRetailer(val);
+                setChartRetailerProduct(undefined);
+              }}
+            />
+            <RetailerProductFilter
+              retailer={chartRetailer}
+              value={selectedProduct}
+              onValueChange={setChartRetailerProduct}
             />
             <ProvinceFilter
               value={chartProvince}
