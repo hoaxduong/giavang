@@ -544,8 +544,9 @@ export class BackfillExecutor {
     const errors = results.filter((e) => e !== null);
 
     if (errors.length > 0) {
+      console.error("Save snapshot errors:", JSON.stringify(errors, null, 2));
       throw new Error(
-        `Failed to save some price snapshots: ${errors[0]?.message}`
+        `Failed to save some price snapshots: ${JSON.stringify(errors[0])}`
       );
     }
 
