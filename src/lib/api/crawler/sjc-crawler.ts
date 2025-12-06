@@ -378,7 +378,8 @@ export class SjcCrawler extends BaseCrawler {
         const provinceCode = this.mapBranchToProvince(item.BranchName);
         const province = provinceMap.get(provinceCode);
 
-        if (!province || !province.isEnabled) {
+        // Only check enabled status if a specific province is assigned
+        if (provinceCode && (!province || !province.isEnabled)) {
           // Use default province if specified one is disabled
           const defaultProvince = provinceMap.get("TP. Hồ Chí Minh");
           if (!defaultProvince || !defaultProvince.isEnabled) {
@@ -544,7 +545,7 @@ export class SjcCrawler extends BaseCrawler {
    * Uses predefined mapping with fallback to default province
    */
   protected mapBranchToProvince(branchName: string): string {
-    return BRANCH_TO_PROVINCE[branchName] || "TP. Hồ Chí Minh";
+    return BRANCH_TO_PROVINCE[branchName] || "";
   }
 
   /**
