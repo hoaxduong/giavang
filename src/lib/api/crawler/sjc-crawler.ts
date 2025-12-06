@@ -380,15 +380,11 @@ export class SjcCrawler extends BaseCrawler {
 
         // Only check enabled status if a specific province is assigned
         if (provinceCode && (!province || !province.isEnabled)) {
-          // Use default province if specified one is disabled
-          const defaultProvince = provinceMap.get("TP. Hồ Chí Minh");
-          if (!defaultProvince || !defaultProvince.isEnabled) {
-            errors.push({
-              item: `${externalCode} (${item.BranchName})`,
-              error: `Province ${provinceCode} is disabled and default province unavailable`,
-            });
-            continue;
-          }
+          errors.push({
+            item: `${externalCode} (${item.BranchName})`,
+            error: `Province ${provinceCode} is disabled or not found`,
+          });
+          continue;
         }
 
         // Extract price values (use BuyValue/SellValue, not the formatted strings)
