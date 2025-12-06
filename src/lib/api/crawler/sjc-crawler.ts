@@ -455,7 +455,7 @@ export class SjcCrawler extends BaseCrawler {
    * Fetch reference data from database
    * Only returns enabled items
    */
-  private async fetchReferenceData(): Promise<{
+  protected async fetchReferenceData(): Promise<{
     mappings: TypeMapping[];
     retailers: Retailer[];
     provinces: Province[];

@@ -57,7 +57,7 @@ export class OnusHistoricalCrawler
 
       // Build API URL with slug and interval parameters
       const baseUrl = this.config.apiUrl.replace("/golds", "/line");
-      const url = `${baseUrl}?slug=${encodeURIComponent(slug)}&interval=1M`;
+      const url = `${baseUrl}?slug=${encodeURIComponent(slug)}&interval=${days}d`;
 
       // Fetch from API
       const timeout = this.config.timeout || 30000;

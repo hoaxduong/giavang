@@ -339,17 +339,14 @@ export class OnusCrawler extends BaseCrawler {
         }
 
         const province = provinceMap.get(provinceCode);
-        if (!province || !province.isEnabled) {
-          // Use default province if specified one is disabled
-          const defaultProvince = provinceMap.get("TP. Hồ Chí Minh");
-          if (!defaultProvince || !defaultProvince.isEnabled) {
-            errors.push({
-              item: `${item.slug} (${item.source})`,
-              error: `Province ${provinceCode} is disabled and default province unavailable`,
-            });
-            continue;
-          }
-          provinceCode = "TP. Hồ Chí Minh";
+
+        // Only check enabled status if a specific province is assigned
+        if (provinceCode && (!province || !province.isEnabled)) {
+          errors.push({
+            item: `${item.slug} (${item.source})`,
+            error: `Province ${provinceCode} is disabled or not found`,
+          });
+          continue;
         }
 
         // Extract price values
@@ -508,7 +505,7 @@ export class OnusCrawler extends BaseCrawler {
     zoneMappings: Map<string, ZoneMapping>
   ): string {
     if (!zoneText) {
-      return "TP. Hồ Chí Minh"; // Default province
+      return ""; // Default province
     }
 
     const mapping = zoneMappings.get(zoneText);
@@ -516,8 +513,8 @@ export class OnusCrawler extends BaseCrawler {
       return mapping.provinceCode;
     }
 
-    // Fallback to default province
-    return "TP. Hồ Chí Minh";
+    // Fallback to default province (empty string)
+    return "";
   }
 
   /**

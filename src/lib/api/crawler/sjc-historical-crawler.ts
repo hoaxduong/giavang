@@ -253,10 +253,27 @@ export class SjcHistoricalCrawler
       return { prices, errors };
     }
 
+    // Fetch reference data to check for enabled provinces
+    const { provinces } = await this.fetchReferenceData();
+    const provinceMap = new Map(provinces.map((p) => [p.code, p]));
+
     // Process all matching items
     for (const item of matchingItems) {
       try {
         // Map branch name to province code
+        const provinceCode = this.mapBranchToProvince(item.BranchName);
+
+        // Validate province is enabled
+        const province = provinceMap.get(provinceCode);
+
+        // Only check enabled status if a specific province is assigned
+        if (provinceCode && (!province || !province.isEnabled)) {
+          errors.push({
+            date: referenceDate,
+            error: `Province ${provinceCode} is disabled or not found in ${item.BranchName}`,
+          });
+          continue;
+        }
 
         // Extract prices
         const buyPrice = item.BuyValue;
