@@ -380,7 +380,6 @@ export class BackfillExecutor {
       isEnabled: source.is_enabled,
       rateLimit: source.rate_limit_per_minute,
       priority: source.priority,
-      fieldMappings: source.field_mappings,
     };
 
     // Create crawler instance based on source type

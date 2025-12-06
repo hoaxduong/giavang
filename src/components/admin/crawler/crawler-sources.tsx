@@ -33,23 +33,6 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 
-interface FieldMappings {
-  dataPath: string;
-  fields: {
-    typeCode: string;
-    buyPrice: string;
-    sellPrice: string;
-    timestamp: string;
-    currency?: string;
-    branch?: string; // SJC-specific field
-    [key: string]: string | undefined; // Allow additional source-specific fields
-  };
-  transforms?: {
-    timestamp?: "iso8601" | "unix" | "custom"; // Added 'custom' for SJC
-    priceMultiplier?: number;
-  };
-}
-
 interface CrawlerSource {
   id: string;
   name: string;
@@ -59,7 +42,6 @@ interface CrawlerSource {
   priority: number;
   rate_limit_per_minute?: number;
   timeout_seconds?: number;
-  field_mappings?: FieldMappings;
 }
 
 interface TypeMapping {
@@ -90,20 +72,6 @@ export function CrawlerSources() {
     priority: 1,
     rateLimitPerMinute: 60,
     timeoutSeconds: 30,
-    fieldMappings: {
-      dataPath: "prices",
-      fields: {
-        typeCode: "type",
-        buyPrice: "buy",
-        sellPrice: "sell",
-        timestamp: "timestamp",
-        currency: "currency",
-      },
-      transforms: {
-        timestamp: "unix" as "iso8601" | "unix" | "custom",
-        priceMultiplier: 1,
-      },
-    },
   });
   const [error, setError] = useState<string | null>(null);
 
@@ -158,17 +126,6 @@ export function CrawlerSources() {
     enabled: isDialogOpen && activeTab === "mappings",
   });
 
-  const { data: provinces } = useQuery({
-    queryKey: ["provinces"],
-    queryFn: async () => {
-      const res = await fetch("/api/admin/provinces");
-      if (!res.ok) throw new Error("Failed to fetch provinces");
-      const json = await res.json();
-      return json.provinces;
-    },
-    enabled: isDialogOpen && activeTab === "mappings",
-  });
-
   // Fetch retailer products when retailer is selected
   const { data: retailerProducts } = useQuery({
     queryKey: ["retailer-products-list", mappingFormData.retailerCode],
@@ -185,17 +142,6 @@ export function CrawlerSources() {
       isDialogOpen &&
       activeTab === "mappings" &&
       !!mappingFormData.retailerCode,
-  });
-
-  const { data: productTypes } = useQuery({
-    queryKey: ["product-types"],
-    queryFn: async () => {
-      const res = await fetch("/api/admin/product-types");
-      if (!res.ok) throw new Error("Failed to fetch product types");
-      const json = await res.json();
-      return json.productTypes;
-    },
-    enabled: isDialogOpen && activeTab === "mappings",
   });
 
   const createMutation = useMutation({
@@ -362,20 +308,6 @@ export function CrawlerSources() {
       priority: 1,
       rateLimitPerMinute: 60,
       timeoutSeconds: 30,
-      fieldMappings: {
-        dataPath: "prices",
-        fields: {
-          typeCode: "type",
-          buyPrice: "buy",
-          sellPrice: "sell",
-          timestamp: "timestamp",
-          currency: "currency",
-        },
-        transforms: {
-          timestamp: "unix" as "iso8601" | "unix",
-          priceMultiplier: 1,
-        },
-      },
     });
     setEditingItem(null);
     setError(null);
@@ -404,36 +336,6 @@ export function CrawlerSources() {
         priority: item.priority,
         rateLimitPerMinute: item.rate_limit_per_minute || 60,
         timeoutSeconds: item.timeout_seconds || 30,
-        fieldMappings: item.field_mappings?.fields
-          ? {
-              dataPath: item.field_mappings.dataPath,
-              fields: {
-                typeCode: item.field_mappings.fields.typeCode,
-                buyPrice: item.field_mappings.fields.buyPrice,
-                sellPrice: item.field_mappings.fields.sellPrice,
-                timestamp: item.field_mappings.fields.timestamp,
-                currency: item.field_mappings.fields.currency || "currency",
-              },
-              transforms: {
-                timestamp: item.field_mappings.transforms?.timestamp || "unix",
-                priceMultiplier:
-                  item.field_mappings.transforms?.priceMultiplier ?? 1,
-              },
-            }
-          : {
-              dataPath: "prices",
-              fields: {
-                typeCode: "type",
-                buyPrice: "buy",
-                sellPrice: "sell",
-                timestamp: "timestamp",
-                currency: "currency",
-              },
-              transforms: {
-                timestamp: "unix" as "iso8601" | "unix",
-                priceMultiplier: 1,
-              },
-            },
       });
     } else {
       resetForm();
@@ -449,7 +351,6 @@ export function CrawlerSources() {
       priority: formData.priority,
       rateLimitPerMinute: formData.rateLimitPerMinute,
       timeoutSeconds: formData.timeoutSeconds,
-      fieldMappings: formData.fieldMappings,
     };
 
     if (editingItem) {
@@ -720,172 +621,6 @@ export function CrawlerSources() {
                         })
                       }
                     />
-                  </div>
-                </div>
-
-                <div className="border-t pt-4 mt-4">
-                  <h4 className="text-sm font-semibold mb-3">
-                    Cấu hình Field Mappings
-                    <span className="ml-2 text-xs font-normal text-muted-foreground">
-                      (Tùy chọn - chỉ cho nguồn dùng generic mapping)
-                    </span>
-                  </h4>
-                  <p className="text-xs text-muted-foreground mb-3">
-                    Lưu ý: SJC và một số nguồn khác dùng logic parse riêng,
-                    không cần chỉnh field mappings
-                  </p>
-                  <div className="space-y-3">
-                    <div>
-                      <Label htmlFor="dataPath">Data Path *</Label>
-                      <Input
-                        id="dataPath"
-                        value={formData.fieldMappings.dataPath}
-                        onChange={(e) =>
-                          setFormData({
-                            ...formData,
-                            fieldMappings: {
-                              ...formData.fieldMappings,
-                              dataPath: e.target.value,
-                            },
-                          })
-                        }
-                        placeholder="VD: prices hoặc data.prices"
-                      />
-                      <p className="text-xs text-muted-foreground mt-1">
-                        Đường dẫn đến mảng prices trong API response
-                      </p>
-                    </div>
-
-                    <div className="grid grid-cols-2 gap-3">
-                      <div>
-                        <Label htmlFor="fieldBuyPrice">
-                          Field: Buy Price *
-                        </Label>
-                        <Input
-                          id="fieldBuyPrice"
-                          value={formData.fieldMappings.fields.buyPrice}
-                          onChange={(e) =>
-                            setFormData({
-                              ...formData,
-                              fieldMappings: {
-                                ...formData.fieldMappings,
-                                fields: {
-                                  ...formData.fieldMappings.fields,
-                                  buyPrice: e.target.value,
-                                },
-                              },
-                            })
-                          }
-                          placeholder="VD: buy"
-                        />
-                      </div>
-                      <div>
-                        <Label htmlFor="fieldSellPrice">
-                          Field: Sell Price *
-                        </Label>
-                        <Input
-                          id="fieldSellPrice"
-                          value={formData.fieldMappings.fields.sellPrice}
-                          onChange={(e) =>
-                            setFormData({
-                              ...formData,
-                              fieldMappings: {
-                                ...formData.fieldMappings,
-                                fields: {
-                                  ...formData.fieldMappings.fields,
-                                  sellPrice: e.target.value,
-                                },
-                              },
-                            })
-                          }
-                          placeholder="VD: sell"
-                        />
-                      </div>
-                    </div>
-
-                    <div className="grid grid-cols-3 gap-3">
-                      <div>
-                        <Label htmlFor="fieldTimestamp">Field: Timestamp</Label>
-                        <Input
-                          id="fieldTimestamp"
-                          value={formData.fieldMappings.fields.timestamp}
-                          onChange={(e) =>
-                            setFormData({
-                              ...formData,
-                              fieldMappings: {
-                                ...formData.fieldMappings,
-                                fields: {
-                                  ...formData.fieldMappings.fields,
-                                  timestamp: e.target.value,
-                                },
-                              },
-                            })
-                          }
-                          placeholder="VD: timestamp"
-                        />
-                      </div>
-                      <div>
-                        <Label htmlFor="timestampFormat">
-                          Format Timestamp
-                        </Label>
-                        <select
-                          id="timestampFormat"
-                          className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background"
-                          value={
-                            formData.fieldMappings.transforms?.timestamp ||
-                            "unix"
-                          }
-                          onChange={(e) =>
-                            setFormData({
-                              ...formData,
-                              fieldMappings: {
-                                ...formData.fieldMappings,
-                                transforms: {
-                                  ...formData.fieldMappings.transforms,
-                                  timestamp: e.target.value as
-                                    | "iso8601"
-                                    | "unix"
-                                    | "custom",
-                                },
-                              },
-                            })
-                          }
-                        >
-                          <option value="unix">Unix (seconds)</option>
-                          <option value="iso8601">ISO 8601</option>
-                          <option value="custom">
-                            Custom (source-specific)
-                          </option>
-                        </select>
-                      </div>
-                      <div>
-                        <Label htmlFor="priceMultiplier">
-                          Price Multiplier
-                        </Label>
-                        <Input
-                          id="priceMultiplier"
-                          type="number"
-                          step="0.01"
-                          value={
-                            formData.fieldMappings.transforms
-                              ?.priceMultiplier || 1
-                          }
-                          onChange={(e) =>
-                            setFormData({
-                              ...formData,
-                              fieldMappings: {
-                                ...formData.fieldMappings,
-                                transforms: {
-                                  ...formData.fieldMappings.transforms,
-                                  priceMultiplier:
-                                    parseFloat(e.target.value) || 1,
-                                },
-                              },
-                            })
-                          }
-                        />
-                      </div>
-                    </div>
                   </div>
                 </div>
               </div>

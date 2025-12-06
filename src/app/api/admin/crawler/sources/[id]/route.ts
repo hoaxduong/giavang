@@ -3,23 +3,6 @@ import { requireRole } from "@/lib/auth/server";
 import { createClient } from "@/lib/supabase/server";
 import { z } from "zod";
 
-const fieldMappingsSchema = z.object({
-  dataPath: z.string(),
-  fields: z.object({
-    typeCode: z.string(),
-    buyPrice: z.string(),
-    sellPrice: z.string(),
-    timestamp: z.string(),
-    currency: z.string().optional(),
-  }),
-  transforms: z
-    .object({
-      timestamp: z.enum(["iso8601", "unix"]).optional(),
-      priceMultiplier: z.number().optional(),
-    })
-    .optional(),
-});
-
 const updateSourceSchema = z.object({
   name: z.string().min(1).max(100).optional(),
   apiUrl: z.string().url().optional(),
@@ -31,7 +14,6 @@ const updateSourceSchema = z.object({
   rateLimitPerMinute: z.number().int().min(1).max(1000).optional(),
   timeoutSeconds: z.number().int().min(1).max(300).optional(),
   priority: z.number().int().min(1).max(100).optional(),
-  fieldMappings: fieldMappingsSchema.optional(),
 });
 
 /**
@@ -40,7 +22,7 @@ const updateSourceSchema = z.object({
  */
 export async function GET(
   request: NextRequest,
-  { params }: { params: Promise<{ id: string }> },
+  { params }: { params: Promise<{ id: string }> }
 ) {
   const { id } = await params;
   try {
@@ -69,7 +51,7 @@ export async function GET(
  */
 export async function PUT(
   request: NextRequest,
-  { params }: { params: Promise<{ id: string }> },
+  { params }: { params: Promise<{ id: string }> }
 ) {
   const { id } = await params;
   try {
@@ -97,8 +79,6 @@ export async function PUT(
       updateData.timeout_seconds = validated.timeoutSeconds;
     if (validated.priority !== undefined)
       updateData.priority = validated.priority;
-    if (validated.fieldMappings !== undefined)
-      updateData.field_mappings = validated.fieldMappings;
 
     const { data, error } = await supabase
       .from("crawler_sources")
@@ -118,7 +98,7 @@ export async function PUT(
     }
     return NextResponse.json(
       { error: "Unauthorized or invalid request" },
-      { status: 401 },
+      { status: 401 }
     );
   }
 }
@@ -129,7 +109,7 @@ export async function PUT(
  */
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: Promise<{ id: string }> },
+  { params }: { params: Promise<{ id: string }> }
 ) {
   const { id } = await params;
   try {
