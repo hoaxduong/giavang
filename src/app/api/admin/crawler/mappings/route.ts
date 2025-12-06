@@ -7,8 +7,8 @@ const mappingSchema = z.object({
   sourceId: z.string().uuid(),
   externalCode: z.string().min(1).max(100),
   retailerCode: z.string().min(1).max(50),
-
-  provinceCode: z.string().min(1).max(50).nullable().optional(),
+  retailerProductId: z.string().uuid(),
+  // provinceCode removed
   label: z.string().min(1).max(200),
   isEnabled: z.boolean().optional().default(true),
 });
@@ -17,8 +17,8 @@ const updateMappingSchema = z.object({
   id: z.string().uuid(),
   externalCode: z.string().min(1).max(100).optional(),
   retailerCode: z.string().min(1).max(50).optional(),
-
-  provinceCode: z.string().min(1).max(50).nullable().optional(),
+  retailerProductId: z.string().uuid().optional(),
+  // provinceCode removed
   label: z.string().min(1).max(200).optional(),
   isEnabled: z.boolean().optional(),
 });
@@ -37,7 +37,7 @@ export async function GET(request: NextRequest) {
 
     let query = supabase
       .from("crawler_type_mappings")
-      .select("*")
+      .select("*, retailer_products(product_name, retailer_code)")
       .order("created_at", { ascending: false });
 
     if (sourceId) {
@@ -74,8 +74,8 @@ export async function POST(request: NextRequest) {
         source_id: validated.sourceId,
         external_code: validated.externalCode,
         retailer_code: validated.retailerCode,
-
-        province_code: validated.provinceCode,
+        retailer_product_id: validated.retailerProductId,
+        // province_code removed
         label: validated.label,
         is_enabled: validated.isEnabled,
       })
@@ -116,8 +116,9 @@ export async function PUT(request: NextRequest) {
     if (validated.retailerCode !== undefined)
       updateData.retailer_code = validated.retailerCode;
 
-    if (validated.provinceCode !== undefined)
-      updateData.province_code = validated.provinceCode;
+    if (validated.retailerProductId !== undefined)
+      updateData.retailer_product_id = validated.retailerProductId;
+    // province_code update removed
     if (validated.label !== undefined) updateData.label = validated.label;
     if (validated.isEnabled !== undefined)
       updateData.is_enabled = validated.isEnabled;

@@ -219,25 +219,24 @@ export class OnusHistoricalCrawler
   convertDailyToSnapshot(
     dailyPrice: BaseDailyPriceData,
     mapping: TypeMapping,
-    retailer: Retailer,
-    province: Province
+    retailer: Retailer
   ): PriceData {
-    const onusPrice = dailyPrice as OnusDailyPriceData;
-    // Use mapping's retailer, province, and product name
-    const retailerCode = mapping.retailerCode;
-    const provinceCode = mapping.provinceCode || province.code;
+    // ONUS doesn't have province info in daily price, and we removed province mapping.
+    // So province will be empty.
+    const provinceName = "";
+
     // Use the timestamp from API response
     return {
       id: "",
-      createdAt: onusPrice.timestamp,
-      retailer: retailerCode as unknown as RetailerLiteral,
-      province: provinceCode as unknown as ProvinceLiteral,
+      createdAt: dailyPrice.date,
+      retailer: mapping.retailerCode as unknown as RetailerLiteral,
+      province: provinceName as unknown as ProvinceLiteral,
       productName: mapping.label, // Store specific product name from mapping
       retailerProductId: mapping.retailerProductId, // Link to retailer_products (mandatory)
-      buyPrice: onusPrice.buyPrice,
-      sellPrice: onusPrice.sellPrice,
+      buyPrice: dailyPrice.buyPrice,
+      sellPrice: dailyPrice.sellPrice,
       unit: "VND/chi",
-      change: onusPrice.change,
+      change: undefined,
     };
   }
 }

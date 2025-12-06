@@ -486,7 +486,7 @@ export class SjcCrawler extends BaseCrawler {
         sourceId: m.source_id,
         externalCode: m.external_code,
         retailerCode: m.retailer_code,
-        provinceCode: m.province_code,
+        // provinceCode removed
         label: m.label,
         isEnabled: m.is_enabled,
         retailerProductId: m.retailer_product_id, // Mandatory after migration 027

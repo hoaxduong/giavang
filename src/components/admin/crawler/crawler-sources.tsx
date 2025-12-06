@@ -67,10 +67,15 @@ interface TypeMapping {
   source_id: string;
   external_code: string;
   retailer_code: string;
-  product_type_code: string;
-  province_code: string | null;
+  // product_type_code removed
+  // province_code removed
   label: string;
   is_enabled: boolean;
+  retailer_product_id: string; // Mandatory
+  retailer_products?: {
+    product_name: string;
+    retailer_code: string;
+  };
 }
 
 export function CrawlerSources() {
@@ -110,8 +115,9 @@ export function CrawlerSources() {
   const [mappingFormData, setMappingFormData] = useState({
     externalCode: "",
     retailerCode: "",
-    productTypeCode: "",
-    provinceCode: "",
+    retailerProductId: "",
+    // productTypeCode removed
+    // provinceCode removed
     label: "",
   });
 
@@ -131,7 +137,7 @@ export function CrawlerSources() {
     queryFn: async () => {
       if (!editingItem?.id) return [];
       const res = await fetch(
-        `/api/admin/crawler/mappings?sourceId=${editingItem.id}`
+        `/api/admin/crawler/mappings?source_id=${editingItem.id}`
       );
       if (!res.ok) throw new Error("Failed to fetch mappings");
       const json = await res.json();
@@ -161,6 +167,24 @@ export function CrawlerSources() {
       return json.provinces;
     },
     enabled: isDialogOpen && activeTab === "mappings",
+  });
+
+  // Fetch retailer products when retailer is selected
+  const { data: retailerProducts } = useQuery({
+    queryKey: ["retailer-products-list", mappingFormData.retailerCode],
+    queryFn: async () => {
+      if (!mappingFormData.retailerCode) return [];
+      const res = await fetch(
+        `/api/admin/retailers/${mappingFormData.retailerCode}/products`
+      );
+      if (!res.ok) throw new Error("Failed to fetch retailer products");
+      const json = await res.json();
+      return json.products;
+    },
+    enabled:
+      isDialogOpen &&
+      activeTab === "mappings" &&
+      !!mappingFormData.retailerCode,
   });
 
   const { data: productTypes } = useQuery({
@@ -362,8 +386,9 @@ export function CrawlerSources() {
     setMappingFormData({
       externalCode: "",
       retailerCode: "",
-      productTypeCode: "",
-      provinceCode: "",
+      retailerProductId: "",
+      // productTypeCode removed
+      // provinceCode removed
       label: "",
     });
     setEditingMapping(null);
@@ -440,8 +465,9 @@ export function CrawlerSources() {
       setMappingFormData({
         externalCode: mapping.external_code,
         retailerCode: mapping.retailer_code,
-        productTypeCode: mapping.product_type_code,
-        provinceCode: mapping.province_code || "",
+        retailerProductId: mapping.retailer_product_id,
+        // productTypeCode removed
+        // provinceCode removed
         label: mapping.label,
       });
     } else {
@@ -454,8 +480,9 @@ export function CrawlerSources() {
     const data = {
       externalCode: mappingFormData.externalCode,
       retailerCode: mappingFormData.retailerCode,
-      productTypeCode: mappingFormData.productTypeCode,
-      provinceCode: mappingFormData.provinceCode || null,
+      retailerProductId: mappingFormData.retailerProductId,
+      // productTypeCode removed
+      // provinceCode removed
       label: mappingFormData.label,
     };
 
@@ -899,8 +926,8 @@ export function CrawlerSources() {
                       <TableHead>External Code</TableHead>
                       <TableHead>Label</TableHead>
                       <TableHead>Retailer</TableHead>
-                      <TableHead>Product Type</TableHead>
-                      <TableHead>Province</TableHead>
+                      <TableHead>Retailer Product</TableHead>
+                      {/* Product Type and Province removed */}
                       <TableHead>Trạng thái</TableHead>
                       <TableHead className="text-right">Thao tác</TableHead>
                     </TableRow>
@@ -929,20 +956,10 @@ export function CrawlerSources() {
                           </TableCell>
                           <TableCell>
                             <Badge variant="outline">
-                              {mapping.product_type_code}
+                              {mapping.retailer_products?.product_name}
                             </Badge>
                           </TableCell>
-                          <TableCell>
-                            {mapping.province_code ? (
-                              <Badge variant="outline">
-                                {mapping.province_code}
-                              </Badge>
-                            ) : (
-                              <span className="text-muted-foreground text-sm">
-                                -
-                              </span>
-                            )}
-                          </TableCell>
+                          {/* Removed Product Type and Province cells */}
                           <TableCell>
                             <div className="flex items-center gap-2">
                               <Switch
@@ -1076,13 +1093,14 @@ export function CrawlerSources() {
               </div>
 
               <div>
-                <Label htmlFor="productType">Product Type *</Label>
+                <Label htmlFor="retailer">Retailer *</Label>
                 <Select
-                  value={mappingFormData.productTypeCode}
+                  value={mappingFormData.retailerCode}
                   onValueChange={(value) =>
                     setMappingFormData({
                       ...mappingFormData,
-                      productTypeCode: value,
+                      retailerCode: value,
+                      retailerProductId: "", // Reset product when retailer changes
                     })
                   }
                 >
@@ -1090,9 +1108,9 @@ export function CrawlerSources() {
                     <SelectValue placeholder="Chọn" />
                   </SelectTrigger>
                   <SelectContent>
-                    {productTypes?.map((pt: any) => (
-                      <SelectItem key={pt.id} value={pt.code}>
-                        {pt.label}
+                    {retailers?.map((retailer: any) => (
+                      <SelectItem key={retailer.id} value={retailer.code}>
+                        {retailer.name}
                       </SelectItem>
                     ))}
                   </SelectContent>
@@ -1100,24 +1118,24 @@ export function CrawlerSources() {
               </div>
 
               <div>
-                <Label htmlFor="province">Province</Label>
+                <Label htmlFor="retailerProduct">Retailer Product *</Label>
                 <Select
-                  value={mappingFormData.provinceCode}
+                  value={mappingFormData.retailerProductId}
                   onValueChange={(value) =>
                     setMappingFormData({
                       ...mappingFormData,
-                      provinceCode: value,
+                      retailerProductId: value,
                     })
                   }
+                  disabled={!mappingFormData.retailerCode}
                 >
                   <SelectTrigger>
-                    <SelectValue placeholder="Không chọn" />
+                    <SelectValue placeholder="Chọn" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">Không chọn</SelectItem>
-                    {provinces?.map((province: any) => (
-                      <SelectItem key={province.id} value={province.code}>
-                        {province.name}
+                    {retailerProducts?.map((rp: any) => (
+                      <SelectItem key={rp.id} value={rp.id}>
+                        {rp.productName} ({rp.productCode})
                       </SelectItem>
                     ))}
                   </SelectContent>
@@ -1142,7 +1160,7 @@ export function CrawlerSources() {
               disabled={
                 !mappingFormData.externalCode ||
                 !mappingFormData.retailerCode ||
-                !mappingFormData.productTypeCode ||
+                !mappingFormData.retailerProductId ||
                 !mappingFormData.label
               }
             >

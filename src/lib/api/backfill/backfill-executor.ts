@@ -433,8 +433,7 @@ export class BackfillExecutor {
       sourceId: m.source_id,
       externalCode: m.external_code,
       retailerCode: m.retailer_code,
-
-      provinceCode: m.province_code,
+      // provinceCode removed
       label: m.label,
       retailerProductId: m.retailer_product_id,
       isEnabled: m.is_enabled,
@@ -451,32 +450,18 @@ export class BackfillExecutor {
     const supabase = createServiceRoleClient();
 
     // Fetch reference data
-    const [retailerResult, provinceResult] = await Promise.all([
-      supabase
-        .from("retailers")
-        .select("*")
-        .eq("code", mapping.retailerCode)
-        .eq("is_enabled", true)
-        .single(),
-      mapping.provinceCode
-        ? supabase
-            .from("provinces")
-            .select("*")
-            .eq("code", mapping.provinceCode)
-            .eq("is_enabled", true)
-            .single()
-        : Promise.resolve({ data: null, error: null }),
-    ]);
+    // Province lookup removed as it is no longer part of mapping
+    // Individual crawlers handle province logic internally or return empty string
+
+    const retailerResult = await supabase
+      .from("retailers")
+      .select("*")
+      .eq("code", mapping.retailerCode)
+      .eq("is_enabled", true)
+      .single();
 
     if (retailerResult.error || !retailerResult.data) {
       throw new Error(`Retailer ${mapping.retailerCode} not found or disabled`);
-    }
-    // Only throw if province code was specifically requested but not found
-    if (
-      mapping.provinceCode &&
-      (provinceResult.error || !provinceResult.data)
-    ) {
-      throw new Error(`Province ${mapping.provinceCode} not found or disabled`);
     }
 
     const retailer: Retailer = {
@@ -487,31 +472,10 @@ export class BackfillExecutor {
       sortOrder: retailerResult.data.sort_order,
     };
 
-    const province: Province = provinceResult.data
-      ? {
-          id: provinceResult.data.id,
-          code: provinceResult.data.code,
-          name: provinceResult.data.name,
-          isEnabled: provinceResult.data.is_enabled,
-          sortOrder: provinceResult.data.sort_order,
-        }
-      : {
-          id: "",
-          code: "",
-          name: "",
-          isEnabled: true,
-          sortOrder: 0,
-        };
-
     // Convert each daily price to snapshot
     // Use type assertion since we know the crawler type matches the daily price type
     return dailyPrices.map((daily) =>
-      this.crawler!.convertDailyToSnapshot(
-        daily as any,
-        mapping,
-        retailer,
-        province
-      )
+      this.crawler!.convertDailyToSnapshot(daily as any, mapping, retailer)
     );
   }
 

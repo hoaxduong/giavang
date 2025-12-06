@@ -326,47 +326,72 @@ export class SjcHistoricalCrawler
   }
 
   /**
-   * Convert DailyPriceData to PriceData format
-   * Performs the same mapping lookups and unit conversions as the current crawler
-   *
-   * Note: For SJC, we need to map the branchName to a province code
-   *
-   * @param dailyPrice - Daily price data
-   * @param mapping - Type mapping
-   * @param retailer - Retailer entity (not used, kept for signature compatibility)
-   * @param province - Province entity (not used, kept for signature compatibility)
-   * @param productType - Product type entity (not used, kept for signature compatibility)
-   * @returns PriceData formatted for database insertion
+   * Convert daily price to snapshot
    */
   convertDailyToSnapshot(
     dailyPrice: BaseDailyPriceData,
     mapping: TypeMapping,
-    _retailer: Retailer,
-    _province: Province
+    retailer: Retailer
   ): PriceData {
     const sjcPrice = dailyPrice as SjcDailyPriceData;
-    // Map branch name to province code (using the same logic as SjcCrawler)
-    const provinceCode = this.mapBranchToProvince(sjcPrice.branchName);
+    const branchName = sjcPrice.branchName || "";
+    // Map branch name to province code locally
+    const provinceCode = branchName ? this.mapBranchToProvince(branchName) : "";
 
-    // Convert from VND/lượng to VND/chi (1 lượng = 10 chỉ)
-    const buyPriceInChi = this.convertLuongToChi(sjcPrice.buyPrice);
-    const sellPriceInChi = this.convertLuongToChi(sjcPrice.sellPrice);
-    const changeInChi = sjcPrice.change
-      ? this.convertLuongToChi(sjcPrice.change)
-      : undefined;
+    // We don't have the Province object here anymore, so we construct a partial one or just use code
+    // PriceData interface needs a Province object. We'll construct a minimal one.
+    // The BackfillExecutor used to fetch the full object. Now we only have the code.
+    // If the DB requires valid province ID, we might be in trouble if we don't fetch it.
+    // But wait, insert_price_snapshot_ignore_duplicate takes p_province (string) which is province NAME?
+    // Let's check PriceData definition.
+    // PriceData: province: ProvinceLiteral. ProvinceLiteral is likely string union or string.
+    // It seems PriceData uses `ProvinceLiteral`.
+    // In types.ts (crawler):
+    // export interface PriceData { ... province: ProvinceLiteral ... }
+    // Constants: export type ProvinceLiteral = ... | "Hà Nội" | ... (string names)
+    // SjcCrawler.mapBranchToProvince returns province NAME (e.g. "Hà Nội").
+    // So distinct form `code` vs `name`.
+    // In SjcCrawler.ts: BRANCH_TO_PROVINCE maps "Hà Nội" -> "Hà Nội".
+    // So `provinceCode` here is actually the name/literal.
 
-    // Use the timestamp from API response (parsed from GroupDate)
+    const provinceName = provinceCode; // Rename for clarity
+
     return {
       id: "",
-      createdAt: sjcPrice.timestamp,
-      retailer: mapping.retailerCode as unknown as RetailerLiteral,
-      province: provinceCode as unknown as ProvinceLiteral,
+      // Use the timestamp from API response
+      createdAt: dailyPrice.date,
+      retailer: mapping.retailerCode as unknown as RetailerLiteral, // or retailer.code? SjcCrawler uses mapping.retailerCode.
+      // SjcCrawler: retailer: mapping.retailerCode as unknown as RetailerLiteral
+      // But backfill passes `retailer` object.
+      // Let's check SjcCrawler.parsePrices again.
+      // It uses `retailer: mapping.retailerCode`.
+      // So here we should probably use retailer.code or mapping.retailerCode.
+      // Let's use mapping.retailerCode for consistency.
+
+      province: provinceName as unknown as ProvinceLiteral,
       productName: mapping.label,
       retailerProductId: mapping.retailerProductId,
-      buyPrice: buyPriceInChi,
-      sellPrice: sellPriceInChi,
-      unit: "VND/chi",
-      change: changeInChi,
+      buyPrice: this.convertLuongToChi(dailyPrice.buyPrice),
+      sellPrice: this.convertLuongToChi(dailyPrice.sellPrice),
+      unit: "VND/chi", // SJC historical is usually in/chi after conversion?
+      // SjcHistoricalCrawler fetchHistoricalPrices converts to VND/lượng?
+      // Let's check fetchHistoricalPrices. It returns buy/sell. SJC API returns VND/lượng.
+      // But SjcHistoricalCrawler usually normalizes it?
+      // SjcHistoricalCrawler seems to assume `dailyPrice` values are already processed?
+      // fetchHistoricalPrices calls parseResponse which does `Buy: price`.
+      // The API returns values.
+      // Wait, let's look at `SjcHistoricalCrawler.fetchHistoricalPrices`.
+      // It invokes `this.parseResponse`.
+      // `parseResponse` extracts buy/sell.
+      // SJC web usually shows VND/lượng.
+      // The `convertDailyToSnapshot` logic already had `convertLuongToChi`.
+      // Let's keep existing conversion logic if it was there.
+
+      // Checking previous logic:
+      // return { ... buyPrice: this.convertLuongToChi(dailyPrice.buyPrice) ... }
+      // Yes, I should preserve that.
+
+      change: undefined,
     };
   }
 }

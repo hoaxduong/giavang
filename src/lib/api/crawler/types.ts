@@ -46,7 +46,7 @@ export interface TypeMapping {
   sourceId: string;
   externalCode: string;
   retailerCode: string;
-  provinceCode: string | null;
+  // provinceCode removed
   label: string;
   isEnabled: boolean;
   retailerProductId: string; // Link to retailer_products table (mandatory after migration 027)
@@ -152,7 +152,7 @@ export interface DbTypeMapping {
   source_id: string;
   external_code: string;
   retailer_code: string;
-  province_code: string | null;
+  // province_code removed
   label: string;
   is_enabled: boolean;
   retailer_product_id: string; // Mandatory after migration 027
@@ -204,7 +204,6 @@ export function dbTypeMappingToTypeMapping(db: DbTypeMapping): TypeMapping {
     sourceId: db.source_id,
     externalCode: db.external_code,
     retailerCode: db.retailer_code,
-    provinceCode: db.province_code,
     label: db.label,
     isEnabled: db.is_enabled,
     retailerProductId: db.retailer_product_id,
@@ -357,7 +356,6 @@ export interface HistoricalCrawler {
   convertDailyToSnapshot(
     dailyPrice: BaseDailyPriceData,
     mapping: TypeMapping,
-    retailer: Retailer,
-    province: Province
+    retailer: Retailer
   ): PriceData;
 }
