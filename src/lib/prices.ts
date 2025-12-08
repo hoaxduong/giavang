@@ -83,7 +83,9 @@ export async function fetchDailyPrices(
       query = query.eq("province", province);
     }
     // Always limit to before the end of the reference day
-    query = query.lt("created_at", startOfNextDayUtc.toISOString());
+    query = query
+      .neq("unit", "USD/oz")
+      .lt("created_at", startOfNextDayUtc.toISOString());
 
     return query;
   };

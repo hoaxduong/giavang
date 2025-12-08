@@ -15,6 +15,7 @@ import {
   formatCurrency,
   formatVietnameseDate,
   calculatePercentChange,
+  formatRetailerName,
 } from "@/lib/utils";
 import {
   usePortfolio,
@@ -192,7 +193,9 @@ export function PortfolioTable({ onEdit }: PortfolioTableProps) {
                     key={entry.id}
                     className="border-b last:border-b-0 hover:bg-muted/50 transition-colors"
                   >
-                    <td className="py-4 px-4 font-medium">{entry.retailer}</td>
+                    <td className="py-4 px-4 font-medium">
+                      {formatRetailerName(entry.retailer)}
+                    </td>
                     <td className="py-4 px-4">
                       <Badge variant="outline" className="text-xs">
                         {entry.productName}

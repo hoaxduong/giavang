@@ -39,7 +39,11 @@ function formatPrice(price: number): string {
   }).format(price);
 }
 
-function preparePrompt(prices: EnrichedPriceSnapshot[], style: string): string {
+function preparePrompt(
+  prices: EnrichedPriceSnapshot[],
+  worldGoldPrice: number | null,
+  style: string
+): string {
   const dateStr = format(new Date(), "EEEE, dd/MM/yyyy", { locale: vi });
 
   // Group prices for better context
@@ -85,12 +89,17 @@ function preparePrompt(prices: EnrichedPriceSnapshot[], style: string): string {
       )
       .join("\n");
 
+  // Add world gold price if available
+  const worldPriceInfo = worldGoldPrice
+    ? `\n\nWorld Gold Price (XAU/USD): $${worldGoldPrice.toFixed(2)}/oz\nEstimated in VND/tael: ${formatPrice(worldGoldPrice * 31.1035 * 24000)} (using approximate exchange rate)`
+    : "\n\nWorld Gold Price: Not available";
+
   return `
     You are an expert gold market analyst for a Vietnamese audience.
     Write a blog post about today's gold prices (${dateStr}).
     
     Current Data:
-    ${priceSummary}
+    ${priceSummary}${worldPriceInfo}
     
     Style to use: ${style}
     
@@ -142,9 +151,32 @@ export async function generateDailyGoldPost(
   prices: EnrichedPriceSnapshot[],
   config?: AiConfig
 ) {
+  // Fetch world gold price from database
+  let worldGoldPrice: number | null = null;
+  try {
+    const { createServiceRoleClient } =
+      await import("@/lib/supabase/service-role");
+    const supabase = createServiceRoleClient();
+
+    const { data: worldGold } = await supabase
+      .from("price_snapshots")
+      .select("buy_price")
+      .eq("unit", "USD/oz")
+      .order("created_at", { ascending: false })
+      .limit(1)
+      .single();
+
+    if (worldGold) {
+      worldGoldPrice = Number(worldGold.buy_price);
+    }
+  } catch (error) {
+    console.warn("Failed to fetch world gold price:", error);
+    // Continue without world price
+  }
+
   // Pick a random style
   const randomStyle = styles[Math.floor(Math.random() * styles.length)];
-  const prompt = preparePrompt(prices, randomStyle);
+  const prompt = preparePrompt(prices, worldGoldPrice, randomStyle);
 
   let model;
 

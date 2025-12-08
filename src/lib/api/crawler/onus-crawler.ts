@@ -9,6 +9,7 @@ import type {
   Province,
   ZoneMapping,
   OnusGoldsResponse,
+  OnusLineResponse,
 } from "./types";
 import type {
   Retailer as RetailerLiteral,
@@ -175,7 +176,21 @@ export class OnusCrawler extends BaseCrawler {
       // Parse prices with database mappings
       const { prices, errors } = await this.parsePrices(data);
 
-      const recordsFetched = data.data.length;
+      // Also fetch XAU/USD from /line endpoint
+      try {
+        const xauusdPrice = await this.fetchXAUUSD();
+        if (xauusdPrice) {
+          prices.push(xauusdPrice);
+        }
+      } catch (error) {
+        errors.push({
+          item: "xauusd",
+          error:
+            error instanceof Error ? error.message : "Failed to fetch XAU/USD",
+        });
+      }
+
+      const recordsFetched = data.data.length + 1; // +1 for XAU/USD attempt
       const recordsSaved = prices.length;
       const recordsFailed = errors.length;
 
@@ -304,13 +319,16 @@ export class OnusCrawler extends BaseCrawler {
         const retailerCode = this.mapSourceToRetailer(item.source);
         const retailer = retailerMap.get(retailerCode);
 
-        // Check if retailer is enabled
-        if (!retailer || !retailer.isEnabled) {
-          errors.push({
-            item: `${item.slug} (${item.source})`,
-            error: `Retailer ${retailerCode} is disabled or not found`,
-          });
-          continue;
+        // For XAU/USD, skip retailer validation since it uses empty retailer
+        // For other items, check if retailer is enabled
+        if (mapping.externalCode !== "xauusd") {
+          if (!retailer || !retailer.isEnabled) {
+            errors.push({
+              item: `${item.slug} (${item.source})`,
+              error: `Retailer ${retailerCode} is disabled or not found`,
+            });
+            continue;
+          }
         }
 
         // Check if retailer product is enabled
@@ -367,17 +385,21 @@ export class OnusCrawler extends BaseCrawler {
         // Calculate change if available
         const change = item.changeBuy !== 0 ? item.changeBuy : undefined;
 
+        // For XAU/USD, use empty retailer; otherwise use mapped retailer
+        const finalRetailerCode =
+          mapping.externalCode === "xauusd" ? "" : retailerCode;
+
         prices.push({
           id: "",
           createdAt: timestamp,
-          retailer: retailerCode as unknown as RetailerLiteral,
+          retailer: finalRetailerCode as unknown as RetailerLiteral,
           province: provinceCode as unknown as ProvinceLiteral,
 
           productName: mapping.label, // Store specific product name from mapping
           retailerProductId: mapping.retailerProductId, // Link to retailer_products (mandatory)
           buyPrice,
           sellPrice,
-          unit: "VND/chi",
+          unit: mapping.externalCode === "xauusd" ? "USD/oz" : "VND/chi",
           change,
         });
       } catch (error) {
@@ -527,5 +549,64 @@ export class OnusCrawler extends BaseCrawler {
     // Map source to retailer code and check if it's in the filter
     const retailerCode = this.mapSourceToRetailer(source);
     return this.config.retailerFilter.includes(retailerCode);
+  }
+
+  /**
+   * Fetch XAU/USD price from /line endpoint
+   * Returns a PriceData object or null if not available
+   */
+  private async fetchXAUUSD(): Promise<PriceData | null> {
+    const supabase = createServiceRoleClient();
+
+    // Get the type mapping for xauusd
+    const { data: mapping } = await supabase
+      .from("crawler_type_mappings")
+      .select("*")
+      .eq("source_id", this.config.id)
+      .eq("external_code", "xauusd")
+      .eq("is_enabled", true)
+      .single();
+
+    if (!mapping) {
+      return null; // No mapping configured
+    }
+
+    // Fetch from /line endpoint
+    const lineUrl = this.config.apiUrl.replace("/golds", "/line?slug=xauusd");
+    const { statusCode, body } = await request(lineUrl, {
+      method: "GET",
+      headers: {
+        Accept: "application/json",
+        "User-Agent": "Mozilla/5.0 (compatible; GoldPriceApp/1.0)",
+      },
+      bodyTimeout: this.config.timeout || 30000,
+      headersTimeout: this.config.timeout || 30000,
+    });
+
+    if (statusCode < 200 || statusCode >= 300) {
+      throw new Error(`HTTP ${statusCode}`);
+    }
+
+    const data = (await body.json()) as OnusLineResponse;
+
+    if (!data.data || data.data.length === 0) {
+      return null;
+    }
+
+    // Get the latest price (last item in array)
+    const latest = data.data[data.data.length - 1];
+
+    return {
+      id: "",
+      createdAt: new Date(latest.ts).toISOString(),
+      retailer: "" as unknown as RetailerLiteral,
+      province: "" as unknown as ProvinceLiteral,
+      productName: mapping.label,
+      retailerProductId: mapping.retailer_product_id,
+      buyPrice: latest.buy,
+      sellPrice: latest.sell,
+      unit: "USD/oz",
+      change: undefined,
+    };
   }
 }

@@ -50,7 +50,7 @@ export function formatCurrencyUSD(amount: number): string {
  */
 export function formatVietnameseDate(
   date: Date | string,
-  formatString: string = "PPP",
+  formatString: string = "PPP"
 ): string {
   const dateObj = typeof date === "string" ? new Date(date) : date;
   return formatDate(dateObj, formatString, { locale: vi });
@@ -78,7 +78,7 @@ export function formatRelativeTime(date: Date | string): string {
  */
 export function calculatePercentChange(
   oldValue: number,
-  newValue: number,
+  newValue: number
 ): number {
   if (oldValue === 0) return 0;
   return ((newValue - oldValue) / oldValue) * 100;
@@ -91,4 +91,15 @@ export function getPriceTrend(change: number): "up" | "down" | "stable" {
   if (change > 0) return "up";
   if (change < 0) return "down";
   return "stable";
+}
+
+/**
+ * Format retailer name for display
+ * Converts empty retailer code to display name
+ */
+export function formatRetailerName(retailerCode: string): string {
+  if (retailerCode === "" || !retailerCode) {
+    return "Giá Vàng Thế Giới";
+  }
+  return retailerCode;
 }

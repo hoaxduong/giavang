@@ -3,7 +3,11 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
-import { formatCurrency, formatRelativeTime } from "@/lib/utils";
+import {
+  formatCurrency,
+  formatRelativeTime,
+  formatRetailerName,
+} from "@/lib/utils";
 
 import type { EnrichedPriceSnapshot } from "@/lib/types";
 
@@ -94,7 +98,9 @@ export function PriceTable({
                     key={`${price.retailer}-${price.province}-${index}`}
                     className="border-b last:border-b-0 hover:bg-muted/50 transition-colors"
                   >
-                    <td className="py-4 px-4 font-medium">{price.retailer}</td>
+                    <td className="py-4 px-4 font-medium">
+                      {formatRetailerName(price.retailer)}
+                    </td>
                     <td className="py-4 px-4 text-sm font-medium">
                       {price.product_name || "Vàng SJC"}
                     </td>
