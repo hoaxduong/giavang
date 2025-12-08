@@ -42,18 +42,18 @@ export const extensions = [
   Table.configure({
     resizable: true,
     HTMLAttributes: {
-      class: "w-full border-collapse border border-border my-4",
+      class: "w-full border-collapse border border-border my-4 not-prose",
     },
   }),
   TableRow,
   TableHeader.configure({
     HTMLAttributes: {
-      class: "border border-border bg-muted p-2 text-left font-bold",
+      class: "border border-border bg-muted !px-4 !py-2 text-left font-bold",
     },
   }),
   TableCell.configure({
     HTMLAttributes: {
-      class: "border border-border p-2",
+      class: "border border-border !px-4 !py-2",
     },
   }),
 ];

@@ -68,15 +68,15 @@ export function PostContent({ content }: PostContentProps) {
         case "hardBreak":
           return "<br />";
         case "table":
-          return `<div class="overflow-x-auto my-4"><table class="w-full border-collapse border border-border">${children}</table></div>`;
+          return `<div class="overflow-x-auto my-4"><table class="w-full border-collapse border border-border not-prose">${children}</table></div>`;
         case "tableRow":
           return `<tr class="group">${children}</tr>`;
         case "tableHeader":
-          return `<th class="border border-border bg-muted p-2 text-left font-bold" colspan="${
+          return `<th class="border border-border bg-muted !px-4 !py-2 text-left font-bold" colspan="${
             node.attrs?.colspan || 1
           }" rowspan="${node.attrs?.rowspan || 1}">${children}</th>`;
         case "tableCell":
-          return `<td class="border border-border p-2" colspan="${
+          return `<td class="border border-border !px-4 !py-2" colspan="${
             node.attrs?.colspan || 1
           }" rowspan="${node.attrs?.rowspan || 1}">${children}</td>`;
         default:
