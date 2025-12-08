@@ -1,7 +1,6 @@
 "use client";
 
 import Link from "next/link";
-import { ThemeToggle } from "./theme-toggle";
 import { UserMenu } from "@/components/user/user-menu";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/use-auth";
@@ -64,7 +63,6 @@ export function Header() {
         </div>
 
         <div className="flex items-center gap-4">
-          <ThemeToggle />
           {loading ? (
             <div className="h-9 w-20 animate-pulse rounded-md bg-muted" />
           ) : isAuthenticated ? (

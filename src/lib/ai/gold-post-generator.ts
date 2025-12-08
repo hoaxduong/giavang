@@ -94,50 +94,51 @@ function preparePrompt(
     ? `\n\nWorld Gold Price (XAU/USD): $${worldGoldPrice.toFixed(2)}/oz\nEstimated in VND/tael: ${formatPrice(worldGoldPrice * 31.1035 * 24000)} (using approximate exchange rate)`
     : "\n\nWorld Gold Price: Not available";
 
-  return `
-    You are an expert gold market analyst for a Vietnamese audience.
-    Write a blog post about today's gold prices (${dateStr}).
-    
-    Current Data:
-    ${priceSummary}${worldPriceInfo}
-    
-    Style to use: ${style}
-    
-    Structure:
-    1. **Opening**: Engaging introduction (approx. 100-150 words). Summarize the main trend (up/down/stable). Mention the key numbers immediately.
-    2. **Domestic Price Analysis** (H2: "Giá vàng trong nước hôm nay [Date]"):
-       - Detailed breakdown of SJC, PNJ, DOJI, and major retailers.
-       - Use a clear HTML Table to present the prices for readability (Headers: Thương hiệu, Loại vàng, Giá Mua, Giá Bán, Thay đổi).
-       - Highlight any significant price movements (increase/decrease > 500k VND/tael).
-    3. **World Gold Price** (H2: "Giá vàng thế giới"):
-       - Convert world price (USD/oz) to VND/tael (estimate).
-       - Compare the gap between domestic and world prices.
-    4. **Market Commentary** (H2: "Nhận định thị trường"):
-       - Why is the price moving? (Global conflict, FED interest rates, Dollar strength, etc.).
-       - Use expert tone.
-    5. **Forecast/Advice** (H2: "Dự báo giá vàng"):
-       - Short-term prediction.
-       - Advice for buyers/sellers (Hold or Sell).
-    
-    Requirements:
-    - Language: Vietnamese.
-    - Format: HTML (use <h2>, <p>, <table>, <thead>, <tbody>, <tr>, <th>, <td>, <ul>, <li>, <strong>).
-    - SEO Best Practices:
-      - Use H2 for main sections, H3 for sub-sections if needed.
-      - Keywords to include naturally: "giá vàng hôm nay", "SJC", "vàng 9999", "giá vàng trực tuyến", "biểu đồ giá vàng".
-      - Bold key figures and trends.
-      - Keep paragraphs short (3-4 sentences max).
-    - Tone: Professional, analytical, but easy to read.
-    - Title: Catchy, includes "Giá vàng hôm nay [Date]" and a "hook" (e.g., "SJC tăng sốc", "Lao dốc không phanh").
-    
-    Output Format:
-    Return a JSON object with:
-    {
-      "title": "string",
-      "excerpt": "string (meta description, 150-160 chars, enticing)",
-      "content": "string (HTML body)"
-    }
-  `;
+  return `You are an expert gold market analyst for a Vietnamese audience.
+Write a blog post about today's gold prices (${dateStr}).
+
+Current Data:
+${priceSummary}${worldPriceInfo}
+
+Style to use: ${style}
+
+Structure:
+1. **Opening**: Engaging introduction (approx. 100-150 words). Summarize the main trend (up/down/stable). Mention the key numbers immediately.
+2. **Domestic Price Analysis** (H2: "Giá vàng trong nước hôm nay [Date]"):
+   - Detailed breakdown of SJC, PNJ, DOJI, and major retailers.
+   - Use a clear HTML Table to present the prices for readability (Headers: Thương hiệu, Loại vàng, Giá Mua, Giá Bán, Thay đổi).
+   - Highlight any significant price movements (increase/decrease > 500k VND/tael).
+3. **World Gold Price** (H2: "Giá vàng thế giới"):
+   - Use the provided world price data.
+   - Compare the gap between domestic and world prices.
+4. **Market Commentary** (H2: "Nhận định thị trường"):
+   - Why is the price moving? (Global conflict, FED interest rates, Dollar strength, etc.).
+   - Use expert tone.
+5. **Forecast/Advice** (H2: "Dự báo giá vàng"):
+   - Short-term prediction.
+   - Advice for buyers/sellers (Hold or Sell).
+
+Requirements:
+- Language: Vietnamese.
+- Format: HTML (use <h2>, <p>, <table>, <thead>, <tbody>, <tr>, <th>, <td>, <ul>, <li>, <strong>).
+- SEO Best Practices:
+  - Use H2 for main sections, H3 for sub-sections if needed.
+  - Keywords to include naturally: "giá vàng hôm nay", "SJC", "vàng 9999", "giá vàng trực tuyến", "biểu đồ giá vàng".
+  - Bold key figures and trends.
+  - Keep paragraphs short (3-4 sentences max).
+- Tone: Professional, analytical, but easy to read.
+- Title: Catchy, includes "Giá vàng hôm nay [Date]" and a "hook" (e.g., "SJC tăng sốc", "Lao dốc không phanh").
+
+IMPORTANT: You MUST respond with ONLY a valid JSON object. Do not include any markdown formatting, explanations, or additional text.
+
+The JSON object must have exactly this structure:
+{
+  "title": "string",
+  "excerpt": "string (meta description, 150-160 chars, enticing)",
+  "content": "string (HTML body)"
+}
+
+Respond with ONLY the JSON object, nothing else.`;
 }
 
 import { createOpenAI } from "@ai-sdk/openai";
@@ -200,10 +201,18 @@ export async function generateDailyGoldPost(
   // Parse the JSON response from the text
   // We asked for a JSON object in the prompt, but LLMs might wrap it in markdown code blocks
   let cleanText = text.trim();
+
+  // Remove markdown code blocks
   if (cleanText.startsWith("```json")) {
-    cleanText = cleanText.replace(/^```json/g, "").replace(/```$/g, "");
+    cleanText = cleanText.replace(/^```json\s*/g, "").replace(/\s*```$/g, "");
   } else if (cleanText.startsWith("```")) {
-    cleanText = cleanText.replace(/^```/g, "").replace(/```$/g, "");
+    cleanText = cleanText.replace(/^```\s*/g, "").replace(/\s*```$/g, "");
+  }
+
+  // Try to extract JSON if there's text before/after
+  const jsonMatch = cleanText.match(/\{[\s\S]*\}/);
+  if (jsonMatch) {
+    cleanText = jsonMatch[0];
   }
 
   let result;
