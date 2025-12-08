@@ -32,6 +32,9 @@ export function useHistoricalPrices(filters: HistoricalFilters) {
       if (filters.province) {
         params.append("province", filters.province);
       }
+      if (filters.unit) {
+        params.append("unit", filters.unit);
+      }
 
       const response = await fetch(`/api/prices/historical?${params}`);
 

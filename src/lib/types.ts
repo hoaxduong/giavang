@@ -91,6 +91,7 @@ export interface PriceFilters {
 }
 
 export interface HistoricalFilters extends PriceFilters {
+  unit?: string;
   startDate: Date;
   endDate: Date;
   interval?: "hourly" | "daily" | "weekly";

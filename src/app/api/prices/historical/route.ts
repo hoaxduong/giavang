@@ -14,6 +14,7 @@ import { createClient } from "@/lib/supabase/server";
  * Optional query parameters:
  * - retailer: Filter by specific retailer
  * - province: Filter by specific province
+ * - unit: Filter by unit (e.g., "USD/oz")
  * - interval: Grouping interval ("hourly", "daily", "weekly") - default: "daily"
  *
  * Example:
@@ -41,6 +42,7 @@ export async function GET(request: NextRequest) {
     const retailerProductId = searchParams.get("retailerProductId");
     const retailer = searchParams.get("retailer");
     const province = searchParams.get("province");
+    const unit = searchParams.get("unit");
     const interval = searchParams.get("interval") || "daily";
 
     const supabase = await createClient();
@@ -61,6 +63,9 @@ export async function GET(request: NextRequest) {
     }
     if (province !== null) {
       query = query.eq("province", province);
+    }
+    if (unit) {
+      query = query.eq("unit", unit);
     }
 
     const { data: rawData, error } = await query;
