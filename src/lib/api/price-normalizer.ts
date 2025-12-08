@@ -47,8 +47,9 @@ export function snapshotToPriceData(
  */
 export function priceDataToSnapshot(
   data: PriceData
-): Omit<PriceSnapshot, "id" | "created_at"> {
+): Omit<PriceSnapshot, "id"> {
   return {
+    created_at: data.createdAt, // Use timestamp from API response
     // retailer is removed from db
     province: data.province,
     // product_name is removed from db

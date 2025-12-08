@@ -227,10 +227,10 @@ export class OnusHistoricalCrawler
     // Determine unit based on external code (XAU/USD uses USD/oz, others use VND/chi)
     const unit = mapping.externalCode === "xauusd" ? "USD/oz" : "VND/chi";
 
-    // Use the timestamp from API response
+    // Use the full timestamp from API response
     return {
       id: "",
-      createdAt: dailyPrice.date,
+      createdAt: (dailyPrice as OnusDailyPriceData).timestamp,
       retailer: mapping.retailerCode as unknown as RetailerLiteral,
       province: provinceName as unknown as ProvinceLiteral,
       productName: mapping.label, // Store specific product name from mapping

@@ -4,7 +4,6 @@ import type { PriceData } from "@/lib/types";
 import type {
   TypeMapping,
   Retailer,
-  Province,
   HistoricalCrawler,
   GenericHistoricalCrawlerResult,
   BaseDailyPriceData,
@@ -331,7 +330,7 @@ export class SjcHistoricalCrawler
   convertDailyToSnapshot(
     dailyPrice: BaseDailyPriceData,
     mapping: TypeMapping,
-    retailer: Retailer
+    _retailer: Retailer
   ): PriceData {
     const sjcPrice = dailyPrice as SjcDailyPriceData;
     const branchName = sjcPrice.branchName || "";
@@ -358,8 +357,8 @@ export class SjcHistoricalCrawler
 
     return {
       id: "",
-      // Use the timestamp from API response
-      createdAt: dailyPrice.date,
+      // Use the full timestamp from API response
+      createdAt: (dailyPrice as SjcDailyPriceData).timestamp,
       retailer: mapping.retailerCode as unknown as RetailerLiteral, // or retailer.code? SjcCrawler uses mapping.retailerCode.
       // SjcCrawler: retailer: mapping.retailerCode as unknown as RetailerLiteral
       // But backfill passes `retailer` object.

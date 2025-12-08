@@ -419,12 +419,12 @@ export class SjcCrawler extends BaseCrawler {
         try {
           timestamp = this.parseDotNetDate(item.GroupDate);
         } catch (error) {
-          // Fallback to current time if GroupDate parsing fails
+          // Fallback to API's latestDate if GroupDate parsing fails
           console.warn(
             `[SJC Crawler] Failed to parse GroupDate for ${externalCode}:`,
             error instanceof Error ? error.message : error
           );
-          timestamp = new Date().toISOString();
+          timestamp = this.parseTimestamp(apiResponse.latestDate);
         }
 
         prices.push({
