@@ -55,9 +55,21 @@ export async function POST(_request: NextRequest) {
     const targetTagIds = Array.isArray(postConfig?.targetTagIds)
       ? postConfig.targetTagIds
       : [];
+    const postMode = postConfig?.postMode || "update";
+
+    // Determine slug based on mode
+    let slug: string;
+    if (postMode === "create") {
+      // Create mode: generate unique slug with date
+      const dateStr = new Date().toISOString().split("T")[0].replace(/-/g, "");
+      slug = `gia-vang-hom-nay-${dateStr}`;
+    } else {
+      // Update mode: use fixed slug
+      slug = "gia-vang-hom-nay";
+    }
 
     const postData = {
-      slug: SLUG,
+      slug,
       title: aiPost.title,
       excerpt: aiPost.excerpt,
       content: aiPost.content,
@@ -70,7 +82,7 @@ export async function POST(_request: NextRequest) {
     };
 
     let result;
-    if (existingPost) {
+    if (postMode === "update" && existingPost) {
       const { data, error } = await supabase
         .from("blog_posts")
         .update(postData)

@@ -82,24 +82,35 @@ export async function GET(request: NextRequest) {
     const targetTagIds = Array.isArray(postConfig?.targetTagIds)
       ? postConfig.targetTagIds
       : [];
+    const postMode = postConfig?.postMode || "update";
+
+    // Determine slug based on mode
+    let slug: string;
+    if (postMode === "create") {
+      // Create mode: generate unique slug with date
+      const dateStr = new Date().toISOString().split("T")[0].replace(/-/g, "");
+      slug = `gia-vang-hom-nay-${dateStr}`;
+    } else {
+      // Update mode: use fixed slug
+      slug = "gia-vang-hom-nay";
+    }
 
     // 4. Update or Insert Post
     const postData = {
-      slug: SLUG, // Always keep this slug
-      title: aiPost.title, // Update title with new date
+      slug,
+      title: aiPost.title,
       excerpt: aiPost.excerpt,
       content: aiPost.content,
       updated_at: new Date().toISOString(),
-      status: "published", // Ensure it is published
+      status: "published",
       author_id: authorId,
       category_id: targetCategoryId,
-      // Only set these on creation or if you want to update them
       meta_title: aiPost.title,
       meta_description: aiPost.excerpt,
     };
 
     let result;
-    if (existingPost) {
+    if (postMode === "update" && existingPost) {
       const { data, error } = await supabase
         .from("blog_posts")
         .update(postData)

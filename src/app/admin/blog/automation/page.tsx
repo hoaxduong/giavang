@@ -83,9 +83,11 @@ export default function BlogAutomationPage() {
   const [postConfig, setPostConfig] = useState<{
     targetCategoryId?: string;
     targetTagIds?: string[];
+    postMode?: "update" | "create";
   }>({
     targetCategoryId: "",
     targetTagIds: [],
+    postMode: "update",
   });
 
   const [loadingSettings, setLoadingSettings] = useState(true);
@@ -157,6 +159,7 @@ export default function BlogAutomationPage() {
         setPostConfig({
           targetCategoryId: postData.setting.value.targetCategoryId || "",
           targetTagIds: postData.setting.value.targetTagIds || [],
+          postMode: postData.setting.value.postMode || "update",
         });
       }
     } catch (_error) {
@@ -412,6 +415,31 @@ export default function BlogAutomationPage() {
                 </div>
               ) : (
                 <>
+                  <div className="space-y-2">
+                    <Label>Post Mode</Label>
+                    <Select
+                      value={postConfig.postMode || "update"}
+                      onValueChange={(val: "update" | "create") =>
+                        setPostConfig({ ...postConfig, postMode: val })
+                      }
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select Mode" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="update">
+                          Update Existing Post
+                        </SelectItem>
+                        <SelectItem value="create">Create New Post</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <p className="text-xs text-muted-foreground">
+                      {postConfig.postMode === "update"
+                        ? "Updates the existing 'Giá vàng hôm nay' post with new content"
+                        : "Creates a new post each time with a unique slug"}
+                    </p>
+                  </div>
+
                   <div className="space-y-2">
                     <div className="flex items-center justify-between">
                       <Label>Target Category</Label>
