@@ -24,13 +24,16 @@ export async function POST(_request: NextRequest) {
 
     // 1.5 Fetch AI Config
     // We use the same supabase client (admin role or user role)
+    // 1.5 Fetch AI Config & Post Config
     const { data: configData } = await supabase
       .from("system_settings")
-      .select("value")
-      .eq("key", "ai_config")
-      .single();
+      .select("key, value")
+      .in("key", ["ai_config", "gold_post_config"]);
 
-    const aiConfig = configData?.value;
+    const aiConfig = configData?.find((c) => c.key === "ai_config")?.value;
+    const postConfig = configData?.find(
+      (c) => c.key === "gold_post_config"
+    )?.value;
 
     // 3. Generate content
     const aiPost = await generateDailyGoldPost(prices, aiConfig);
@@ -47,6 +50,12 @@ export async function POST(_request: NextRequest) {
     // If manual trigger, and no existing post, we use current admin as author
     const authorId = existingPost?.author_id || user.id;
 
+    // Read config
+    const targetCategoryId = postConfig?.targetCategoryId || null;
+    const targetTagIds = Array.isArray(postConfig?.targetTagIds)
+      ? postConfig.targetTagIds
+      : [];
+
     const postData = {
       slug: SLUG,
       title: aiPost.title,
@@ -55,6 +64,7 @@ export async function POST(_request: NextRequest) {
       updated_at: new Date().toISOString(),
       status: "published",
       author_id: authorId,
+      category_id: targetCategoryId,
       meta_title: aiPost.title,
       meta_description: aiPost.excerpt,
     };
@@ -74,7 +84,6 @@ export async function POST(_request: NextRequest) {
         .from("blog_posts")
         .insert({
           ...postData,
-          category_id: null,
           created_at: new Date().toISOString(),
           view_count: 0,
           comment_count: 0,
@@ -83,6 +92,21 @@ export async function POST(_request: NextRequest) {
         .single();
       if (error) throw error;
       result = data;
+    }
+
+    // Update Tags
+    if (result && targetTagIds.length > 0) {
+      const tagInserts = targetTagIds.map((tagId: string) => ({
+        post_id: result.id,
+        tag_id: tagId,
+      }));
+      const { error: tagError } = await supabase
+        .from("blog_post_tags")
+        .upsert(tagInserts, { onConflict: "post_id,tag_id" });
+
+      if (tagError) {
+        console.error("Failed to update tags:", tagError);
+      }
     }
 
     // 5. Log Success

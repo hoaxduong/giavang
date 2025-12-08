@@ -82,22 +82,37 @@ function preparePrompt(prices: EnrichedPriceSnapshot[], style: string): string {
     Style to use: ${style}
     
     Structure:
-    1. **Opening**: Engaging introduction about the market state today.
-    2. **Detailed Analysis**: Breakdown of SJC, PNJ, DOJI prices. Highlight significant changes.
-    3. **Closing**: Summary and quick advice for investors.
+    1. **Opening**: Engaging introduction (approx. 100-150 words). Summarize the main trend (up/down/stable). Mention the key numbers immediately.
+    2. **Domestic Price Analysis** (H2: "Giá vàng trong nước hôm nay [Date]"):
+       - Detailed breakdown of SJC, PNJ, DOJI, and major retailers.
+       - Use a clear HTML Table to present the prices for readability (Headers: Thương hiệu, Loại vàng, Giá Mua, Giá Bán, Thay đổi).
+       - Highlight any significant price movements (increase/decrease > 500k VND/tael).
+    3. **World Gold Price** (H2: "Giá vàng thế giới"):
+       - Convert world price (USD/oz) to VND/tael (estimate).
+       - Compare the gap between domestic and world prices.
+    4. **Market Commentary** (H2: "Nhận định thị trường"):
+       - Why is the price moving? (Global conflict, FED interest rates, Dollar strength, etc.).
+       - Use expert tone.
+    5. **Forecast/Advice** (H2: "Dự báo giá vàng"):
+       - Short-term prediction.
+       - Advice for buyers/sellers (Hold or Sell).
     
     Requirements:
     - Language: Vietnamese.
-    - Format: HTML (use <h2>, <p>, <ul>, <li>, <strong>).
-    - SEO: Use keywords "giá vàng hôm nay", "SJC", "vàng 9999".
-    - Tone: Professional but accessible.
-    - Title: Generate a catchy title including "Giá vàng hôm nay" and the date.
+    - Format: HTML (use <h2>, <p>, <table>, <thead>, <tbody>, <tr>, <th>, <td>, <ul>, <li>, <strong>).
+    - SEO Best Practices:
+      - Use H2 for main sections, H3 for sub-sections if needed.
+      - Keywords to include naturally: "giá vàng hôm nay", "SJC", "vàng 9999", "giá vàng trực tuyến", "biểu đồ giá vàng".
+      - Bold key figures and trends.
+      - Keep paragraphs short (3-4 sentences max).
+    - Tone: Professional, analytical, but easy to read.
+    - Title: Catchy, includes "Giá vàng hôm nay [Date]" and a "hook" (e.g., "SJC tăng sốc", "Lao dốc không phanh").
     
     Output Format:
     Return a JSON object with:
     {
       "title": "string",
-      "excerpt": "string (short summary for meta description)",
+      "excerpt": "string (meta description, 150-160 chars, enticing)",
       "content": "string (HTML body)"
     }
   `;
