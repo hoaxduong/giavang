@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { format } from "date-fns";
 import { Badge } from "@/components/ui/badge";
-import { Calendar, Eye, MessageSquare, User } from "lucide-react";
+import { Calendar, Eye, MessageSquare } from "lucide-react";
 
 interface PostMetaProps {
   post: {
@@ -27,10 +27,6 @@ export function PostMeta({ post }: PostMetaProps) {
     <div className="space-y-6">
       {/* Author & Date */}
       <div className="flex items-center gap-6 text-sm text-muted-foreground">
-        <div className="flex items-center gap-2">
-          <User className="h-4 w-4" />
-          <span>{post.author.fullName}</span>
-        </div>
         <div className="flex items-center gap-2">
           <Calendar className="h-4 w-4" />
           <span>{format(new Date(post.publishedAt), "dd/MM/yyyy")}</span>
