@@ -2,6 +2,10 @@ import StarterKit from "@tiptap/starter-kit";
 import Image from "@tiptap/extension-image";
 import Link from "@tiptap/extension-link";
 import Placeholder from "@tiptap/extension-placeholder";
+import { Table } from "@tiptap/extension-table";
+import { TableRow } from "@tiptap/extension-table-row";
+import { TableHeader } from "@tiptap/extension-table-header";
+import { TableCell } from "@tiptap/extension-table-cell";
 
 export const extensions = [
   StarterKit.configure({
@@ -34,5 +38,22 @@ export const extensions = [
   }),
   Placeholder.configure({
     placeholder: "Viết nội dung bài viết của bạn...",
+  }),
+  Table.configure({
+    resizable: true,
+    HTMLAttributes: {
+      class: "w-full border-collapse border border-border my-4",
+    },
+  }),
+  TableRow,
+  TableHeader.configure({
+    HTMLAttributes: {
+      class: "border border-border bg-muted p-2 text-left font-bold",
+    },
+  }),
+  TableCell.configure({
+    HTMLAttributes: {
+      class: "border border-border p-2",
+    },
   }),
 ];

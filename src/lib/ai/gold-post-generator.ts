@@ -1,3 +1,16 @@
+import { Window } from "happy-dom";
+
+// Polyfill DOM for @tiptap/html on server side
+if (!global.window) {
+  const window = new Window();
+  // @ts-ignore
+  global.window = window;
+  // @ts-ignore
+  global.document = window.document;
+  // @ts-ignore - navigator is read-only in Node 21+, but checking validation script suggested we might not need it?
+  // actually let's try WITHOUT navigator first as it caused crash in verification script.
+}
+
 import { generateText } from "ai";
 import { createGoogleGenerativeAI } from "@ai-sdk/google";
 import { generateJSON } from "@tiptap/html";

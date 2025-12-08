@@ -17,9 +17,11 @@ import {
   Image as ImageIcon,
   Undo,
   Redo,
+  Table2,
+  Trash,
 } from "lucide-react";
 import { extensions } from "@/lib/tiptap/extensions";
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 
 interface PostEditorProps {
@@ -45,6 +47,36 @@ export function PostEditor({ content, onChange }: PostEditorProps) {
       },
     },
   });
+
+  // Sync content updates from parent (e.g. async load)
+  useEffect(() => {
+    if (editor && content) {
+      // Simple check to avoid loops/redraws if content is "same"
+      // But Tiptap JSON comparison is tricky.
+      // For "load from server" scenario, usually editor is empty or content is totally different.
+      // If we just setContent, it resets cursor.
+      // However, here the main issue is INITIAL load.
+      // Or if the parent completely replaces content (Regenerate).
+
+      // We can check if editor is empty, or just blindly set it for now?
+      // Better: check if content changed.
+
+      // Since this is an admin editor, forcing update on prop change is acceptable
+      // if we assume the parent only updates "content" when it really changes (like load).
+      // But onChange calls setContent in parent -> loop?
+      // No, onChange passes "JSON from editor" to parent.
+      // Parent updates state.
+      // Parent passes state back to PostEditor.
+      // If we strictly sync, we create a loop and cursor jump.
+
+      // FIX: Only update if editor is empty OR if we implement deep comparison.
+      // For the "Post didn't load" issue, checking isEmpty is enough for initial load.
+
+      if (editor.isEmpty) {
+        editor.commands.setContent(content);
+      }
+    }
+  }, [editor, content]);
 
   const handleImageUpload = useCallback(async () => {
     const input = document.createElement("input");
@@ -212,6 +244,35 @@ export function PostEditor({ content, onChange }: PostEditorProps) {
             disabled={isUploading}
           >
             <ImageIcon className="h-4 w-4" />
+          </Button>
+
+          <Separator orientation="vertical" className="h-8" />
+
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            onClick={() =>
+              editor
+                .chain()
+                .focus()
+                .insertTable({ rows: 3, cols: 3, withHeaderRow: true })
+                .run()
+            }
+            disabled={!editor.can().insertTable()}
+          >
+            <Table2 className="h-4 w-4" />
+          </Button>
+
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            onClick={() => editor.chain().focus().deleteTable().run()}
+            disabled={!editor.can().deleteTable()}
+            title="Delete Table"
+          >
+            <Trash className="h-4 w-4" />
           </Button>
 
           <Separator orientation="vertical" className="h-8" />
