@@ -1,14 +1,12 @@
-"use client";
-
 import { useQuery } from "@tanstack/react-query";
 import { REFRESH_INTERVAL } from "../constants";
-import type { PriceSnapshot } from "../types";
+import type { EnrichedPriceSnapshot } from "../types";
 
 /**
  * API Response type for world gold price
  */
 interface WorldGoldPriceResponse {
-  data: PriceSnapshot | null;
+  data: EnrichedPriceSnapshot | null;
   timestamp: string;
 }
 
@@ -28,7 +26,7 @@ export function useWorldGoldPrice() {
 
       if (!response.ok) {
         throw new Error(
-          `Failed to fetch world gold price: ${response.statusText}`,
+          `Failed to fetch world gold price: ${response.statusText}`
         );
       }
 
