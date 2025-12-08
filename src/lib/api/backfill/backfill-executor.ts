@@ -15,7 +15,6 @@ import type {
   CrawlerConfig,
   TypeMapping,
   Retailer,
-  Province,
   HistoricalCrawler,
   BaseDailyPriceData,
 } from "../crawler/types";

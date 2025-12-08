@@ -4,7 +4,6 @@ import type { PriceData } from "@/lib/types";
 import type {
   TypeMapping,
   Retailer,
-  Province,
   OnusLineResponse,
   OnusDailyPriceData,
   HistoricalCrawler,
@@ -219,11 +218,14 @@ export class OnusHistoricalCrawler
   convertDailyToSnapshot(
     dailyPrice: BaseDailyPriceData,
     mapping: TypeMapping,
-    retailer: Retailer
+    _retailer: Retailer
   ): PriceData {
     // ONUS doesn't have province info in daily price, and we removed province mapping.
     // So province will be empty.
     const provinceName = "";
+
+    // Determine unit based on external code (XAU/USD uses USD/oz, others use VND/chi)
+    const unit = mapping.externalCode === "xauusd" ? "USD/oz" : "VND/chi";
 
     // Use the timestamp from API response
     return {
@@ -235,7 +237,7 @@ export class OnusHistoricalCrawler
       retailerProductId: mapping.retailerProductId, // Link to retailer_products (mandatory)
       buyPrice: dailyPrice.buyPrice,
       sellPrice: dailyPrice.sellPrice,
-      unit: "VND/chi",
+      unit,
       change: undefined,
     };
   }
