@@ -209,37 +209,6 @@ export function dbProvinceToProvince(db: DbProvince): Province {
 }
 
 /**
- * Zone mapping for Onus crawler
- */
-export interface ZoneMapping {
-  id: string;
-  sourceId: string;
-  zoneText: string;
-  provinceCode: string;
-  isEnabled: boolean;
-}
-
-export interface DbZoneMapping {
-  id: string;
-  source_id: string;
-  zone_text: string;
-  province_code: string;
-  is_enabled: boolean;
-  created_at: string;
-  updated_at: string;
-}
-
-export function dbZoneMappingToZoneMapping(db: DbZoneMapping): ZoneMapping {
-  return {
-    id: db.id,
-    sourceId: db.source_id,
-    zoneText: db.zone_text,
-    provinceCode: db.province_code,
-    isEnabled: db.is_enabled,
-  };
-}
-
-/**
  * Onus API Response Interfaces
  */
 

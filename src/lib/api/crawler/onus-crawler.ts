@@ -7,7 +7,6 @@ import type {
   TypeMapping,
   Retailer,
   Province,
-  ZoneMapping,
   OnusGoldsResponse,
   OnusLineResponse,
 } from "./types";
@@ -37,8 +36,8 @@ const SOURCE_TO_RETAILER: Record<string, string> = {
  *
  * Fetches gold prices from Onus Exchange API and converts them to internal format.
  * - Supports multiple retailers with optional filtering
- * - Maps zone text to province codes using database mappings
  * - Uses slug as external code for type mappings
+ * - Always uses empty province for all Onus data
  * - Respects enable/disable flags at multiple levels
  * - Comprehensive logging of all operations
  */
@@ -269,8 +268,8 @@ export class OnusCrawler extends BaseCrawler {
     const prices: PriceData[] = [];
     const errors: Array<{ item: string; error: string }> = [];
 
-    // Fetch all enabled mappings, retailers, provinces, retailer products, zone mappings
-    const { mappings, retailers, provinces, retailerProducts, zoneMappings } =
+    // Fetch all enabled mappings, retailers, provinces, retailer products
+    const { mappings, retailers, provinces, retailerProducts } =
       await this.fetchReferenceData();
 
     // Create lookup maps for fast access
@@ -285,9 +284,6 @@ export class OnusCrawler extends BaseCrawler {
 
     const retailerProductMap = new Map<string, RetailerProduct>();
     retailerProducts.forEach((rp) => retailerProductMap.set(rp.id, rp));
-
-    const zoneMappingMap = new Map<string, ZoneMapping>();
-    zoneMappings.forEach((zm) => zoneMappingMap.set(zm.zoneText, zm));
 
     // Parse each price entry
     for (const item of apiResponse.data) {
@@ -343,13 +339,8 @@ export class OnusCrawler extends BaseCrawler {
           continue;
         }
 
-        // Determine province code
-        let provinceCode: string;
-        // Map zone to province
-        provinceCode = this.mapZoneToProvince(
-          item.zone?.text || null,
-          zoneMappingMap
-        );
+        // Always use empty province for Onus data
+        const provinceCode = "";
 
         const province = provinceMap.get(provinceCode);
 
@@ -422,7 +413,6 @@ export class OnusCrawler extends BaseCrawler {
     retailers: Retailer[];
     provinces: Province[];
     retailerProducts: RetailerProduct[];
-    zoneMappings: ZoneMapping[];
   }> {
     const supabase = createServiceRoleClient();
 
@@ -432,7 +422,6 @@ export class OnusCrawler extends BaseCrawler {
       retailersResult,
       provincesResult,
       retailerProductsResult,
-      zoneMappingsResult,
     ] = await Promise.all([
       supabase
         .from("crawler_type_mappings")
@@ -442,11 +431,6 @@ export class OnusCrawler extends BaseCrawler {
       supabase.from("retailers").select("*").eq("is_enabled", true),
       supabase.from("provinces").select("*").eq("is_enabled", true),
       supabase.from("retailer_products").select("*").eq("is_enabled", true),
-      supabase
-        .from("zone_mappings")
-        .select("*")
-        .eq("source_id", this.config.id)
-        .eq("is_enabled", true),
     ]);
 
     const mappings: TypeMapping[] =
@@ -494,16 +478,7 @@ export class OnusCrawler extends BaseCrawler {
         updatedAt: rp.updated_at,
       })) || [];
 
-    const zoneMappings: ZoneMapping[] =
-      zoneMappingsResult.data?.map((zm) => ({
-        id: zm.id,
-        sourceId: zm.source_id,
-        zoneText: zm.zone_text,
-        provinceCode: zm.province_code,
-        isEnabled: zm.is_enabled,
-      })) || [];
-
-    return { mappings, retailers, provinces, retailerProducts, zoneMappings };
+    return { mappings, retailers, provinces, retailerProducts };
   }
 
   /**
@@ -511,27 +486,6 @@ export class OnusCrawler extends BaseCrawler {
    */
   protected mapSourceToRetailer(source: string): string {
     return SOURCE_TO_RETAILER[source.toLowerCase()] || source.toUpperCase();
-  }
-
-  /**
-   * Map zone text to province code
-   * Uses zone mappings from database with fallback to default province
-   */
-  protected mapZoneToProvince(
-    zoneText: string | null,
-    zoneMappings: Map<string, ZoneMapping>
-  ): string {
-    if (!zoneText) {
-      return ""; // Default province
-    }
-
-    const mapping = zoneMappings.get(zoneText);
-    if (mapping && mapping.isEnabled) {
-      return mapping.provinceCode;
-    }
-
-    // Fallback to default province (empty string)
-    return "";
   }
 
   /**

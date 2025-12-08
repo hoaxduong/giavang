@@ -131,25 +131,7 @@ INSERT INTO crawler_sources (
 )
 ON CONFLICT (name) DO NOTHING;
 
--- ============================================================================
--- ZONE MAPPINGS
--- ============================================================================
 
-INSERT INTO zone_mappings (source_id, zone_text, province_code, is_enabled)
-SELECT
-  cs.id,
-  mappings.zone,
-  mappings.province,
-  true
-FROM crawler_sources cs,
-  (VALUES
-    ('Hồ Chí Minh', 'TP. Hồ Chí Minh'),
-    ('Hà Nội', 'Hà Nội'),
-    ('Đà Nẵng', 'Đà Nẵng'),
-    ('Cần Thơ', 'Cần Thơ')
-  ) AS mappings(zone, province)
-WHERE cs.api_type = 'onus'
-ON CONFLICT (source_id, zone_text) DO NOTHING;
 
 -- ============================================================================
 -- UNIFIED RETAILER PRODUCTS & TYPE MAPPINGS
