@@ -43,7 +43,7 @@ export function PostEditor({ content, onChange }: PostEditorProps) {
     editorProps: {
       attributes: {
         class:
-          "prose prose-sm sm:prose lg:prose-lg xl:prose-xl focus:outline-none min-h-[400px] max-w-none p-4 border rounded-md",
+          "prose prose-sm sm:prose lg:prose-lg xl:prose-xl focus:outline-none min-h-full w-full !max-w-none p-4",
       },
     },
   });
@@ -298,7 +298,9 @@ export function PostEditor({ content, onChange }: PostEditorProps) {
         </div>
 
         {/* Editor */}
-        <EditorContent editor={editor} />
+        <div className="h-[600px] overflow-auto border rounded-b-lg w-full">
+          <EditorContent editor={editor} className="min-h-full" />
+        </div>
       </div>
     </div>
   );
