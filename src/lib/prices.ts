@@ -25,9 +25,19 @@ export function getLatestPrices(
     }
   }
 
-  return Array.from(latestMap.values()).sort((a, b) =>
-    a.retailer.localeCompare(b.retailer)
-  );
+  return Array.from(latestMap.values()).sort((a, b) => {
+    // First sort by retailer sort_order
+    const retailerSortA = a.retailer_sort_order ?? 999999;
+    const retailerSortB = b.retailer_sort_order ?? 999999;
+    if (retailerSortA !== retailerSortB) {
+      return retailerSortA - retailerSortB;
+    }
+
+    // Then sort by product sort_order
+    const sortOrderA = a.sort_order ?? 999999;
+    const sortOrderB = b.sort_order ?? 999999;
+    return sortOrderA - sortOrderB;
+  });
 }
 
 export type FetchPricesOptions = {
@@ -69,7 +79,7 @@ export async function fetchDailyPrices(
     let query = supabase
       .from("price_snapshots")
       .select(
-        "*, retailer_products!inner(product_name, is_enabled, retailer_code)"
+        "*, retailer_products!inner(product_name, is_enabled, retailer_code, sort_order, retailers!inner(sort_order))"
       )
       .eq("retailer_products.is_enabled", true)
       .order("created_at", { ascending: false })
@@ -102,6 +112,10 @@ export async function fetchDailyPrices(
         retailer_products: {
           product_name: string;
           retailer_code: string;
+          sort_order: number;
+          retailers: {
+            sort_order: number;
+          } | null;
         } | null;
       };
 
@@ -109,6 +123,9 @@ export async function fetchDailyPrices(
         ...joinedItem,
         product_name: joinedItem.retailer_products?.product_name || null,
         retailer: joinedItem.retailer_products?.retailer_code || "unknown",
+        sort_order: joinedItem.retailer_products?.sort_order,
+        retailer_sort_order:
+          joinedItem.retailer_products?.retailers?.sort_order,
       } as EnrichedPriceSnapshot;
     });
 
@@ -135,7 +152,7 @@ export async function fetchDailyPrices(
       const { data, error } = await supabase
         .from("price_snapshots")
         .select(
-          "*, retailer_products!inner(product_name, is_enabled, retailer_code)"
+          "*, retailer_products!inner(product_name, is_enabled, retailer_code, sort_order, retailers!inner(sort_order))"
         )
         .eq("retailer_products.is_enabled", true)
         .eq("retailer_products.retailer_code", retailerCode)
