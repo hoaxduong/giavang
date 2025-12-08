@@ -327,16 +327,11 @@ export class OnusCrawler extends BaseCrawler {
 
         // Determine province code
         let provinceCode: string;
-        if (mapping.provinceCode) {
-          // Use province from mapping (overrides zone)
-          provinceCode = mapping.provinceCode;
-        } else {
-          // Map zone to province
-          provinceCode = this.mapZoneToProvince(
-            item.zone?.text || null,
-            zoneMappingMap
-          );
-        }
+        // Map zone to province
+        provinceCode = this.mapZoneToProvince(
+          item.zone?.text || null,
+          zoneMappingMap
+        );
 
         const province = provinceMap.get(provinceCode);
 

@@ -16,6 +16,7 @@ import {
   FolderOpen,
   Tag,
   MessageSquare,
+  Bot,
 } from "lucide-react";
 
 const navigation = [
@@ -58,6 +59,11 @@ const navigation = [
         name: "Thẻ",
         href: "/admin/blog/tags",
         icon: Tag,
+      },
+      {
+        name: "Tự động hóa",
+        href: "/admin/blog/automation",
+        icon: Bot,
       },
       {
         name: "Bình luận",
