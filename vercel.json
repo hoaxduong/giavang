@@ -4,6 +4,10 @@
     {
       "path": "/api/prices/sync",
       "schedule": "0 0 * * *"
+    },
+    {
+      "path": "/api/cron/scheduler",
+      "schedule": "0 * * * *"
     }
   ]
 }

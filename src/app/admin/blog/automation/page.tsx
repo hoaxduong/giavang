@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { format } from "date-fns";
-import { Loader2, RefreshCw, Save, X, Plus } from "lucide-react";
+import { Loader2, Save, Plus, Trash, Play, Clock, Pencil } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import {
@@ -23,6 +23,8 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { Switch } from "@/components/ui/switch";
 import {
   Select,
   SelectContent,
@@ -38,7 +40,9 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { generateSlug } from "@/lib/blog/utils";
+import { DEFAULT_PROMPT_TEMPLATE } from "@/lib/ai/gold-post-shared";
 
 interface AutomationLog {
   id: string;
@@ -49,11 +53,25 @@ interface AutomationLog {
   created_at: string;
 }
 
+interface Automation {
+  id: string;
+  name: string;
+  type: string;
+  schedule: string;
+  is_active: boolean;
+  prompt_template?: string;
+  config: {
+    targetCategoryId?: string;
+    targetTagIds?: string[];
+    postMode?: "update" | "create";
+  };
+  last_run_at?: string;
+  next_run_at?: string;
+}
+
 interface AiConfig {
   provider: "google" | "openai";
   apiKey: string;
-  targetCategoryId?: string;
-  targetTagIds?: string[];
 }
 
 interface Category {
@@ -68,8 +86,8 @@ interface Tag {
 
 export default function BlogAutomationPage() {
   const [logs, setLogs] = useState<AutomationLog[]>([]);
+  const [automations, setAutomations] = useState<Automation[]>([]);
   const [loading, setLoading] = useState(true);
-  const [generating, setGenerating] = useState(false);
 
   // Data for selects
   const [categories, setCategories] = useState<Category[]>([]);
@@ -80,21 +98,16 @@ export default function BlogAutomationPage() {
     provider: "google",
     apiKey: "",
   });
-  const [postConfig, setPostConfig] = useState<{
-    targetCategoryId?: string;
-    targetTagIds?: string[];
-    postMode?: "update" | "create";
-  }>({
-    targetCategoryId: "",
-    targetTagIds: [],
-    postMode: "update",
-  });
 
-  const [loadingSettings, setLoadingSettings] = useState(true);
   const [savingProvider, setSavingProvider] = useState(false);
-  const [savingPostConfig, setSavingPostConfig] = useState(false);
 
-  // Create Dialog States
+  // Edit/Create State
+  const [editingAutomation, setEditingAutomation] =
+    useState<Partial<Automation> | null>(null);
+  const [editDialogOpen, setEditDialogOpen] = useState(false);
+  const [savingAutomation, setSavingAutomation] = useState(false);
+
+  // Create Dialog States for resources
   const [createCategoryOpen, setCreateCategoryOpen] = useState(false);
   const [newCategoryName, setNewCategoryName] = useState("");
   const [createCategoryLoading, setCreateCategoryLoading] = useState(false);
@@ -124,7 +137,18 @@ export default function BlogAutomationPage() {
     }
   };
 
-  // Fetch Logs
+  const fetchAutomations = async () => {
+    try {
+      const res = await fetch("/api/admin/automations");
+      const data = await res.json();
+      if (data.automations) {
+        setAutomations(data.automations);
+      }
+    } catch (error) {
+      toast.error("Failed to load automations");
+    }
+  };
+
   const fetchLogs = async () => {
     try {
       const res = await fetch("/api/admin/automation/gold-post?limit=20");
@@ -132,20 +156,15 @@ export default function BlogAutomationPage() {
       const data = await res.json();
       setLogs(data.logs);
     } catch (_error) {
-      toast.error("Could not load automation history");
+      // toast.error("Could not load automation history");
     } finally {
       setLoading(false);
     }
   };
 
-  // Fetch Settings
   const fetchSettings = async () => {
     try {
-      const [aiRes, postRes] = await Promise.all([
-        fetch("/api/admin/settings?key=ai_config"),
-        fetch("/api/admin/settings?key=gold_post_config"),
-      ]);
-
+      const aiRes = await fetch("/api/admin/settings?key=ai_config");
       const aiData = await aiRes.json();
       if (aiData.setting?.value) {
         setProviderConfig({
@@ -153,21 +172,17 @@ export default function BlogAutomationPage() {
           apiKey: aiData.setting.value.apiKey || "",
         });
       }
-
-      const postData = await postRes.json();
-      if (postData.setting?.value) {
-        setPostConfig({
-          targetCategoryId: postData.setting.value.targetCategoryId || "",
-          targetTagIds: postData.setting.value.targetTagIds || [],
-          postMode: postData.setting.value.postMode || "update",
-        });
-      }
     } catch (_error) {
-      // Ignore error
-    } finally {
-      setLoadingSettings(false);
+      // Ignore
     }
   };
+
+  useEffect(() => {
+    fetchData();
+    fetchAutomations();
+    fetchLogs();
+    fetchSettings();
+  }, []);
 
   // Save Provider Settings
   const handleSaveProvider = async () => {
@@ -192,30 +207,88 @@ export default function BlogAutomationPage() {
     }
   };
 
-  // Save Post Config
-  const handleSavePostConfig = async () => {
-    setSavingPostConfig(true);
+  // Automation CRUD
+  const handleEditAutomation = (automation?: Automation) => {
+    if (automation) {
+      setEditingAutomation({ ...automation });
+    } else {
+      setEditingAutomation({
+        name: "New Automation",
+        type: "gold_price_post",
+        schedule: "0 8 * * *",
+        is_active: true,
+        prompt_template: DEFAULT_PROMPT_TEMPLATE,
+        config: {
+          targetCategoryId: "",
+          targetTagIds: [],
+          postMode: "update",
+        },
+      });
+    }
+    setEditDialogOpen(true);
+  };
+
+  const handleSaveAutomation = async () => {
+    if (!editingAutomation) return;
+    setSavingAutomation(true);
     try {
-      const res = await fetch("/api/admin/settings", {
-        method: "POST",
+      const isNew = !editingAutomation.id;
+      const url = isNew
+        ? "/api/admin/automations"
+        : `/api/admin/automations/${editingAutomation.id}`;
+
+      const method = isNew ? "POST" : "PUT";
+
+      const res = await fetch(url, {
+        method,
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          key: "gold_post_config",
-          value: postConfig,
-          description: "Daily Gold Post Configuration",
-        }),
+        body: JSON.stringify(editingAutomation),
       });
 
-      if (!res.ok) throw new Error("Failed to save post config");
-      toast.success("Content configuration saved");
-    } catch (_error) {
-      toast.error("Failed to save content configuration");
+      if (!res.ok) throw new Error("Failed to save automation");
+
+      toast.success(isNew ? "Automation created" : "Automation updated");
+      setEditDialogOpen(false);
+      fetchAutomations();
+    } catch (error) {
+      toast.error("Failed to save automation");
+      console.error(error);
     } finally {
-      setSavingPostConfig(false);
+      setSavingAutomation(false);
     }
   };
 
-  // Create Handlers
+  const handleDeleteAutomation = async (id: string) => {
+    if (!confirm("Are you sure you want to delete this automation?")) return;
+    try {
+      await fetch(`/api/admin/automations/${id}`, { method: "DELETE" });
+      toast.success("Automation deleted");
+      fetchAutomations();
+    } catch (error) {
+      toast.error("Failed to delete automation");
+    }
+  };
+
+  const handleRunAutomation = async (automation: Automation) => {
+    toast.promise(
+      async () => {
+        // Pass ID to route to use specific config
+        const res = await fetch(
+          `/api/admin/automation/gold-post?automationId=${automation.id}`,
+          { method: "POST" }
+        );
+        if (!res.ok) throw new Error("Failed");
+        fetchLogs();
+      },
+      {
+        loading: "Running automation...",
+        success: "Automation ran successfully",
+        error: "Failed to run automation",
+      }
+    );
+  };
+
+  // Helper for Category/Tags creation
   const handleCreateCategory = async () => {
     if (!newCategoryName.trim()) return;
     setCreateCategoryLoading(true);
@@ -231,7 +304,15 @@ export default function BlogAutomationPage() {
       const data = await res.json();
 
       setCategories([...categories, data.category]);
-      setPostConfig({ ...postConfig, targetCategoryId: data.category.id });
+      if (editingAutomation?.config) {
+        setEditingAutomation({
+          ...editingAutomation,
+          config: {
+            ...editingAutomation.config,
+            targetCategoryId: data.category.id,
+          },
+        });
+      }
       setCreateCategoryOpen(false);
       setNewCategoryName("");
       toast.success("Created category successfully");
@@ -257,10 +338,18 @@ export default function BlogAutomationPage() {
       const data = await res.json();
 
       setTags([...tags, data.tag]);
-      setPostConfig({
-        ...postConfig,
-        targetTagIds: [...(postConfig.targetTagIds || []), data.tag.id],
-      });
+      if (editingAutomation?.config) {
+        setEditingAutomation({
+          ...editingAutomation,
+          config: {
+            ...editingAutomation.config,
+            targetTagIds: [
+              ...(editingAutomation.config.targetTagIds || []),
+              data.tag.id,
+            ],
+          },
+        });
+      }
       setCreateTagOpen(false);
       setNewTagName("");
       toast.success("Created tag successfully");
@@ -271,156 +360,313 @@ export default function BlogAutomationPage() {
     }
   };
 
-  useEffect(() => {
-    fetchLogs();
-    fetchSettings();
-    fetchData();
-  }, []);
-
-  const handleRegenerate = async () => {
-    setGenerating(true);
-    try {
-      const res = await fetch("/api/admin/automation/gold-post", {
-        method: "POST",
-      });
-      const data = await res.json();
-
-      if (!res.ok) throw new Error(data.error || "Failed to regenerate");
-
-      toast.success("Post regenerated successfully!", {
-        description: `Style: ${data.generatedStyle}`,
-      });
-
-      fetchLogs();
-    } catch (error) {
-      toast.error(
-        error instanceof Error ? error.message : "Failed to regenerate post"
-      );
-    } finally {
-      setGenerating(false);
-    }
-  };
-
-  const handleTagToggle = (tagId: string) => {
-    const currentTags = postConfig.targetTagIds || [];
-    const newTags = currentTags.includes(tagId)
-      ? currentTags.filter((id) => id !== tagId)
-      : [...currentTags, tagId];
-    setPostConfig({ ...postConfig, targetTagIds: newTags });
-  };
-
   return (
     <div className="container mx-auto px-6 py-8">
       <div className="flex items-center justify-between mb-8">
         <div>
           <h1 className="text-3xl font-bold tracking-tight">Blog Automation</h1>
           <p className="text-muted-foreground mt-2">
-            Manage automated content generation for &quot;Giá vàng hôm
-            nay&quot;.
+            Manage automated content generation schedules and templates.
           </p>
         </div>
-        <Button onClick={handleRegenerate} disabled={generating}>
-          {generating ? (
-            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-          ) : (
-            <RefreshCw className="mr-2 h-4 w-4" />
-          )}
-          Regenerate Post Now
-        </Button>
+        <div className="flex gap-2">
+          <Button onClick={() => handleEditAutomation()}>
+            <Plus className="mr-2 h-4 w-4" />
+            New Automation
+          </Button>
+        </div>
       </div>
 
-      <div className="grid gap-6 md:grid-cols-2">
-        {/* Left Column: Settings */}
-        <div className="space-y-6">
-          {/* AI Provider Config */}
+      <Tabs defaultValue="automations" className="space-y-4">
+        <TabsList>
+          <TabsTrigger value="automations">Automations</TabsTrigger>
+          <TabsTrigger value="history">History</TabsTrigger>
+          <TabsTrigger value="settings">Global Settings</TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="automations" className="space-y-4">
+          {automations.map((auto) => (
+            <Card key={auto.id}>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <div>
+                  <CardTitle className="text-lg font-bold">
+                    {auto.name}
+                  </CardTitle>
+                  <CardDescription className="flex items-center mt-1">
+                    <Badge variant="outline" className="mr-2">
+                      {auto.type}
+                    </Badge>
+                    <Clock className="w-3 h-3 mr-1" /> {auto.schedule}
+                    {auto.is_active ? (
+                      <Badge className="ml-2 bg-green-500 hover:bg-green-600">
+                        Active
+                      </Badge>
+                    ) : (
+                      <Badge variant="secondary" className="ml-2">
+                        Paused
+                      </Badge>
+                    )}
+                  </CardDescription>
+                </div>
+                <div className="flex gap-2">
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={() => handleRunAutomation(auto)}
+                    title="Run Now"
+                  >
+                    <Play className="h-4 w-4" />
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={() => handleEditAutomation(auto)}
+                  >
+                    <Pencil className="h-4 w-4" />
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="text-red-500 hover:text-red-600"
+                    onClick={() => handleDeleteAutomation(auto.id)}
+                  >
+                    <Trash className="h-4 w-4" />
+                  </Button>
+                </div>
+              </CardHeader>
+              <CardContent>
+                <div className="text-sm text-muted-foreground">
+                  Last run:{" "}
+                  {auto.last_run_at
+                    ? format(new Date(auto.last_run_at), "dd/MM/yyyy HH:mm")
+                    : "Never"}
+                </div>
+              </CardContent>
+            </Card>
+          ))}
+          {automations.length === 0 && (
+            <div className="text-center py-12 border rounded-lg bg-muted/10">
+              <p className="text-muted-foreground">
+                No automations configured.
+              </p>
+              <Button variant="link" onClick={() => handleEditAutomation()}>
+                Create one
+              </Button>
+            </div>
+          )}
+        </TabsContent>
+
+        <TabsContent value="history">
           <Card>
             <CardHeader>
-              <CardTitle>AI Provider Settings</CardTitle>
-              <CardDescription>
-                Configure the LLM provider (Google Gemini or OpenAI).
-              </CardDescription>
+              <CardTitle>Execution Logs</CardTitle>
             </CardHeader>
-            <CardContent className="space-y-4">
-              {loadingSettings ? (
-                <div className="flex justify-center py-4">
-                  <Loader2 className="h-6 w-6 animate-spin" />
-                </div>
-              ) : (
-                <>
-                  <div className="space-y-2">
-                    <Label>Provider</Label>
-                    <Select
-                      value={providerConfig.provider}
-                      onValueChange={(val: "google" | "openai") =>
-                        setProviderConfig({ ...providerConfig, provider: val })
-                      }
-                    >
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select Provider" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="google">Google Gemini</SelectItem>
-                        <SelectItem value="openai">OpenAI</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label>API Key</Label>
-                    <Input
-                      type="password"
-                      value={providerConfig.apiKey}
-                      onChange={(e) =>
-                        setProviderConfig({
-                          ...providerConfig,
-                          apiKey: e.target.value,
-                        })
-                      }
-                      placeholder="Enter API Key"
-                    />
-                    <p className="text-xs text-muted-foreground">
-                      {providerConfig.provider === "google"
-                        ? "Get key from Google AI Studio"
-                        : "Get key from OpenAI Platform"}
-                    </p>
-                  </div>
-
-                  <Button
-                    onClick={handleSaveProvider}
-                    disabled={savingProvider}
-                  >
-                    {savingProvider && (
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    )}
-                    {!savingProvider && <Save className="mr-2 h-4 w-4" />}
-                    Save Provider
-                  </Button>
-                </>
-              )}
+            <CardContent>
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Date</TableHead>
+                    <TableHead>Type</TableHead>
+                    <TableHead>Status</TableHead>
+                    <TableHead>Info</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {logs.map((log) => (
+                    <TableRow key={log.id}>
+                      <TableCell className="whitespace-nowrap">
+                        {format(
+                          new Date(log.created_at),
+                          "dd/MM/yyyy HH:mm:ss"
+                        )}
+                      </TableCell>
+                      <TableCell>{log.type}</TableCell>
+                      <TableCell>
+                        <Badge
+                          variant={
+                            log.status === "success" ? "default" : "destructive"
+                          }
+                        >
+                          {log.status}
+                        </Badge>
+                      </TableCell>
+                      <TableCell className="text-xs text-muted-foreground">
+                        {log.message}
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
             </CardContent>
           </Card>
+        </TabsContent>
 
-          {/* Post Content Config */}
+        <TabsContent value="settings">
           <Card>
             <CardHeader>
-              <CardTitle>Content Configuration</CardTitle>
+              <CardTitle>AI Provider Configuration</CardTitle>
               <CardDescription>
-                Set target category and tags for the generated post.
+                Global settings for AI generation.
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
-              {loadingSettings ? (
-                <div className="flex justify-center py-4">
-                  <Loader2 className="h-6 w-6 animate-spin" />
+              <div className="space-y-2">
+                <Label>Provider</Label>
+                <Select
+                  value={providerConfig.provider}
+                  onValueChange={(val: "google" | "openai") =>
+                    setProviderConfig({ ...providerConfig, provider: val })
+                  }
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select Provider" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="google">Google Gemini</SelectItem>
+                    <SelectItem value="openai">OpenAI</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="space-y-2">
+                <Label>API Key</Label>
+                <Input
+                  type="password"
+                  value={providerConfig.apiKey}
+                  onChange={(e) =>
+                    setProviderConfig({
+                      ...providerConfig,
+                      apiKey: e.target.value,
+                    })
+                  }
+                  placeholder="Enter API Key"
+                />
+              </div>
+
+              <Button onClick={handleSaveProvider} disabled={savingProvider}>
+                {savingProvider ? (
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                ) : (
+                  <Save className="mr-2 h-4 w-4" />
+                )}
+                Save Settings
+              </Button>
+            </CardContent>
+          </Card>
+        </TabsContent>
+      </Tabs>
+
+      <Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>
+        <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>
+              {editingAutomation?.id ? "Edit Automation" : "New Automation"}
+            </DialogTitle>
+            <DialogDescription>
+              Configure automation schedule and prompt.
+            </DialogDescription>
+          </DialogHeader>
+
+          {editingAutomation && (
+            <div className="grid gap-6 py-4">
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label>Name</Label>
+                  <Input
+                    value={editingAutomation.name}
+                    onChange={(e) =>
+                      setEditingAutomation({
+                        ...editingAutomation,
+                        name: e.target.value,
+                      })
+                    }
+                  />
                 </div>
-              ) : (
-                <>
+                <div className="space-y-2">
+                  <Label>Type</Label>
+                  <Select
+                    value={editingAutomation.type}
+                    onValueChange={(val) =>
+                      setEditingAutomation({ ...editingAutomation, type: val })
+                    }
+                  >
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="gold_price_post">
+                        Gold Price Post
+                      </SelectItem>
+                      {/* Future types here */}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <Label>Schedule (Cron Expression)</Label>
+                <div className="flex gap-2">
+                  <Input
+                    value={editingAutomation.schedule}
+                    onChange={(e) =>
+                      setEditingAutomation({
+                        ...editingAutomation,
+                        schedule: e.target.value,
+                      })
+                    }
+                    placeholder="0 8 * * *"
+                  />
+                  <Button variant="outline" asChild>
+                    <a
+                      href="https://crontab.guru/"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                    >
+                      Help
+                    </a>
+                  </Button>
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  Example: <code>0 8 * * *</code> = Every day at 8:00 AM UTC.
+                </p>
+              </div>
+
+              <div className="space-y-2">
+                <Label>Prompt Template</Label>
+                <Textarea
+                  className="font-mono text-xs min-h-[200px]"
+                  value={editingAutomation.prompt_template || ""}
+                  onChange={(e) =>
+                    setEditingAutomation({
+                      ...editingAutomation,
+                      prompt_template: e.target.value,
+                    })
+                  }
+                />
+                <p className="text-xs text-muted-foreground">
+                  Available variables:{" "}
+                  <code>
+                    {"{{date_str}}"}, {"{{price_summary}}"},{" "}
+                    {"{{world_price_info}}"}, {"{{style}}"}
+                  </code>
+                </p>
+              </div>
+
+              <div className="border-t pt-4 mt-2">
+                <h4 className="font-medium mb-3">Post Configuration</h4>
+                <div className="grid gap-4">
                   <div className="space-y-2">
                     <Label>Post Mode</Label>
                     <Select
-                      value={postConfig.postMode || "update"}
+                      value={editingAutomation.config?.postMode || "update"}
                       onValueChange={(val: "update" | "create") =>
-                        setPostConfig({ ...postConfig, postMode: val })
+                        setEditingAutomation({
+                          ...editingAutomation,
+                          config: {
+                            ...editingAutomation.config,
+                            postMode: val,
+                          },
+                        })
                       }
                     >
                       <SelectTrigger>
@@ -433,39 +679,38 @@ export default function BlogAutomationPage() {
                         <SelectItem value="create">Create New Post</SelectItem>
                       </SelectContent>
                     </Select>
-                    <p className="text-xs text-muted-foreground">
-                      {postConfig.postMode === "update"
-                        ? "Updates the existing 'Giá vàng hôm nay' post with new content"
-                        : "Creates a new post each time with a unique slug"}
-                    </p>
                   </div>
 
                   <div className="space-y-2">
                     <div className="flex items-center justify-between">
-                      <Label>Target Category</Label>
+                      <Label>Category</Label>
                       <Button
                         variant="ghost"
                         size="sm"
-                        className="h-6 px-2 text-xs"
                         onClick={() => setCreateCategoryOpen(true)}
                       >
-                        <Plus className="h-3 w-3 mr-1" />
-                        New
+                        <Plus className="h-3 w-3" />
                       </Button>
                     </div>
                     <Select
-                      value={postConfig.targetCategoryId || ""}
+                      value={editingAutomation.config?.targetCategoryId || ""}
                       onValueChange={(val) =>
-                        setPostConfig({ ...postConfig, targetCategoryId: val })
+                        setEditingAutomation({
+                          ...editingAutomation,
+                          config: {
+                            ...editingAutomation.config,
+                            targetCategoryId: val,
+                          },
+                        })
                       }
                     >
                       <SelectTrigger>
                         <SelectValue placeholder="Select Category" />
                       </SelectTrigger>
                       <SelectContent>
-                        {categories.map((category) => (
-                          <SelectItem key={category.id} value={category.id}>
-                            {category.name}
+                        {categories.map((c) => (
+                          <SelectItem key={c.id} value={c.id}>
+                            {c.name}
                           </SelectItem>
                         ))}
                       </SelectContent>
@@ -474,142 +719,85 @@ export default function BlogAutomationPage() {
 
                   <div className="space-y-2">
                     <div className="flex items-center justify-between">
-                      <Label>Target Tags</Label>
+                      <Label>Tags</Label>
                       <Button
                         variant="ghost"
                         size="sm"
-                        className="h-6 px-2 text-xs"
                         onClick={() => setCreateTagOpen(true)}
                       >
-                        <Plus className="h-3 w-3 mr-1" />
-                        New
+                        <Plus className="h-3 w-3" />
                       </Button>
                     </div>
-                    <div className="flex flex-wrap gap-2 pt-2">
+                    <div className="flex flex-wrap gap-2">
                       {tags.map((tag) => (
                         <Badge
                           key={tag.id}
                           variant={
-                            postConfig.targetTagIds?.includes(tag.id)
+                            editingAutomation.config?.targetTagIds?.includes(
+                              tag.id
+                            )
                               ? "default"
                               : "outline"
                           }
                           className="cursor-pointer"
-                          onClick={() => handleTagToggle(tag.id)}
+                          onClick={() => {
+                            const current =
+                              editingAutomation.config?.targetTagIds || [];
+                            const fresh = current.includes(tag.id)
+                              ? current.filter((id) => id !== tag.id)
+                              : [...current, tag.id];
+                            setEditingAutomation({
+                              ...editingAutomation,
+                              config: {
+                                ...editingAutomation.config,
+                                targetTagIds: fresh,
+                              },
+                            });
+                          }}
                         >
                           {tag.name}
-                          {postConfig.targetTagIds?.includes(tag.id) && (
-                            <X className="ml-1 h-3 w-3" />
-                          )}
                         </Badge>
                       ))}
                     </div>
                   </div>
+                </div>
+              </div>
 
-                  <Button
-                    onClick={handleSavePostConfig}
-                    disabled={savingPostConfig}
-                  >
-                    {savingPostConfig && (
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    )}
-                    {!savingPostConfig && <Save className="mr-2 h-4 w-4" />}
-                    Save Configuration
-                  </Button>
-                </>
+              <div className="flex items-center space-x-2 pt-4">
+                <Switch
+                  id="active-mode"
+                  checked={editingAutomation.is_active}
+                  onCheckedChange={(checked) =>
+                    setEditingAutomation({
+                      ...editingAutomation,
+                      is_active: checked,
+                    })
+                  }
+                />
+                <Label htmlFor="active-mode">Enable Automation</Label>
+              </div>
+            </div>
+          )}
+
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setEditDialogOpen(false)}>
+              Cancel
+            </Button>
+            <Button onClick={handleSaveAutomation} disabled={savingAutomation}>
+              {savingAutomation && (
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
               )}
-            </CardContent>
-          </Card>
-        </div>
+              Save Automation
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
-        {/* Right Column: History */}
-        <div className="space-y-6">
-          <Card>
-            <CardHeader>
-              <CardTitle>Automation History</CardTitle>
-              <CardDescription>
-                Recent automated actions and their status.
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Date</TableHead>
-                    <TableHead>Status</TableHead>
-                    <TableHead>Style/Meta</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {loading ? (
-                    <TableRow>
-                      <TableCell colSpan={3} className="text-center py-8">
-                        <Loader2 className="h-6 w-6 animate-spin mx-auto" />
-                      </TableCell>
-                    </TableRow>
-                  ) : logs.length === 0 ? (
-                    <TableRow>
-                      <TableCell colSpan={3} className="text-center py-8">
-                        No logs found.
-                      </TableCell>
-                    </TableRow>
-                  ) : (
-                    logs.map((log) => (
-                      <TableRow key={log.id}>
-                        <TableCell className="whitespace-nowrap">
-                          {format(
-                            new Date(log.created_at),
-                            "dd/MM/yyyy HH:mm:ss"
-                          )}
-                        </TableCell>
-                        <TableCell>
-                          <Badge
-                            variant={
-                              log.status === "success"
-                                ? "default"
-                                : "destructive"
-                            }
-                          >
-                            {log.status}
-                          </Badge>
-                        </TableCell>
-
-                        <TableCell className="text-xs text-muted-foreground">
-                          {!!log.meta?.style && (
-                            <span className="block">
-                              {String(log.meta.style)}
-                            </span>
-                          )}
-                          {!!log.meta?.error && (
-                            <span
-                              className="block text-red-500"
-                              title={String(JSON.stringify(log.meta.error))}
-                            >
-                              Error
-                            </span>
-                          )}
-                          <span className="block text-[10px] opacity-70 mt-1 capitalize">
-                            {log.type.replace(/_/g, " ")}
-                          </span>
-                        </TableCell>
-                      </TableRow>
-                    ))
-                  )}
-                </TableBody>
-              </Table>
-            </CardContent>
-          </Card>
-        </div>
-      </div>
-
-      {/* Create Category Dialog */}
+      {/* Reusing Create Category/Tag Dialogs logic from previous version manually adapted */}
       <Dialog open={createCategoryOpen} onOpenChange={setCreateCategoryOpen}>
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Create New Category</DialogTitle>
-            <DialogDescription>
-              Add a new category for generated posts.
-            </DialogDescription>
           </DialogHeader>
           <div className="py-4">
             <Label htmlFor="newCategory">Category Name</Label>
@@ -617,7 +805,6 @@ export default function BlogAutomationPage() {
               id="newCategory"
               value={newCategoryName}
               onChange={(e) => setNewCategoryName(e.target.value)}
-              placeholder="e.g., Gold News"
               onKeyDown={(e) => {
                 if (e.key === "Enter") handleCreateCategory();
               }}
@@ -634,23 +821,16 @@ export default function BlogAutomationPage() {
               onClick={handleCreateCategory}
               disabled={!newCategoryName.trim() || createCategoryLoading}
             >
-              {createCategoryLoading && (
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              )}
               Create
             </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
 
-      {/* Create Tag Dialog */}
       <Dialog open={createTagOpen} onOpenChange={setCreateTagOpen}>
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Create New Tag</DialogTitle>
-            <DialogDescription>
-              Add a new tag for generated posts.
-            </DialogDescription>
           </DialogHeader>
           <div className="py-4">
             <Label htmlFor="newTag">Tag Name</Label>
@@ -658,7 +838,6 @@ export default function BlogAutomationPage() {
               id="newTag"
               value={newTagName}
               onChange={(e) => setNewTagName(e.target.value)}
-              placeholder="e.g., Market Updates"
               onKeyDown={(e) => {
                 if (e.key === "Enter") handleCreateTag();
               }}
@@ -672,9 +851,6 @@ export default function BlogAutomationPage() {
               onClick={handleCreateTag}
               disabled={!newTagName.trim() || createTagLoading}
             >
-              {createTagLoading && (
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              )}
               Create
             </Button>
           </DialogFooter>
