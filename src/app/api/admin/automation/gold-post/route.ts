@@ -16,7 +16,10 @@ export async function POST(request: NextRequest) {
 
     if (automationId) {
       const result = await runAutomation(automationId, supabase, user);
-      return NextResponse.json({ ...result, generatedStyle: result.style });
+      return NextResponse.json({
+        ...result,
+        generatedStyle: result.meta?.style,
+      });
     }
 
     // Legacy Fallback: Find the FIRST active 'gold_price_post' automation
@@ -30,7 +33,10 @@ export async function POST(request: NextRequest) {
 
     if (defaultAuto) {
       const result = await runAutomation(defaultAuto.id, supabase, user);
-      return NextResponse.json({ ...result, generatedStyle: result.style });
+      return NextResponse.json({
+        ...result,
+        generatedStyle: result.meta?.style,
+      });
     }
 
     // If absolutely no automation found, we could fall back to old hardcoded logic,

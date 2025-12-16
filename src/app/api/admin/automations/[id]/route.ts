@@ -6,9 +6,10 @@ export const dynamic = "force-dynamic";
 
 export async function PUT(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  props: { params: Promise<{ id: string }> }
 ) {
   try {
+    const params = await props.params;
     await requireRole("admin");
     const supabase = await createClient();
     const body = await req.json();
@@ -36,9 +37,10 @@ export async function PUT(
 
 export async function DELETE(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  props: { params: Promise<{ id: string }> }
 ) {
   try {
+    const params = await props.params;
     await requireRole("admin");
     const supabase = await createClient();
 
