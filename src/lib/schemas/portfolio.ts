@@ -17,6 +17,12 @@ export const portfolioFormSchema = z.object({
     .optional()
     .nullable(),
   bought_at: z.string().min(1, "Thời gian mua là bắt buộc"),
+  buy_price: z
+    .number({
+      required_error: "Giá mua là bắt buộc",
+      invalid_type_error: "Giá mua phải là số",
+    })
+    .min(0, "Giá mua không được âm"),
 });
 
 export type PortfolioFormData = z.infer<typeof portfolioFormSchema>;

@@ -7,21 +7,17 @@ import type { PortfolioGrowthResponse } from "../types";
  * Hook to fetch portfolio growth data
  */
 export function usePortfolioGrowth(
-  groupBy: "total" | "monthly" | "yearly" = "total",
+  groupBy: "total" | "monthly" | "yearly" = "total"
 ) {
   return useQuery({
     queryKey: ["portfolio", "growth", groupBy],
     queryFn: async () => {
-      const response = await fetch(`/api/portfolio/growth?groupBy=${groupBy}`);
-
-      if (!response.ok) {
-        throw new Error(
-          `Failed to fetch portfolio growth: ${response.statusText}`,
-        );
-      }
-
-      return response.json() as Promise<PortfolioGrowthResponse>;
+      // Local storage implementation does not support historical growth calculation yet
+      return {
+        data: [],
+        groupBy,
+        timestamp: new Date().toISOString(),
+      } as PortfolioGrowthResponse;
     },
-    staleTime: 60 * 1000, // 1 minute
   });
 }

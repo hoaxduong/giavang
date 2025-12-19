@@ -162,10 +162,9 @@ export function SignInForm() {
         </div>
 
         <div className="text-center text-sm">
-          <span className="text-muted-foreground">Chưa có tài khoản? </span>
-          <Link href="/auth/signup" className="text-primary hover:underline">
-            Đăng ký ngay
-          </Link>
+          <span className="text-muted-foreground">
+            Chỉ dành cho quản trị viên
+          </span>
         </div>
       </CardContent>
     </Card>

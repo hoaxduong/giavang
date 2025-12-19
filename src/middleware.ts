@@ -51,7 +51,7 @@ export async function middleware(request: NextRequest) {
           });
         },
       },
-    },
+    }
   );
 
   const {
@@ -61,15 +61,9 @@ export async function middleware(request: NextRequest) {
   const pathname = request.nextUrl.pathname;
 
   // Public routes that don't require authentication
-  const publicRoutes = [
-    "/",
-    "/charts",
-    "/auth/signin",
-    "/auth/signup",
-    "/auth/callback",
-  ];
+  const publicRoutes = ["/", "/charts", "/auth/signin", "/auth/callback"];
   const isPublicRoute = publicRoutes.some(
-    (route) => pathname === route || pathname.startsWith("/api/"),
+    (route) => pathname === route || pathname.startsWith("/api/")
   );
 
   // Protected routes

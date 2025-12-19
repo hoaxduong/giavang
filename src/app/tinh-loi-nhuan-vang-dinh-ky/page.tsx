@@ -1,10 +1,7 @@
-import { requireAuth } from "@/lib/auth/server";
 import { Header } from "@/components/layout/header";
 import { PortfolioClient } from "@/components/portfolio/portfolio-client";
 
-export default async function PortfolioPage() {
-  const { user, profile } = await requireAuth();
-
+export default function PortfolioPage() {
   return (
     <div className="min-h-screen bg-background">
       <Header />

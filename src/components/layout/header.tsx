@@ -2,13 +2,10 @@
 
 import Link from "next/link";
 import { UserMenu } from "@/components/user/user-menu";
-import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/use-auth";
-import { useRole } from "@/hooks/use-role";
 
 export function Header() {
   const { isAuthenticated, loading } = useAuth();
-  const { isAdmin } = useRole();
 
   return (
     <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
@@ -45,14 +42,12 @@ export function Header() {
             >
               Tính Lãi/Lỗ
             </Link>
-            {isAuthenticated && (
-              <Link
-                href="/tinh-loi-nhuan-vang-dinh-ky"
-                className="text-sm font-medium transition-colors hover:text-primary"
-              >
-                Danh Mục
-              </Link>
-            )}
+            <Link
+              href="/tinh-loi-nhuan-vang-dinh-ky"
+              className="text-sm font-medium transition-colors hover:text-primary"
+            >
+              Danh Mục
+            </Link>
             <Link
               href="/blog"
               className="text-sm font-medium transition-colors hover:text-primary"
@@ -69,11 +64,7 @@ export function Header() {
             <>
               <UserMenu />
             </>
-          ) : (
-            <Button asChild variant="default" size="sm">
-              <Link href="/auth/signin">Đăng Nhập</Link>
-            </Button>
-          )}
+          ) : null}
         </div>
       </div>
     </header>

@@ -72,6 +72,7 @@ export function PortfolioForm({
         productName: entry.productName,
         province: entry.province || null,
         bought_at: localDateTime.toISOString().slice(0, 16),
+        buy_price: entry.buy_price || 0,
       };
     }
 
@@ -86,6 +87,7 @@ export function PortfolioForm({
       productName: "" as any,
       province: null,
       bought_at: localDateTime.toISOString().slice(0, 16),
+      buy_price: 0,
     };
   };
 
@@ -121,6 +123,7 @@ export function PortfolioForm({
           productName: data.productName,
           province: data.province || null,
           bought_at: boughtAtISO,
+          buy_price: data.buy_price,
         });
       } else {
         // Create new entry
@@ -130,6 +133,7 @@ export function PortfolioForm({
           productName: data.productName,
           province: data.province || null,
           bought_at: boughtAtISO,
+          buy_price: data.buy_price || 0, // Should be required by schema
         });
       }
 
@@ -162,6 +166,23 @@ export function PortfolioForm({
           />
           {errors.amount && (
             <p className="text-sm text-destructive">{errors.amount.message}</p>
+          )}
+        </div>
+
+        <div className="space-y-2">
+          <Label htmlFor="buy_price">Giá Mua (VNĐ/chỉ) *</Label>
+          <Input
+            id="buy_price"
+            type="number"
+            step="1000"
+            min="0"
+            placeholder="Ví dụ: 8000000"
+            {...register("buy_price", { valueAsNumber: true })}
+          />
+          {errors.buy_price && (
+            <p className="text-sm text-destructive">
+              {errors.buy_price.message}
+            </p>
           )}
         </div>
 
@@ -226,16 +247,16 @@ export function PortfolioForm({
             control={control}
             render={({ field }) => (
               <Select
-                value={field.value || ""}
+                value={field.value || "none"}
                 onValueChange={(value) =>
-                  field.onChange(value === "" ? null : value)
+                  field.onChange(value === "none" ? null : value)
                 }
               >
                 <SelectTrigger id="province">
                   <SelectValue placeholder="Chọn tỉnh/TP (tùy chọn)" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">Không chọn</SelectItem>
+                  <SelectItem value="none">Không chọn</SelectItem>
                   {PROVINCES.map((p) => (
                     <SelectItem key={p} value={p}>
                       {p}
