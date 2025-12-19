@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useState, useMemo } from "react";
 import { subDays, subMonths, subYears } from "date-fns";
 import { Header } from "@/components/layout/header";
@@ -16,6 +17,9 @@ import { RetailerProductFilter } from "@/components/prices/retailer-product-filt
 import { useRetailerProducts } from "@/lib/queries/use-retailer-products";
 import { useCurrentPrices } from "@/lib/queries/use-current-prices";
 import { useHistoricalPrices } from "@/lib/queries/use-historical-prices";
+import { useBlogPosts } from "@/lib/queries/use-blog-posts";
+import { PostCard } from "@/components/blog/post-card";
+import { ArrowRight } from "lucide-react";
 import type { Province, Retailer, TimeRange } from "@/lib/constants";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
@@ -98,6 +102,10 @@ export default function Home() {
     interval: "daily",
   });
 
+  const { data: blogPosts, isLoading: isBlogPostsLoading } = useBlogPosts({
+    limit: 3,
+  });
+
   return (
     <div className="min-h-screen bg-background">
       <Header />
@@ -119,13 +127,6 @@ export default function Home() {
         <div className="mb-6">
           <WorldGoldPrice />
         </div>
-
-        <PriceTable
-          data={data?.data || []}
-          isLoading={isLoading}
-          date={selectedDate}
-          onDateChange={setSelectedDate}
-        />
 
         <div className="mt-8 mb-8 space-y-4">
           <div className="flex items-center justify-between">
@@ -184,6 +185,53 @@ export default function Home() {
             <PriceLineChart data={chartData?.data || []} />
           )}
         </div>
+
+        <div className="mt-8 mb-8 space-y-4">
+          <div className="flex items-center justify-between">
+            <h2 className="text-2xl font-semibold tracking-tight">
+              Tin Tức & Phân Tích
+            </h2>
+            <Link
+              href="/blog"
+              className="text-sm font-medium text-primary hover:underline flex items-center gap-1"
+            >
+              Xem tất cả <ArrowRight className="h-4 w-4" />
+            </Link>
+          </div>
+
+          {isBlogPostsLoading ? (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {[1, 2, 3].map((i) => (
+                <div key={i} className="space-y-4">
+                  <Skeleton className="h-48 w-full rounded-lg" />
+                  <div className="space-y-2">
+                    <Skeleton className="h-4 w-3/4" />
+                    <Skeleton className="h-4 w-full" />
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : blogPosts?.posts && blogPosts.posts.length > 0 ? (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {blogPosts.posts.map((post) => (
+                <PostCard
+                  key={post.id}
+                  post={{
+                    ...post,
+                    publishedAt: post.publishedAt || post.createdAt,
+                  }}
+                />
+              ))}
+            </div>
+          ) : null}
+        </div>
+
+        <PriceTable
+          data={data?.data || []}
+          isLoading={isLoading}
+          date={selectedDate}
+          onDateChange={setSelectedDate}
+        />
 
         <div className="mt-8 text-center text-sm text-muted-foreground">
           <p>Dữ liệu được cập nhật tự động mỗi 5 phút</p>
