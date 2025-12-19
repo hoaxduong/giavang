@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo } from "react";
+import { normalizePriceToVndPerChi } from "@/lib/utils";
 import type { PortfolioStats } from "../types";
 import { usePortfolio } from "./use-portfolio";
 import { useCurrentPrices } from "./use-current-prices";
@@ -51,18 +52,34 @@ export function usePortfolioStats() {
         // Try to match by retailer + product name, or just retailer + product info
         // The entry has `productName` and `retailer`.
         // The prices have `product_name` and `retailer`.
-        const currentPrice = pricesData.data.find(
+        // Find current price for this product
+        // Priority:
+        // 1. Exact match (Retailer + Product + Specific Province)
+        // 2. Generic match (Retailer + Product + Empty Province)
+        let currentPrice = pricesData.data.find(
           (p) =>
             p.retailer === entry.retailer &&
-            p.product_name === entry.productName
+            p.product_name === entry.productName &&
+            p.province === (entry.province || "")
         );
 
-        // If detailed match fails, try generic
-        // If no match, fallback to buy_price (no gain/loss) or 0?
-        // Better to safeguard.
+        // If specific province match failed and we have a province in entry, try generic
+        if (!currentPrice && entry.province) {
+          currentPrice = pricesData.data.find(
+            (p) =>
+              p.retailer === entry.retailer &&
+              p.product_name === entry.productName &&
+              p.province === ""
+          );
+        }
+
+        // Calculate value using buy_price (what retailer pays user)
+        // If not found, use entry.buy_price (break-even assumption)
+        // IMPORTANT: Normalize price unit (Lượng -> Chỉ)
         const marketPrice = currentPrice
-          ? currentPrice.sell_price
+          ? normalizePriceToVndPerChi(currentPrice.buy_price, currentPrice.unit)
           : entry.buy_price || 0;
+
         currentVndValue += entry.amount * marketPrice;
       }
     });

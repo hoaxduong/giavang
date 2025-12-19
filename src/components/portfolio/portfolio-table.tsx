@@ -16,6 +16,7 @@ import {
   formatVietnameseDate,
   calculatePercentChange,
   formatRetailerName,
+  normalizePriceToVndPerChi,
 } from "@/lib/utils";
 import {
   usePortfolio,
@@ -48,11 +49,14 @@ export function PortfolioTable({ onEdit }: PortfolioTableProps) {
 
   // Create a map of current prices for quick lookup
   // Use buy_price (retailer's buy price) - this is what user would receive if selling now
-  const currentPriceMap = new Map<string, number>();
+  const currentPriceMap = new Map<string, { price: number; unit: string }>();
   if (currentPrices?.data) {
     currentPrices.data.forEach((price) => {
       const key = `${price.retailer}-${price.province}-${price.product_name}`;
-      currentPriceMap.set(key, Number(price.buy_price));
+      currentPriceMap.set(key, {
+        price: Number(price.buy_price),
+        unit: price.unit,
+      });
     });
   }
 
@@ -100,14 +104,25 @@ export function PortfolioTable({ onEdit }: PortfolioTableProps) {
     }
 
     // Not sold - use current price
-    const key = `${entry.retailer}-${entry.province || ""}-${entry.productName}`;
-    const currentPrice = currentPriceMap.get(key);
+    // Priority: Specific province -> Generic province
+    const specificKey = `${entry.retailer}-${entry.province || ""}-${entry.productName}`;
+    let currentPriceData = currentPriceMap.get(specificKey);
 
-    if (currentPrice) {
-      return Number(entry.amount) * currentPrice;
+    // Fallback to generic price if specific not found and we were looking for a specific one
+    if (!currentPriceData && entry.province) {
+      const genericKey = `${entry.retailer}-${""}-${entry.productName}`;
+      currentPriceData = currentPriceMap.get(genericKey);
     }
 
-    // Fallback: use buy price if current price not available
+    if (currentPriceData) {
+      const normalizedPrice = normalizePriceToVndPerChi(
+        currentPriceData.price,
+        currentPriceData.unit
+      );
+      return Number(entry.amount) * normalizedPrice;
+    }
+
+    // Fallback: use buy price if current price not available in either specific or generic
     return Number(entry.amount) * Number(entry.buy_price);
   };
 

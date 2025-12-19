@@ -97,9 +97,46 @@ export function getPriceTrend(change: number): "up" | "down" | "stable" {
  * Format retailer name for display
  * Converts empty retailer code to display name
  */
+// ... existing code ...
 export function formatRetailerName(retailerCode: string): string {
   if (retailerCode === "" || !retailerCode) {
     return "Giá Vàng Thế Giới";
   }
   return retailerCode;
+}
+
+/**
+ * Normalize price to VND per "chỉ" (3.75g)
+ * Most gold prices often quote in "lượng" (tael = 10 chỉ)
+ */
+export function normalizePriceToVndPerChi(price: number, unit: string): number {
+  if (!unit) return price;
+
+  const lowerUnit = unit.toLowerCase();
+
+  // 1 lượng (tael) = 1 cây = 10 chỉ
+  if (
+    lowerUnit.includes("lượng") ||
+    lowerUnit.includes("luong") ||
+    lowerUnit.includes("cây") ||
+    lowerUnit.includes("cay")
+  ) {
+    return price / 10;
+  }
+
+  // 1 kg = 26.666666666667 lượng = 266.66666666667 chỉ
+  // But usually prices are 1000x or 1,000,000x, let's just handle Lượng vs Chỉ for now.
+
+  // HEURISTIC: If unit indicates "Chỉ" but price is abnormally high (> 50,000,000),
+  // it is likely actually in "Lượng" (or just raw per tael price) but mislabeled.
+  // Current gold price ~8-9M/chỉ (80-90M/lượng).
+  // If price > 50M, it's definitely not per chỉ.
+  if (
+    (lowerUnit === "vnd/chi" || lowerUnit === "vnd/chỉ") &&
+    price > 50000000
+  ) {
+    return price / 10;
+  }
+
+  return price;
 }
