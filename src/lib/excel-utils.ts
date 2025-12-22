@@ -1,4 +1,5 @@
 import * as XLSX from "xlsx";
+import { parse, isValid, format } from "date-fns";
 import type { PortfolioEntry } from "./types";
 import { RETAILERS, PROVINCES } from "./constants";
 
@@ -64,6 +65,43 @@ export const exportToCsv = (data: PortfolioEntry[], filename: string) => {
   document.body.removeChild(link);
 };
 
+// Helper: Attempt to parse multiple date formats
+function parseDateString(dateStr: string | number): string | undefined {
+  if (!dateStr) return undefined;
+
+  // If already matches ISO start (e.g. 2024-12-25...), just assume it's valid for now
+  // or checks if it is a valid date directly
+  const simpleDate = new Date(dateStr);
+  if (isValid(simpleDate) && dateStr.toString().includes("-")) {
+    return simpleDate.toISOString();
+  }
+
+  const str = dateStr.toString().trim();
+  const formatsToTry = [
+    "dd/MM/yyyy",
+    "dd/MM/yyyy HH:mm",
+    "dd-MM-yyyy",
+    "yyyy-MM-dd",
+    "MM/dd/yyyy", // unlikely in VN, but possible
+    "d/M/yyyy",
+  ];
+
+  for (const fmt of formatsToTry) {
+    const parsed = parse(str, fmt, new Date());
+    if (isValid(parsed)) {
+      return parsed.toISOString();
+    }
+  }
+
+  // Fallback: see if standard Date constructor works for other formats
+  const fallback = new Date(str);
+  if (isValid(fallback)) {
+    return fallback.toISOString();
+  }
+
+  return undefined; // Could not parse
+}
+
 export const parseImportFile = async (file: File): Promise<any[]> => {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
@@ -83,7 +121,6 @@ export const parseImportFile = async (file: File): Promise<any[]> => {
             // Generate temp ID if missing (will be replaced by storage add logic if new)
             // But for import logic, we usually want to KEEP IDs if they exist to support updates?
             // Or treats as new?
-            // Implementation plan said: import replaces logic or adds?
             // portfolio-storage.ts `importPortfolio` replaces EVERYTHING.
             // So we should try to keep ID if present.
             user_id: "local-user",
@@ -94,9 +131,29 @@ export const parseImportFile = async (file: File): Promise<any[]> => {
           Object.keys(row).forEach((colName) => {
             const key = REVERSE_COLUMN_MAP[colName];
             if (key) {
-              entry[key] = row[colName];
+              let value = row[colName];
+
+              // Handle Date Conversions
+              if (key === "bought_at" || key === "sold_at") {
+                const parsed = parseDateString(value);
+                // If parsed is undefined, maybe keep original value so user sees it's broken?
+                // Or keep it undefined? If undefined, app might crash if it expects string.
+                // Let's use current time as extreme fallback or just keep invalid string?
+                // Better to put undefined so it doesn't crash Date constructor immediately,
+                // but types say string.
+                if (parsed) {
+                  value = parsed;
+                }
+              }
+
+              entry[key] = value;
             }
           });
+
+          // Ensure bought_at is present, otherwise invalid entry
+          if (!entry.bought_at) {
+            entry.bought_at = new Date().toISOString();
+          }
 
           return entry;
         });

@@ -53,6 +53,11 @@ export function formatVietnameseDate(
   formatString: string = "PPP"
 ): string {
   const dateObj = typeof date === "string" ? new Date(date) : date;
+
+  if (isNaN(dateObj.getTime())) {
+    return typeof date === "string" ? date : "Ngày không hợp lệ";
+  }
+
   return formatDate(dateObj, formatString, { locale: vi });
 }
 
