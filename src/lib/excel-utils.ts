@@ -1,7 +1,6 @@
 import * as XLSX from "xlsx";
-import { parse, isValid, format } from "date-fns";
+import { parse, isValid } from "date-fns";
 import type { PortfolioEntry } from "./types";
-import { RETAILERS, PROVINCES } from "./constants";
 
 // Mapping for user-friendly column headers
 const COLUMN_MAP: Record<string, string> = {
@@ -16,9 +15,17 @@ const COLUMN_MAP: Record<string, string> = {
   id: "ID (Không sửa)",
 };
 
-const REVERSE_COLUMN_MAP: Record<string, keyof PortfolioEntry> = Object.entries(
-  COLUMN_MAP
-).reduce((acc, [key, value]) => ({ ...acc, [value]: key }), {});
+// Normalize string for fuzzy matching (lowercase, trim, remove extra spaces)
+function normalizeHeader(header: string): string {
+  return header.toLowerCase().trim().replace(/\s+/g, " ");
+}
+
+// Create a map of normalized headers to keys
+const NORMALIZED_REVERSE_MAP: Record<string, keyof PortfolioEntry> =
+  Object.entries(COLUMN_MAP).reduce(
+    (acc, [key, value]) => ({ ...acc, [normalizeHeader(value)]: key }),
+    {}
+  );
 
 export const exportToExcel = (data: PortfolioEntry[], filename: string) => {
   const exportData = data.map((entry) => ({
@@ -129,7 +136,9 @@ export const parseImportFile = async (file: File): Promise<any[]> => {
           };
 
           Object.keys(row).forEach((colName) => {
-            const key = REVERSE_COLUMN_MAP[colName];
+            const normalizedCol = normalizeHeader(colName);
+            const key = NORMALIZED_REVERSE_MAP[normalizedCol];
+
             if (key) {
               let value = row[colName];
 
