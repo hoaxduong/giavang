@@ -116,7 +116,8 @@ export const parseImportFile = async (file: File): Promise<any[]> => {
     reader.onload = (e) => {
       try {
         const data = e.target?.result;
-        const workbook = XLSX.read(data, { type: "binary" });
+        // Use 'array' or 'buffer' type for ArrayBuffer
+        const workbook = XLSX.read(data, { type: "array" });
         const sheetName = workbook.SheetNames[0];
         const worksheet = workbook.Sheets[sheetName];
 
@@ -174,6 +175,6 @@ export const parseImportFile = async (file: File): Promise<any[]> => {
     };
 
     reader.onerror = (error) => reject(error);
-    reader.readAsBinaryString(file);
+    reader.readAsArrayBuffer(file);
   });
 };
